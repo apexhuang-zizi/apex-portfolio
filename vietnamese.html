@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>越南语情景对话</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
 <style>
 :root{--primary:#2563eb;--primary-dark:#1d4ed8;--bg:#f0f4ff;--surface:#fff;--border:#e2e8f0;--text:#1e293b;--text-muted:#64748b;--success:#10b981;--danger:#ef4444;--shadow:0 4px 24px rgba(0,0,0,.08)}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -117,6 +120,20 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
 </div>
 
 <script>
+// Firebase 配置
+const firebaseConfig = {
+  apiKey: "AIzaSyCMPFTNEBWXA_EnkF7Yk__F1gdHYfPg8kM",
+  authDomain: "vietnames-data.firebaseapp.com",
+  projectId: "vietnames-data",
+  storageBucket: "vietnames-data.firebasestorage.app",
+  messagingSenderId: "474396114838",
+  appId: "1:474396114838:web:0fc28fb08bfbd4b6bee7b7"
+};
+
+// 初始化 Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
 // 预置对话数据（localStorage为空时使用）
 var defaultDialogues = [
   {
@@ -148,20 +165,57 @@ function getLocalDate() {
 }
 
 function init() {
-    var stored = localStorage.getItem('vnDialogues');
-    if (stored) {
-        try { dialogues = JSON.parse(stored); } catch(e) { dialogues = []; }
-    } else {
-        // localStorage为空，使用预置数据
-        dialogues = defaultDialogues.slice();
-        localStorage.setItem('vnDialogues', JSON.stringify(dialogues));
-    }
     document.getElementById('addDate').value = getLocalDate();
+    
+    // 从 Firebase 加载数据
+    loadFromFirebase();
     
     // 检查URL参数，自动添加对话
     checkUrlParams();
-    
-    renderList();
+}
+
+// 从 Firebase 加载数据
+async function loadFromFirebase() {
+    try {
+        const snapshot = await db.collection('dialogues').orderBy('created', 'desc').get();
+        if (snapshot.empty) {
+            // Firebase 为空，检查 localStorage 是否有数据需要迁移
+            var stored = localStorage.getItem('vnDialogues');
+            if (stored) {
+                try { 
+                    dialogues = JSON.parse(stored); 
+                    // 迁移到 Firebase
+                    for (var d of dialogues) {
+                        await db.collection('dialogues').add(d);
+                    }
+                    console.log('已将本地数据迁移到云端');
+                } catch(e) { 
+                    dialogues = []; 
+                }
+            } else {
+                // 使用预置数据
+                dialogues = defaultDialogues.slice();
+                for (var d of dialogues) {
+                    await db.collection('dialogues').add(d);
+                }
+            }
+        } else {
+            // 从 Firebase 加载数据
+            dialogues = [];
+            snapshot.forEach(doc => {
+                dialogues.push({ id: doc.id, ...doc.data() });
+            });
+        }
+        renderList();
+    } catch (e) {
+        console.error('加载 Firebase 数据失败:', e);
+        // 失败时从 localStorage 加载
+        var stored = localStorage.getItem('vnDialogues');
+        if (stored) {
+            try { dialogues = JSON.parse(stored); } catch(e) { dialogues = []; }
+        }
+        renderList();
+    }
 }
 
 function checkUrlParams() {
@@ -262,24 +316,30 @@ function saveNew() {
     // 处理内容：自动添加 A/B 标签
     var processedContent = processNewContent(content);
     
-    var newIdx = dialogues.length;
-    dialogues.push({date: date, topic: topic, content: processedContent, created: Date.now()});
-    dialogues.sort(function(a, b) { return b.date.localeCompare(a.date) || b.created - a.created; });
-    localStorage.setItem('vnDialogues', JSON.stringify(dialogues));
-    toggleAddForm();
-    renderList();
-    showAutoAddNotice('对话已保存，正在翻译...');
+    var newDialogue = {date: date, topic: topic, content: processedContent, created: Date.now()};
     
-    // 异步翻译（如果有越南语）
-    setTimeout(function() {
-        // 找到刚保存的对话
-        for (var i = 0; i < dialogues.length; i++) {
-            if (dialogues[i].date === date && dialogues[i].topic === topic) {
-                translateAndSave(i);
-                break;
-            }
-        }
-    }, 500);
+    // 保存到 Firebase
+    saveToFirebase(newDialogue);
+}
+
+// 保存到 Firebase
+async function saveToFirebase(dialogue) {
+    try {
+        const docRef = await db.collection('dialogues').add(dialogue);
+        dialogue.id = docRef.id;
+        dialogues.unshift(dialogue);
+        dialogues.sort(function(a, b) { return b.date.localeCompare(a.date) || b.created - a.created; });
+        
+        toggleAddForm();
+        renderList();
+        showAutoAddNotice('对话已保存到云端，正在翻译...');
+        
+        // 异步翻译
+        translateAndSave(dialogue.id);
+    } catch (e) {
+        console.error('保存到 Firebase 失败:', e);
+        alert('保存失败，请检查网络连接');
+    }
 }
 
 // 处理新内容：自动添加 A/B 标签
@@ -309,8 +369,8 @@ function processNewContent(content) {
 }
 
 // 异步翻译越南语到中文（保存后自动调用）
-async function translateAndSave(idx) {
-    var d = dialogues[idx];
+async function translateAndSave(dialogueId) {
+    var d = dialogues.find(item => item.id === dialogueId);
     if (!d) return;
     
     var lines = d.content.split('\n');
@@ -349,10 +409,19 @@ async function translateAndSave(idx) {
         }
     }
     
-    // 如果有翻译，更新保存
+    // 如果有翻译，更新保存到 Firebase
     if (needsUpdate) {
-        dialogues[idx].content = translatedLines.join('\n');
-        localStorage.setItem('vnDialogues', JSON.stringify(dialogues));
+        d.content = translatedLines.join('\n');
+        
+        // 更新到 Firebase
+        if (d.id) {
+            try {
+                await db.collection('dialogues').doc(d.id).update({ content: d.content });
+            } catch (e) {
+                console.error('更新翻译失败:', e);
+            }
+        }
+        
         renderList();
         showAutoAddNotice('翻译完成！');
     }
@@ -375,10 +444,19 @@ async function translateVietnamese(text) {
 
 function showDeleteModal(idx) { deleteTarget = idx; document.getElementById('deleteModal').classList.add('show'); }
 function closeDeleteModal() { deleteTarget = -1; document.getElementById('deleteModal').classList.remove('show'); }
-function confirmDelete() {
+
+async function confirmDelete() {
     if (deleteTarget >= 0) {
+        var d = dialogues[deleteTarget];
+        // 从 Firebase 删除
+        if (d.id) {
+            try {
+                await db.collection('dialogues').doc(d.id).delete();
+            } catch (e) {
+                console.error('删除失败:', e);
+            }
+        }
         dialogues.splice(deleteTarget, 1);
-        localStorage.setItem('vnDialogues', JSON.stringify(dialogues));
         renderList();
     }
     closeDeleteModal();
