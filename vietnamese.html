@@ -280,7 +280,8 @@ function goBack() {
 function downloadWord() {
     var content = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">';
     content += '<head><meta charset="utf-8"><title>越南语情景对话</title>';
-    content += '<style>body{font-family:Arial,sans-serif;font-size:12pt;}h1{color:#2563eb;}h2{color:#1e40af;margin-top:20pt;}.date{color:#64748b;font-size:10pt;}.dialogue{margin:15pt 0;padding:10pt;border-left:3pt solid #2563eb;background:#f8fafc;}.topic{font-weight:bold;color:#1e293b;margin-bottom:8pt;}.line{margin:5pt 0;}.vn{color:#2563eb;font-style:italic;}</style>';
+    // 页边距减少一半（默认约2.54cm，改为约1.27cm）
+    content += '<style>@page{margin:1.27cm;}body{font-family:Arial,sans-serif;font-size:12pt;}h1{color:#2563eb;}h2{color:#1e40af;margin-top:20pt;}.date{color:#64748b;font-size:10pt;}.dialogue{margin:15pt 0;padding:10pt;border-left:3pt solid #2563eb;background:#f8fafc;}.topic{font-weight:bold;color:#1e293b;margin-bottom:8pt;}.line{margin:5pt 0;}.vn{color:#2563eb;font-style:italic;}.footer{margin-top:30pt;padding-top:15pt;border-top:1pt solid #e2e8f0;color:#64748b;font-size:9pt;text-align:center;}.footer a{color:#2563eb;}</style>';
     content += '</head><body>';
     content += '<h1>🗣️ 越南语情景对话</h1>';
     content += '<p class="date">导出日期: ' + new Date().toLocaleDateString('zh-CN') + '</p><hr>';
@@ -300,6 +301,12 @@ function downloadWord() {
         }
         content += '</div></div>';
     }
+    
+    // 页尾来源注释
+    content += '<div class="footer">';
+    content += '<p>来源：Apex个人主页 - 越南语情景对话</p>';
+    content += '<p><a href="https://apexhuang-zizi.github.io/apex-portfolio/">https://apexhuang-zizi.github.io/apex-portfolio/</a></p>';
+    content += '</div>';
     
     content += '</body></html>';
     
