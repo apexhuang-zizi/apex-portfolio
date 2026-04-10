@@ -19,6 +19,8 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
 .btn-add:hover{background:var(--primary-dark)}
 .btn-success{background:var(--success);color:#fff}
 .btn-danger{background:var(--danger);color:#fff;font-size:.75rem;padding:4px 10px}
+.btn-download{background:#8b5cf6;color:#fff}
+.btn-download:hover{background:#7c3aed}
 .hero{padding:30px 24px 20px;text-align:center}
 .hero h2{font-size:1.4rem;font-weight:600;margin-bottom:6px}
 .hero p{color:var(--text-muted);font-size:.9rem}
@@ -69,7 +71,10 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
 <button class="btn btn-back" onclick="goBack()">← 返回</button>
 <h1>🗣️ 越南语情景对话</h1>
 </div>
+<div style="display:flex;gap:8px;">
+<button class="btn btn-download" onclick="downloadWord()">📥 下载Word</button>
 <button class="btn btn-add" onclick="toggleAddForm()">+ 新增对话</button>
+</div>
 </div>
 
 <div class="hero">
@@ -108,6 +113,28 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
 </div>
 
 <script>
+// 预置对话数据（localStorage为空时使用）
+var defaultDialogues = [
+  {
+    date: "2026-04-10",
+    topic: "gọi đồ uống ở quán cà phê",
+    content: "Bạn: Mình muốn một ly cà phê sữa đá, ít đường nhé. (我想要一杯冰牛奶咖啡，少糖。)\n\nNgười bán: Dạ được ạ. Bạn uống nóng hay lạnh ạ? (好的。您要热的还是冷的？)\n\nBạn: Lạnh luôn. Cho mình thêm một ít đá phin nha. (冷的。再加一点冰块吧。)\n\nNgười bán: Ok luôn! Bạn đợi một chút nha, có ngay ạ. (好的！您稍等，马上来。)",
+    created: 1775830519260
+  },
+  {
+    date: "2026-04-10",
+    topic: "ở sân bay chuyển bị lên máy bay",
+    content: "A, chào bạn, chuyến bay đi Hà Nội ở đâu vậy?\nB, dạ, quý khách đi quầy số 5 ạ. vé máy bay có sẫn(准备) chưa?\nA, rồi, đây là vé điện tử của tôi\nB, dạ, cảm ơn bạn, mời bạn để hành lý lên băng chuyền.(传送带)\nA, đươc rồi, bao nhiêu tiền phí hành lý?\nB, 15 kilogram miễn phí, hành lý của bạn 12 kilogram, không phí thêm ạ.\nA, tuyệt vời, cảm ơn bạn",
+    created: 1775829772441
+  },
+  {
+    date: "2026-04-10",
+    topic: "gọi điện buổi sáng",
+    content: "A, chào buổi sáng, hôm nay bạn có kế hoạch  gì không?\nB, hôm nay tôi phải đi họp lúc chín giớ sáng, sau đó ăn trưa với đồng nghiệp.\n\nA, ồ,bạn ăn trưa ở đâu vậy? gần công ty không?\nB, ăn ở quán cơm gần đây thôi, vừa ngon vừa rẻ, bạn có muốn đi cùng không?",
+    created: 1775829169596
+  }
+];
+
 var dialogues = [];
 var deleteTarget = -1;
 
@@ -117,7 +144,14 @@ function getLocalDate() {
 }
 
 function init() {
-    try { dialogues = JSON.parse(localStorage.getItem('vnDialogues') || '[]'); } catch(e) { dialogues = []; }
+    var stored = localStorage.getItem('vnDialogues');
+    if (stored) {
+        try { dialogues = JSON.parse(stored); } catch(e) { dialogues = []; }
+    } else {
+        // localStorage为空，使用预置数据
+        dialogues = defaultDialogues.slice();
+        localStorage.setItem('vnDialogues', JSON.stringify(dialogues));
+    }
     document.getElementById('addDate').value = getLocalDate();
     
     // 检查URL参数，自动添加对话
@@ -133,7 +167,6 @@ function checkUrlParams() {
     var content = params.get('content');
     
     if (date && topic && content) {
-        // URL中有对话参数，自动添加
         var decodedContent = decodeURIComponent(content);
         var exists = dialogues.some(function(d) { 
             return d.date === date && d.topic === topic; 
@@ -153,7 +186,6 @@ function checkUrlParams() {
             showAutoAddNotice('今日对话已存在！');
         }
         
-        // 清除URL参数
         window.history.replaceState({}, document.title, window.location.pathname);
     }
 }
@@ -241,7 +273,47 @@ function confirmDelete() {
 function escHtml(str) { return str ? str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
 
 function goBack() {
-    window.location.href = 'home.html';
+    window.location.href = 'index.html';
+}
+
+// Word下载功能
+function downloadWord() {
+    var content = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">';
+    content += '<head><meta charset="utf-8"><title>越南语情景对话</title>';
+    content += '<style>body{font-family:Arial,sans-serif;font-size:12pt;}h1{color:#2563eb;}h2{color:#1e40af;margin-top:20pt;}.date{color:#64748b;font-size:10pt;}.dialogue{margin:15pt 0;padding:10pt;border-left:3pt solid #2563eb;background:#f8fafc;}.topic{font-weight:bold;color:#1e293b;margin-bottom:8pt;}.line{margin:5pt 0;}.vn{color:#2563eb;font-style:italic;}</style>';
+    content += '</head><body>';
+    content += '<h1>🗣️ 越南语情景对话</h1>';
+    content += '<p class="date">导出日期: ' + new Date().toLocaleDateString('zh-CN') + '</p><hr>';
+    
+    for (var i = 0; i < dialogues.length; i++) {
+        var d = dialogues[i];
+        content += '<div class="dialogue">';
+        content += '<p class="date">' + escHtml(d.date) + '</p>';
+        content += '<p class="topic">📌 ' + escHtml(d.topic) + '</p>';
+        content += '<div style="margin-top:10pt;">';
+        var lines = d.content.split('\n');
+        for (var j = 0; j < lines.length; j++) {
+            var line = lines[j].trim();
+            if (line) {
+                content += '<p class="line">' + escHtml(line) + '</p>';
+            }
+        }
+        content += '</div></div>';
+    }
+    
+    content += '</body></html>';
+    
+    var blob = new Blob(['\ufeff' + content], {type: 'application/msword'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = '越南语情景对话_' + getLocalDate() + '.doc';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showAutoAddNotice('Word文件已下载！');
 }
 
 init();
