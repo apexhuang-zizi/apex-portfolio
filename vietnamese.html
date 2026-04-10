@@ -392,7 +392,10 @@ function downloadWord() {
     content += '.date { color: #64748b; font-size: 10pt; margin-bottom: 12pt; } ';
     content += '.topic { font-weight: bold; color: #1e293b; margin: 16pt 0 8pt 0; font-size: 11pt; } ';
     content += '.line { margin: 6pt 0; } ';
-    content += '.divider { border-top: 1pt solid #e2e8f0; margin: 20pt 0; } ';
+    content += '.line.vn-cn { } ';
+    content += '.vn { color: #2563eb; font-style: italic; } ';
+    content += '.cn { color: #1e293b; } ';
+    content += '.divider { text-align: center; color: #cbd5e1; margin: 20pt 0; font-family: monospace; } ';
     content += '</style>';
     
     // Word页脚定义
@@ -417,7 +420,7 @@ function downloadWord() {
     // 标题
     content += '<h1>🗣️ 越南语情景对话</h1>';
     content += '<p class="date">导出日期: ' + new Date().toLocaleDateString('zh-CN') + '</p>';
-    content += '<div class="divider"></div>';
+    content += '<div class="divider">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>';
     
     // 对话内容
     for (var i = 0; i < dialogues.length; i++) {
@@ -426,13 +429,34 @@ function downloadWord() {
         content += '<p class="topic">📌 ' + escHtml(d.topic) + '</p>';
         
         var lines = d.content.split('\n');
-        for (var j = 0; j < lines.length; j++) {
+        var j = 0;
+        while (j < lines.length) {
             var line = lines[j].trim();
-            if (line) {
+            if (!line) { j++; continue; }
+            
+            // 检测是否为越南语行
+            var isVn = /[ăâđêôơưàằầèềìòồờùừỳáắấéếíóốớúứýảẳẩẻểỉỏổởủửỷạặậẹệịọộợụựỵ]/i.test(line);
+            
+            // 检查下一行
+            var nextLine = (j + 1 < lines.length) ? lines[j + 1].trim() : '';
+            var nextIsVn = nextLine ? /[ăâđêôơưàằầèềìòồờùừỳáắấéếíóốớúứýảẳẩẻểỉỏổởủửỷạặậẹệịọộợụựỵ]/i.test(nextLine) : false;
+            
+            // 如果当前是越南语且下一行是中文，合并为一行
+            if (isVn && nextLine && !nextIsVn) {
+                content += '<p class="line vn-cn"><span class="vn">' + escHtml(line) + '</span> ｜ <span class="cn">' + escHtml(nextLine) + '</span></p>';
+                j += 2;
+            }
+            // 如果当前是中文且下一行是越南语，合并为一行
+            else if (!isVn && nextLine && nextIsVn) {
+                content += '<p class="line vn-cn"><span class="vn">' + escHtml(nextLine) + '</span> ｜ <span class="cn">' + escHtml(line) + '</span></p>';
+                j += 2;
+            }
+            else {
                 content += '<p class="line">' + escHtml(line) + '</p>';
+                j++;
             }
         }
-        content += '<div class="divider"></div>';
+        content += '<div class="divider">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>';
     }
     
     content += '</div>'; // Section1

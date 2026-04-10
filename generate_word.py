@@ -83,9 +83,12 @@ def create_word(dialogues, output_path):
     run = date_p.add_run(f'导出日期: {datetime.now().strftime("%Y-%m-%d")}')
     set_run_font(run, 'Arial', '微软雅黑', 10)
     
+    # 统一分隔线
+    separator = '─' * 60
+    
     # 分隔线
     sep = doc.add_paragraph()
-    run = sep.add_run('─' * 50)
+    run = sep.add_run(separator)
     set_run_font(run, 'Arial', '微软雅黑', 10)
     
     # 添加对话内容
@@ -139,7 +142,7 @@ def create_word(dialogues, output_path):
         # 分隔
         doc.add_paragraph()
         sep = doc.add_paragraph()
-        run = sep.add_run('─' * 30)
+        run = sep.add_run(separator)
         set_run_font(run, 'Arial', '微软雅黑', 10)
     
     # 保存
