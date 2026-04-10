@@ -280,8 +280,10 @@ function goBack() {
 function downloadWord() {
     var content = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">';
     content += '<head><meta charset="utf-8"><title>越南语情景对话</title>';
-    // 页边距减少一半（默认约2.54cm，改为约1.27cm）
-    content += '<style>@page{margin:1.27cm;}body{font-family:Arial,sans-serif;font-size:12pt;}h1{color:#2563eb;}h2{color:#1e40af;margin-top:20pt;}.date{color:#64748b;font-size:10pt;}.dialogue{margin:15pt 0;padding:10pt;border-left:3pt solid #2563eb;background:#f8fafc;}.topic{font-weight:bold;color:#1e293b;margin-bottom:8pt;}.line{margin:5pt 0;}.vn{color:#2563eb;font-style:italic;}.footer{margin-top:30pt;padding-top:15pt;border-top:1pt solid #e2e8f0;color:#64748b;font-size:9pt;text-align:center;}.footer a{color:#2563eb;}</style>';
+    // 页边距：中等（约1.91cm），页眉页脚1.2cm
+    content += '<style>@page{margin:1.91cm;mso-header-margin:1.2cm;mso-footer-margin:1.2cm;}body{font-family:Arial,sans-serif;font-size:12pt;}h1{color:#2563eb;}h2{color:#1e40af;margin-top:20pt;}.date{color:#64748b;font-size:10pt;}.dialogue{margin:15pt 0;padding:10pt;border-left:3pt solid #2563eb;background:#f8fafc;}.topic{font-weight:bold;color:#1e293b;margin-bottom:8pt;}.line{margin:5pt 0;}.vn{color:#2563eb;font-style:italic;}div.footer{display:none;}</style>';
+    // 页脚设置
+    content += '<xml><w:WordDocument><w:footnotes></w:footnotes></w:WordDocument></xml>';
     content += '</head><body>';
     content += '<h1>🗣️ 越南语情景对话</h1>';
     content += '<p class="date">导出日期: ' + new Date().toLocaleDateString('zh-CN') + '</p><hr>';
@@ -302,11 +304,8 @@ function downloadWord() {
         content += '</div></div>';
     }
     
-    // 页尾来源注释
-    content += '<div class="footer">';
-    content += '<p>Apex Personal Workspace &copy; 2026</p>';
-    content += '</div>';
-    
+    content += '<br><br><br>';
+    content += '<div style="text-align:center;border-top:1pt solid #e2e8f0;padding-top:15pt;margin-top:20pt;"><p style="color:#64748b;font-size:9pt;">Apex Personal Workspace &copy; 2026</p></div>';
     content += '</body></html>';
     
     var blob = new Blob(['\ufeff' + content], {type: 'application/msword'});
