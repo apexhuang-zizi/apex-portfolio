@@ -276,24 +276,61 @@ function goBack() {
     window.location.href = 'index.html';
 }
 
-// Word下载功能
+// Word下载功能 - 使用HTML格式配合Word特定标签
 function downloadWord() {
     var content = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">';
     content += '<head><meta charset="utf-8"><title>越南语情景对话</title>';
-    // 页边距全部1.2cm
-    content += '<style>@page{margin:1.2cm;mso-header-margin:1.2cm;mso-footer-margin:1.2cm;mso-paper-source:0;}body{font-family:Arial,sans-serif;font-size:12pt;}h1{color:#2563eb;}h2{color:#1e40af;margin-top:20pt;}.date{color:#64748b;font-size:10pt;}.dialogue{margin:15pt 0;padding:10pt;border-left:3pt solid #2563eb;background:#f8fafc;}.topic{font-weight:bold;color:#1e293b;margin-bottom:8pt;}.line{margin:5pt 0;}.vn{color:#2563eb;font-style:italic;}</style>';
-    // Word 页脚设置 - 使用 sectPr
-    content += '<xml><w:WordDocument><w:View>Print</w:View></w:WordDocument></xml>';
-    content += '</head><body>';
-    content += '<h1>🗣️ 越南语情景对话</h1>';
-    content += '<p class="date">导出日期: ' + new Date().toLocaleDateString('zh-CN') + '</p><hr>';
     
+    // 样式 - 页边距1.2cm (约680 twips)
+    content += '<style>';
+    content += '@page { ';
+    content += 'size: A4; ';
+    content += 'margin-top: 1.2cm; ';
+    content += 'margin-right: 1.2cm; ';
+    content += 'margin-bottom: 1.2cm; ';
+    content += 'margin-left: 1.2cm; ';
+    content += 'mso-page-orientation: portrait; ';
+    content += 'mso-footer: url("#footer"); ';
+    content += '} ';
+    content += 'div.Section1 { page: Section1; } ';
+    content += 'body { font-family: Arial, sans-serif; font-size: 12pt; line-height: 1.6; } ';
+    content += 'h1 { color: #2563eb; font-size: 18pt; margin-bottom: 8pt; } ';
+    content += '.date { color: #64748b; font-size: 10pt; margin-bottom: 12pt; } ';
+    content += '.topic { font-weight: bold; color: #1e293b; margin: 16pt 0 8pt 0; font-size: 11pt; } ';
+    content += '.line { margin: 6pt 0; } ';
+    content += '.divider { border-top: 1pt solid #e2e8f0; margin: 20pt 0; } ';
+    content += '</style>';
+    
+    // Word页脚定义
+    content += '<xml xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">';
+    content += '<w:WordDocument>';
+    content += '<w:footers>';
+    content += '<w:footer w:type="odd" w:continue="on" id="footer">';
+    content += '<w:p><w:pPr><w:jc w:val="center"/></w:pPr>';
+    content += '<w:r><w:rPr><w:sz w:val="18"/><w:color w:val="64748B"/></w:rPr>';
+    content += '<w:t>Apex Personal Workspace © 2026</w:t>';
+    content += '</w:r></w:p>';
+    content += '</w:footer>';
+    content += '</w:footers>';
+    content += '</w:WordDocument>';
+    content += '</xml>';
+    
+    content += '</head><body>';
+    
+    // 使用Section1来应用页面设置
+    content += '<div class="Section1">';
+    
+    // 标题
+    content += '<h1>🗣️ 越南语情景对话</h1>';
+    content += '<p class="date">导出日期: ' + new Date().toLocaleDateString('zh-CN') + '</p>';
+    content += '<div class="divider"></div>';
+    
+    // 对话内容
     for (var i = 0; i < dialogues.length; i++) {
         var d = dialogues[i];
-        content += '<div class="dialogue">';
-        content += '<p class="date">' + escHtml(d.date) + '</p>';
+        content += '<p class="date">📅 ' + escHtml(d.date) + '</p>';
         content += '<p class="topic">📌 ' + escHtml(d.topic) + '</p>';
-        content += '<div style="margin-top:10pt;">';
+        
         var lines = d.content.split('\n');
         for (var j = 0; j < lines.length; j++) {
             var line = lines[j].trim();
@@ -301,14 +338,13 @@ function downloadWord() {
                 content += '<p class="line">' + escHtml(line) + '</p>';
             }
         }
-        content += '</div></div>';
+        content += '<div class="divider"></div>';
     }
     
-    // 文档末尾 - 设置页脚（每页底部显示）
-    content += '<br clear="all" style="page-break-before:always;mso-break-type:section-break;">';
-    content += '<xml><w:sectPr><w:pgMar w:top="680" w:right="680" w:bottom="680" w:left="680" w:header="680" w:footer="680"/><w:footer w:type="odd"><w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:t>Apex Personal Workspace © 2026</w:t></w:r></w:p></w:footer></w:sectPr></xml>';
+    content += '</div>'; // Section1
     content += '</body></html>';
     
+    // 创建下载
     var blob = new Blob(['\ufeff' + content], {type: 'application/msword'});
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
@@ -320,6 +356,11 @@ function downloadWord() {
     URL.revokeObjectURL(url);
     
     showAutoAddNotice('Word文件已下载！');
+}
+
+function escXml(str) {
+    if (!str) return '';
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 }
 
 init();
