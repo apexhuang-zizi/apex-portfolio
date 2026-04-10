@@ -21,6 +21,10 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
 .btn-danger{background:var(--danger);color:#fff;font-size:.75rem;padding:4px 10px}
 .btn-download{background:#8b5cf6;color:#fff}
 .btn-download:hover{background:#7c3aed}
+.btn-play{background:#10b981;color:#fff}
+.btn-play:hover{background:#059669}
+.btn-play.playing{background:#f59e0b;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
 .hero{padding:30px 24px 20px;text-align:center}
 .hero h2{font-size:1.4rem;font-weight:600;margin-bottom:6px}
 .hero p{color:var(--text-muted);font-size:.9rem}
@@ -212,8 +216,11 @@ function renderList() {
             '<span class="dialogue-topic">' + escHtml(d.topic) + '</span>' +
             '<span class="dialogue-arrow">▶</span>' +
             '</div>' +
-            '<div class="dialogue-body"><div class="dialogue-content">' + formatContent(d.content) + '</div>' +
-            '<div class="dialogue-actions"><button class="btn btn-danger" onclick="showDeleteModal(' + i + ')">删除</button></div></div></div>';
+            '<div class="dialogue-body"><div class="dialogue-content" id="content_' + i + '">' + formatContent(d.content, i) + '</div>' +
+            '<div class="dialogue-actions">' +
+            '<button class="btn btn-play" onclick="playDialogue(' + i + ')">🔊 播放</button>' +
+            '<button class="btn btn-danger" onclick="showDeleteModal(' + i + ')">删除</button>' +
+            '</div></div></div>';
     }
     list.innerHTML = html;
 }
@@ -274,6 +281,93 @@ function escHtml(str) { return str ? str.replace(/&/g,'&amp;').replace(/</g,'&lt
 
 function goBack() {
     window.location.href = 'index.html';
+}
+
+// TTS 语音播放功能
+var speechSynthesis = window.speechSynthesis;
+var currentUtterance = null;
+var isPlaying = false;
+
+function playDialogue(idx) {
+    var d = dialogues[idx];
+    if (!d) return;
+    
+    var btn = event.target;
+    
+    // 如果正在播放，停止
+    if (isPlaying) {
+        speechSynthesis.cancel();
+        isPlaying = false;
+        document.querySelectorAll('.btn-play').forEach(function(b) {
+            b.classList.remove('playing');
+            b.textContent = '🔊 播放';
+        });
+        return;
+    }
+    
+    // 开始播放
+    btn.classList.add('playing');
+    btn.textContent = '⏹ 停止';
+    isPlaying = true;
+    
+    var lines = d.content.split('\n');
+    var textQueue = [];
+    
+    for (var i = 0; i < lines.length; i++) {
+        var line = lines[i].trim();
+        if (!line) continue;
+        
+        // 检测是否为越南语（包含越南语特殊字符）
+        var isVietnamese = /[ăâđêôơưàằầèềìòồờùừỳáắấéếíóốớúứýảẳẩẻểỉỏổởủửỷạặậẹệịọộợụựỵĐĂÂÊÔƠƯ]/i.test(line);
+        
+        textQueue.push({
+            text: line,
+            lang: isVietnamese ? 'vi-VN' : 'zh-CN'
+        });
+    }
+    
+    playTextQueue(textQueue, 0, btn);
+}
+
+function playTextQueue(queue, index, btn) {
+    if (index >= queue.length || !isPlaying) {
+        // 播放完成
+        isPlaying = false;
+        btn.classList.remove('playing');
+        btn.textContent = '🔊 播放';
+        return;
+    }
+    
+    var item = queue[index];
+    var utterance = new SpeechSynthesisUtterance(item.text);
+    utterance.lang = item.lang;
+    utterance.rate = 0.9; // 稍慢一点更清晰
+    
+    // 尝试获取对应语言的语音
+    var voices = speechSynthesis.getVoices();
+    var voice = voices.find(function(v) { return v.lang.startsWith(item.lang.substring(0, 2)); });
+    if (voice) utterance.voice = voice;
+    
+    utterance.onend = function() {
+        // 播放下一条
+        setTimeout(function() {
+            playTextQueue(queue, index + 1, btn);
+        }, 500); // 每条之间间隔500ms
+    };
+    
+    utterance.onerror = function() {
+        playTextQueue(queue, index + 1, btn);
+    };
+    
+    currentUtterance = utterance;
+    speechSynthesis.speak(utterance);
+}
+
+// 预加载语音列表
+if (speechSynthesis) {
+    speechSynthesis.onvoiceschanged = function() {
+        speechSynthesis.getVoices();
+    };
 }
 
 // Word下载功能 - 使用HTML格式配合Word特定标签
