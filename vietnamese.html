@@ -91,7 +91,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
 <h3>新增对话 / Them hoi thoai moi</h3>
 <div class="form-group"><label>日期 / Ngay</label><input type="date" id="addDate"></div>
 <div class="form-group"><label>主题 / Chu de</label><input type="text" id="addTopic" placeholder="输入对话主题..."></div>
-<div class="form-group"><label>对话内容 / Noi dung</label><textarea id="addContent" placeholder="中文内容&#10;越南文内容&#10;&#10;中文内容&#10;越南文内容"></textarea></div>
+<div class="form-group"><label>对话内容 / Noi dung <span style="color:#64748b;font-weight:normal">(只需输入越南文，自动添加A/B并翻译中文)</span></label><textarea id="addContent" placeholder="第一句越南文&#10;第二句越南文&#10;第三句越南文&#10;...&#10;&#10;提示：A/B 会自动交替添加，中文会自动翻译"></textarea></div>
 <div class="form-actions">
 <button class="btn btn-outline" onclick="toggleAddForm()">取消</button>
 <button class="btn btn-add" onclick="saveNew()">保存</button>
@@ -258,12 +258,119 @@ function saveNew() {
     var topic = document.getElementById('addTopic').value.trim();
     var content = document.getElementById('addContent').value.trim();
     if (!date || !topic || !content) { alert('请填写完整信息'); return; }
-    dialogues.push({date: date, topic: topic, content: content, created: Date.now()});
+    
+    // 处理内容：自动添加 A/B 标签
+    var processedContent = processNewContent(content);
+    
+    var newIdx = dialogues.length;
+    dialogues.push({date: date, topic: topic, content: processedContent, created: Date.now()});
     dialogues.sort(function(a, b) { return b.date.localeCompare(a.date) || b.created - a.created; });
     localStorage.setItem('vnDialogues', JSON.stringify(dialogues));
     toggleAddForm();
     renderList();
-    showAutoAddNotice('对话已保存！');
+    showAutoAddNotice('对话已保存，正在翻译...');
+    
+    // 异步翻译（如果有越南语）
+    setTimeout(function() {
+        // 找到刚保存的对话
+        for (var i = 0; i < dialogues.length; i++) {
+            if (dialogues[i].date === date && dialogues[i].topic === topic) {
+                translateAndSave(i);
+                break;
+            }
+        }
+    }, 500);
+}
+
+// 处理新内容：自动添加 A/B 标签
+function processNewContent(content) {
+    var lines = content.split('\n').filter(function(l) { return l.trim(); });
+    var result = [];
+    var isA = true; // 第一句是 A
+    
+    for (var i = 0; i < lines.length; i++) {
+        var line = lines[i].trim();
+        if (!line) continue;
+        
+        // 如果用户已经输入了 A: 或 B:，则保留
+        if (line.match(/^[AB][:：]/i)) {
+            result.push(line);
+            isA = !isA;
+            continue;
+        }
+        
+        // 自动添加 A: 或 B:
+        var prefix = isA ? 'A: ' : 'B: ';
+        result.push(prefix + line);
+        isA = !isA; // 交替
+    }
+    
+    return result.join('\n');
+}
+
+// 异步翻译越南语到中文（保存后自动调用）
+async function translateAndSave(idx) {
+    var d = dialogues[idx];
+    if (!d) return;
+    
+    var lines = d.content.split('\n');
+    var translatedLines = [];
+    var needsUpdate = false;
+    
+    for (var i = 0; i < lines.length; i++) {
+        var line = lines[i].trim();
+        if (!line) continue;
+        
+        // 提取 A: 或 B: 前缀后面的内容
+        var match = line.match(/^([AB][:：])\s*(.+)$/i);
+        if (!match) {
+            translatedLines.push(line);
+            continue;
+        }
+        
+        var prefix = match[1];
+        var text = match[2];
+        
+        // 检测是否为越南语（包含越南语特殊字符）
+        var isVn = /[ăâđêôơưàằầèềìòồờùừỳáắấéếíóốớúứýảẳẩẻểỉỏổởủửỷạặậẹệịọộợụựỵĐĂÂÊÔƠƯ]/i.test(text);
+        
+        // 如果是越南语，尝试翻译
+        if (isVn) {
+            try {
+                var translated = await translateVietnamese(text);
+                translatedLines.push(prefix + ' ' + text);
+                translatedLines.push(prefix + ' ' + translated);
+                needsUpdate = true;
+            } catch (e) {
+                translatedLines.push(prefix + ' ' + text);
+            }
+        } else {
+            translatedLines.push(prefix + ' ' + text);
+        }
+    }
+    
+    // 如果有翻译，更新保存
+    if (needsUpdate) {
+        dialogues[idx].content = translatedLines.join('\n');
+        localStorage.setItem('vnDialogues', JSON.stringify(dialogues));
+        renderList();
+        showAutoAddNotice('翻译完成！');
+    }
+}
+
+// 翻译越南语到中文（使用免费翻译服务）
+async function translateVietnamese(text) {
+    try {
+        var url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=vi&tl=zh-CN&dt=t&q=' + encodeURIComponent(text);
+        var response = await fetch(url);
+        var data = await response.json();
+        if (data && data[0] && data[0][0] && data[0][0][0]) {
+            return data[0][0][0];
+        }
+    } catch (e) {
+        console.log('翻译失败:', e);
+    }
+    return text;
 }
 
 function showDeleteModal(idx) { deleteTarget = idx; document.getElementById('deleteModal').classList.add('show'); }
