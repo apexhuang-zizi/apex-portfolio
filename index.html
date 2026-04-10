@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Apex的个人主页</title>
+<title>Apex鐨勪釜浜轰富椤?/title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--primary:#2563eb;--primary-dark:#1d4ed8;--bg:#f0f4ff;--surface:#fff;--border:#e2e8f0;--text:#1e293b;--text-muted:#64748b;--success:#10b981;--danger:#ef4444;--shadow:0 4px 24px rgba(0,0,0,.08)}
@@ -45,36 +45,36 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
 <div class="login-page" id="loginPage">
 <div class="login-box">
 <h1>Apex</h1>
-<p>个人工作台 / Nen lam viec</p>
-<input type="text" id="loginUser" placeholder="用户名 / Tai khoan" autocomplete="off">
-<input type="password" id="loginPass" placeholder="密码 / Mat khau" autocomplete="off">
-<button onclick="doLogin()">登 录 / Dang nhap</button>
-<div class="login-error" id="loginError">用户名或密码错误</div>
+<p>涓汉宸ヤ綔鍙?/ Nen lam viec</p>
+<input type="text" id="loginUser" placeholder="鐢ㄦ埛鍚?/ Tai khoan" autocomplete="off">
+<input type="password" id="loginPass" placeholder="瀵嗙爜 / Mat khau" autocomplete="off">
+<button onclick="doLogin()">鐧?褰?/ Dang nhap</button>
+<div class="login-error" id="loginError">鐢ㄦ埛鍚嶆垨瀵嗙爜閿欒</div>
 </div>
 </div>
 
 <div class="app-page" id="appPage">
 <div class="topbar">
-<h1>Apex 的工作台</h1>
-<button class="logout-btn" onclick="doLogout()">退出登录 / Dang xuat</button>
+<h1>Apex 鐨勫伐浣滃彴</h1>
+<button class="logout-btn" onclick="doLogout()">閫€鍑虹櫥褰?/ Dang xuat</button>
 </div>
 <div class="hero">
-<h2>功能模块 / Modules</h2>
-<p>点击模块进入对应功能 / Click to open</p>
+<h2>鍔熻兘妯″潡 / Modules</h2>
+<p>鐐瑰嚮妯″潡杩涘叆瀵瑰簲鍔熻兘 / Click to open</p>
 </div>
 <div class="modules">
 <div class="module-grid" id="moduleGrid">
 <a class="module-card" href="vietnamese.html">
-<div class="icon">🗣️</div>
-<h4>越南语情景对话</h4>
-<p>每日越南语学习对话归档，支持中越双语对照</p>
-<span class="tag tag-active">在线</span>
+<div class="icon">馃棧锔?/div>
+<h4>瓒婂崡璇儏鏅璇?/h4>
+<p>姣忔棩瓒婂崡璇涔犲璇濆綊妗ｏ紝鏀寔涓秺鍙岃瀵圭収</p>
+<span class="tag tag-active">鍦ㄧ嚎</span>
 </a>
-<a class="module-card" href="index.html">
-<div class="icon">📋</div>
-<h4>问题追踪表</h4>
-<p>中越双语问题记录与追踪，支持自动翻译</p>
-<span class="tag tag-active">在线</span>
+<a class="module-card" href="tracker.html">
+<div class="icon">馃搵</div>
+<h4>闂杩借釜琛?/h4>
+<p>涓秺鍙岃闂璁板綍涓庤拷韪紝鏀寔鑷姩缈昏瘧</p>
+<span class="tag tag-active">鍦ㄧ嚎</span>
 </a>
 </div>
 </div>
@@ -83,49 +83,3 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
 
 <script>
 var USERS = {
-    'apex': 'apex2026',
-    'admin': 'admin2026'
-};
-
-function checkAuth() {
-    var auth = sessionStorage.getItem('apex_auth');
-    if (auth === 'true') {
-        document.getElementById('loginPage').style.display = 'none';
-        document.getElementById('appPage').style.display = 'block';
-    }
-}
-
-function doLogin() {
-    var user = document.getElementById('loginUser').value.trim().toLowerCase();
-    var pass = document.getElementById('loginPass').value;
-    if (USERS[user] && USERS[user] === pass) {
-        sessionStorage.setItem('apex_auth', 'true');
-        sessionStorage.setItem('apex_user', user);
-        document.getElementById('loginPage').style.display = 'none';
-        document.getElementById('appPage').style.display = 'block';
-        document.getElementById('loginError').style.display = 'none';
-    } else {
-        document.getElementById('loginError').style.display = 'block';
-    }
-}
-
-function doLogout() {
-    sessionStorage.removeItem('apex_auth');
-    sessionStorage.removeItem('apex_user');
-    document.getElementById('loginPage').style.display = 'flex';
-    document.getElementById('appPage').style.display = 'none';
-    document.getElementById('loginUser').value = '';
-    document.getElementById('loginPass').value = '';
-}
-
-document.getElementById('loginPass').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') doLogin();
-});
-document.getElementById('loginUser').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') document.getElementById('loginPass').focus();
-});
-
-checkAuth();
-</script>
-</body>
-</html>
