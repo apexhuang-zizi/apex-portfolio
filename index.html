@@ -300,19 +300,88 @@ body { font-family: "Outfit", sans-serif; background: var(--bg); color: var(--te
 
 <script>
 // ==================== 数据结构 ====================
+// ===========================================
+// CLOUD SYNC via JSONBin.io (FREE!)
+// ===========================================
+// 1. Sign up at https://jsonbin.io (free)
+// 2. Create a Bin, copy its URL
+// 3. Go to API Access -> Create Master Key
+// 4. Replace below with your credentials:
+var JSONBIN_MASTER_KEY = "";  // Your Master Key
+var JSONBIN_BIN_URL = "";      // Your Bin URL like: https://api.jsonbin.io/v3/b/xxxxx
+
 var DEFAULT_USERS = [
-    { username: "apex", password: "apex2026", role: "admin", modules: "full", createdBy: "system" },
-    { username: "test", password: "test2026", role: "user", modules: "basic", createdBy: "system" }
+    {username:"apex",password:"apex2026",role:"admin",modules:"full",createdBy:"system"},
+    {username:"test",password:"test2026",role:"user",modules:"basic",createdBy:"system"}
 ];
 
+var cloudData = null;  // Cached cloud data
+
 function initData() {
-    if (!localStorage.getItem("apex_users")) {
-        localStorage.setItem("apex_users", JSON.stringify(DEFAULT_USERS));
+    if (JSONBIN_MASTER_KEY && JSONBIN_BIN_URL) {
+        loadFromCloud();
+    } else {
+        if (!localStorage.getItem("apex_users")) {
+            localStorage.setItem("apex_users", JSON.stringify(DEFAULT_USERS));
+        }
     }
 }
 
-function getUsers() { return JSON.parse(localStorage.getItem("apex_users") || "[]"); }
-function saveUsers(users) { localStorage.setItem("apex_users", JSON.stringify(users)); }
+function loadFromCloud() {
+    if (!JSONBIN_MASTER_KEY || !JSONBIN_BIN_URL) {
+        if (!localStorage.getItem("apex_users")) {
+            localStorage.setItem("apex_users", JSON.stringify(DEFAULT_USERS));
+        }
+        return;
+    }
+    
+    fetch(JSONBIN_BIN_URL, {
+        method: 'GET',
+        headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data && data.record && data.record.users) {
+            localStorage.setItem("apex_users", JSON.stringify(data.record.users));
+            cloudData = data.record.users;
+            if (document.getElementById('userTableBody')) renderUserTable();
+            showToast("Data synced from cloud", "success");
+        }
+    })
+    .catch(err => {
+        console.log("Cloud load failed:", err);
+        if (!localStorage.getItem("apex_users")) {
+            localStorage.setItem("apex_users", JSON.stringify(DEFAULT_USERS));
+        }
+    });
+}
+
+function saveUsers(users) {
+    localStorage.setItem("apex_users", JSON.stringify(users));
+    cloudData = users;
+    
+    if (JSONBIN_MASTER_KEY && JSONBIN_BIN_URL) {
+        fetch(JSONBIN_BIN_URL, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Master-Key': JSONBIN_MASTER_KEY
+            },
+            body: JSON.stringify({users: users})
+        })
+        .then(r => r.json())
+        .then(() => showToast("Synced to cloud", "success"))
+        .catch(err => {
+            console.log("Cloud save failed:", err);
+            showToast("Cloud sync failed", "error");
+        });
+    }
+}
+
+function getUsers() {
+    return JSON.parse(localStorage.getItem("apex_users") || "[]");
+}
+// ===========================================
 
 // ==================== 认证 ====================
 function checkAuth() {
@@ -557,4 +626,19 @@ initData();
 checkAuth();
 </script>
 </body>
+
+<!--
+========================================
+CLOUD SYNC SETUP (JSONBin.io - FREE!)
+========================================
+1. Go to https://jsonbin.io/register (free signup)
+2. Create a new Bin (collection)
+3. Go to API Access -> Create Master Key
+4. Edit index.html:
+   - Replace "YOUR_API_KEY_HERE" with your Master Key
+   - Replace "YOUR_BIN_URL_HERE" with your Bin URL
+
+Then user data will sync across all devices automatically!
+========================================
+-->
 </html>

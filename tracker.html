@@ -83,14 +83,28 @@ select{font-size:.65rem;padding:2px}
 </style>
 </head>
 <body>
+<div class="topbar">
+    <div class="topbar-left">
+        <button class="btn-back" onclick="goBack()">← Back</button>
+        <h1>Problem Tracker</h1>
+    </div>
+    <div class="topbar-actions">
+        <button class="btn btn-primary" id="saveBtn">💾 Save</button>
+        <button class="btn btn-success" id="pdfBtn">📄 PDF</button>
+    </div>
+</div>
+<div class="topbar">
+    <div class="topbar-left">
+        <button class="btn-back" onclick="goBack()">← Back</button>
+        <h1>Problem Tracker</h1>
+    </div>
+    <div class="topbar-actions">
+        <button class="btn btn-primary" id="saveBtn">Save</button>
+        <button class="btn btn-success" id="pdfBtn">PDF</button>
+    </div>
+</div>
 <div class="container">
-<div class="header">
-<div><h1>问题追踪表</h1><p style="color:var(--text-muted)">Bang theo doi van de / 问题追踪表</p></div>
-<div class="header-actions">
-<button class="btn btn-outline" id="saveBtn">💾 保存</button>
-<button class="btn btn-danger" id="pdfBtn">📄 PDF</button>
-</div>
-</div>
+
 
 <div class="header-info">
 <div class="info-field"><label>日期 / Ngay</label><input type="date" id="hDate"></div>
@@ -404,6 +418,10 @@ document.getElementById('saveBtn').addEventListener('click', function() {
     saveData();
     downloadHTMLBackup();
 });
+
+function goBack() { window.location.href = "index.html"; }
+
+function goBack() { window.location.href = "index.html"; }
 
 function downloadHTMLBackup() {
     var filename = getFileName('.html');
