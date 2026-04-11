@@ -146,13 +146,14 @@ select{font-size:.65rem;padding:2px}
 <input type="file" id="productImgInput" accept="image/*" multiple style="display:none">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js">
-
-function goBack() {
-    window.location.href = 'index.html';
-}
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
+// 全局返回函数 - 必须在 IIFE 外部定义才能被 onclick 访问
+function goBack() {
+    window.location.href = 'index.html';
+}
+
 (function(){
 var curRow = -1;
 var currentViewerImg = '';
