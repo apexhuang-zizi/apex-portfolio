@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Apex 涓汉涓婚〉 - 澶氱敤鎴风鐞嗘祴璇?/title>
+<title>Apex 个人主页 - 多用户管理测试</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -30,7 +30,7 @@ body { font-family: "Outfit", sans-serif; background: var(--bg); color: var(--te
 .topbar .logout-btn { padding: 8px 16px; background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-muted); cursor: pointer; font-family: inherit; font-size: .85rem; transition: all .2s }
 .topbar .logout-btn:hover { background: #fef2f2; color: var(--danger); border-color: var(--danger) }
 
-/* 蹇嵎鎿嶄綔鎸夐挳 */
+/* 快捷操作按钮 */
 .quick-actions { background: var(--surface); margin: 20px 24px 0; padding: 16px 24px; border-radius: 12px; box-shadow: var(--shadow); display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
 .quick-actions h3 { font-size: 1rem; font-weight: 600; margin-right: auto; }
 .quick-btn { padding: 10px 18px; border: none; border-radius: 8px; font-size: .9rem; font-weight: 500; cursor: pointer; font-family: inherit; transition: all .2s; display: flex; align-items: center; gap: 6px; }
@@ -39,12 +39,12 @@ body { font-family: "Outfit", sans-serif; background: var(--bg); color: var(--te
 .btn-password { background: #fef3c7; color: var(--warning); }
 .btn-password:hover { background: var(--warning); color: #fff; }
 
-/* 涓诲唴瀹瑰尯 */
+/* 主内容区 */
 .hero { padding: 40px 24px 20px; text-align: center; }
 .hero h2 { font-size: 1.6rem; font-weight: 600; margin-bottom: 8px; }
 .hero p { color: var(--text-muted); font-size: .95rem; }
 
-/* 妯″潡缃戞牸 */
+/* 模块网格 */
 .modules { max-width: 1200px; margin: 0 auto; padding: 0 24px 40px; }
 .modules h3 { font-size: 1rem; font-weight: 600; color: var(--text-muted); margin-bottom: 16px; text-transform: uppercase; letter-spacing: 1px; }
 .module-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
@@ -56,7 +56,7 @@ body { font-family: "Outfit", sans-serif; background: var(--bg); color: var(--te
 .module-card.locked { opacity: 0.5; cursor: not-allowed; }
 .module-card.locked:hover { transform: none; border-color: transparent; box-shadow: var(--shadow); }
 
-/* 闈㈡澘 */
+/* 面板 */
 .panel { background: var(--surface); border-radius: 16px; padding: 30px; box-shadow: var(--shadow); margin: 20px 24px; max-width: 900px; }
 .panel h3 { font-size: 1.2rem; font-weight: 600; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
 .panel h3 .icon { font-size: 1.5rem; }
@@ -72,14 +72,14 @@ body { font-family: "Outfit", sans-serif; background: var(--bg); color: var(--te
 .module-badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: .75rem; background: #f1f5f9; color: var(--text-muted); margin: 2px; }
 .module-badge.active { background: #dcfce7; color: #16a34a; }
 
-/* 琛ㄥ崟 */
+/* 表单 */
 .form-group { margin-bottom: 16px; }
 .form-group label { display: block; margin-bottom: 6px; font-weight: 500; font-size: .9rem; }
 .form-group input, .form-group select { width: 100%; padding: 12px 16px; border: 1px solid var(--border); border-radius: 10px; font-size: .95rem; font-family: inherit; }
 .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--primary); }
 .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
 
-/* 鎸夐挳 */
+/* 按钮 */
 .btn-primary { padding: 12px 24px; background: var(--primary); color: #fff; border: none; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: background .2s; }
 .btn-primary:hover { background: var(--primary-dark); }
 .btn-secondary { padding: 10px 20px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 10px; font-size: .9rem; cursor: pointer; font-family: inherit; transition: all .2s; }
@@ -89,7 +89,7 @@ body { font-family: "Outfit", sans-serif; background: var(--bg); color: var(--te
 .btn-danger { padding: 10px 16px; background: #fef2f2; color: var(--danger); border: none; border-radius: 8px; font-size: .85rem; cursor: pointer; font-family: inherit; transition: all .2s; }
 .btn-danger:hover { background: var(--danger); color: #fff; }
 
-/* 妯℃€佹 */
+/* 模态框 */
 .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,.5); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
 .modal.active { display: flex; }
 .modal-content { background: var(--surface); border-radius: 16px; padding: 30px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
@@ -97,14 +97,14 @@ body { font-family: "Outfit", sans-serif; background: var(--bg); color: var(--te
 .modal-close { float: right; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); }
 .modal-footer { margin-top: 24px; display: flex; gap: 12px; justify-content: flex-end; }
 
-/* 鎻愮ず */
+/* 提示 */
 .toast { position: fixed; top: 80px; right: 20px; padding: 14px 20px; border-radius: 10px; font-size: .9rem; font-weight: 500; z-index: 2000; animation: slideIn .3s ease; box-shadow: var(--shadow); }
 .toast-success { background: #dcfce7; color: #16a34a; border: 1px solid #86efac; }
 .toast-error { background: #fef2f2; color: var(--danger); border: 1px solid #fecaca; }
 @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 .footer { text-align: center; padding: 30px; color: var(--text-muted); font-size: .8rem; }
 
-/* 鍝嶅簲寮?*/
+/* 响应式 */
 @media (max-width: 600px) { 
     .module-grid { grid-template-columns: 1fr; } 
     .quick-actions { flex-direction: column; align-items: stretch; }
@@ -119,176 +119,179 @@ body { font-family: "Outfit", sans-serif; background: var(--bg); color: var(--te
 </style>
 </head>
 <body>
-<!-- 鐧诲綍椤?-->
+<!-- 登录页 -->
 <div class="login-page" id="loginPage">
     <div class="login-box">
         <h1>Apex</h1>
-        <p>涓汉宸ヤ綔鍙?/ Nen lam viec</p>
-        <input type="text" id="loginUser" placeholder="鐢ㄦ埛鍚?/ Tai khoan" autocomplete="off">
-        <input type="password" id="loginPass" placeholder="瀵嗙爜 / Mat khau" autocomplete="off">
-        <button onclick="doLogin()">鐧?褰?/ Dang nhap</button>
-        <div class="login-error" id="loginError">鐢ㄦ埛鍚嶆垨瀵嗙爜閿欒</div>
+        <p>个人工作台 / Nen lam viec</p>
+        <input type="text" id="loginUser" placeholder="用户名 / Tai khoan" autocomplete="off">
+        <input type="password" id="loginPass" placeholder="密码 / Mat khau" autocomplete="off">
+        <button onclick="doLogin()">登 录 / Dang nhap</button>
+        <div class="login-error" id="loginError">用户名或密码错误</div>
     </div>
 </div>
 
-<!-- 搴旂敤椤?-->
+<!-- 应用页 -->
 <div class="app-page" id="appPage">
-    <!-- 椤堕儴瀵艰埅 -->
+    <!-- 顶部导航 -->
     <div class="topbar">
-        <h1>Apex 鐨勫伐浣滃彴</h1>
+        <h1>Apex 的工作台</h1>
         <div class="topbar-right">
             <div class="user-info">
-                <span>馃懁</span>
+                <span>👤</span>
                 <strong id="currentUserName">-</strong>
                 <span style="color: var(--text-muted);">|</span>
                 <span id="currentUserRole" class="role-badge">-</span>
             </div>
-            <button class="logout-btn" onclick="doLogout()">閫€鍑?/button>
+            <button class="logout-btn" onclick="doLogout()">退出</button>
         </div>
     </div>
 
-    <!-- 蹇嵎鎿嶄綔鏍?-->
+    <!-- 快捷操作栏 -->
     <div class="quick-actions">
-        <h3>鈿?蹇嵎鎿嶄綔</h3>
-        <!-- 绠＄悊鍛橈細鐢ㄦ埛绠＄悊鎸夐挳 -->
+        <h3>⚡ 快捷操作</h3>
+        <!-- 管理员：用户管理按钮 -->
         <button class="quick-btn btn-users" id="btnUserMgmt" onclick="showUserManagement()">
-            馃懃 鐢ㄦ埛绠＄悊
+            👥 用户管理
         </button>
-        <!-- 鎵€鏈夌敤鎴凤細淇敼瀵嗙爜鎸夐挳 -->
+        <!-- 所有用户：修改密码按钮 -->
         <button class="quick-btn btn-password" onclick="showPasswordPanel()">
-            馃攽 淇敼瀵嗙爜
+            🔑 修改密码
         </button>
     </div>
 
-    <!-- 鍔熻兘妯″潡鍖?-->
+    <!-- 功能模块区 -->
     <div class="hero">
-        <h2>鍔熻兘妯″潡 / Modules</h2>
-        <p id="moduleHint">鏍规嵁鎮ㄧ殑鏉冮檺鏄剧ず鍙敤妯″潡</p>
+        <h2>功能模块 / Modules</h2>
+        <p id="moduleHint">根据您的权限显示可用模块</p>
     </div>
 
     <div class="modules">
-        <h3>鍙闂ā鍧?/h3>
+        <h3>可访问模块</h3>
         <div class="module-grid">
             <a class="module-card" id="mod-vietnamese" href="vietnamese.html">
-                <div class="icon">馃棧锔?/div>
-                <h4>瓒婂崡璇儏鏅璇?/h4>
-                <p>姣忔棩瓒婂崡璇涔犲璇濆綊妗ｏ紝鏀寔涓秺鍙岃瀵圭収</p>
-                <span class="module-badge active">鍙敤</span>
+                <div class="icon">🗣️</div>
+                <h4>越南语情景对话</h4>
+                <p>每日越南语学习对话归档，支持中越双语对照</p>
+                <span class="module-badge active">可用</span>
             </a>
 
             <a class="module-card" id="mod-tracker" href="tracker.html">
-                <div class="icon">馃搵</div>
-                <h4>闂杩借釜琛?/h4>
-                <p>涓秺鍙岃闂璁板綍涓庤拷韪紝鏀寔鑷姩缈昏瘧</p>
-                <span class="module-badge" id="mod-tracker-badge">闇€鏉冮檺</span>
+                <div class="icon">📋</div>
+                <h4>问题追踪表</h4>
+                <p>中越双语问题记录与追踪，支持自动翻译</p>
+                <span class="module-badge" id="mod-tracker-badge">需权限</span>
             </a>
 
             <a class="module-card" id="mod-stats" href="#">
-                <div class="icon">馃搳</div>
-                <h4>缁熻鎶ヨ〃</h4>
-                <p>宸ヤ綔鏁版嵁缁熻鍒嗘瀽锛屼粎绠＄悊鍛樺彲鐢?/p>
-                <span class="module-badge" id="mod-stats-badge">绠＄悊鍛?/span>
+                <div class="icon">📊</div>
+                <h4>统计报表</h4>
+                <p>工作数据统计分析，仅管理员可用</p>
+                <span class="module-badge" id="mod-stats-badge">管理员</span>
             </a>
 
             <div class="module-card locked" id="mod-locked">
-                <div class="icon">馃敀</div>
-                <h4>楂樼骇鍔熻兘</h4>
-                <p>鎮ㄧ殑鏉冮檺涓嶈冻浠ヨ闂妯″潡</p>
-                <span class="module-badge">鏉冮檺涓嶈冻</span>
+                <div class="icon">🔒</div>
+                <h4>高级功能</h4>
+                <p>您的权限不足以访问此模块</p>
+                <span class="module-badge">权限不足</span>
             </div>
         </div>
     </div>
 
-    <!-- ==================== 鐢ㄦ埛绠＄悊闈㈡澘 ==================== -->
+    <!-- ==================== 用户管理面板 ==================== -->
     <div class="panel hidden" id="userManagementPanel">
-        <h3>馃懃 鐢ㄦ埛绠＄悊 <small style="font-weight: normal; color: var(--text-muted); font-size: 0.85rem;">锛堜粎绠＄悊鍛橈級</small></h3>
-        <p>鍦ㄨ繖閲屾偍鍙互娣诲姞鏂扮敤鎴枫€佸垹闄ょ敤鎴枫€佸垎閰嶈鑹插拰璁块棶鏉冮檺銆?/p>
+        <h3>👥 用户管理 <small style="font-weight: normal; color: var(--text-muted); font-size: 0.85rem;">（仅管理员）</small></h3>
+        <p>在这里您可以添加新用户、删除用户、分配角色和访问权限。</p>
         
         <div style="background: #fef3c7; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-size: 0.9rem; color: #92400e;">
-            馃挕 <strong>瑙掕壊璇存槑锛?/strong>
-            <strong style="color: var(--danger);">绠＄悊鍛?/strong> - 鍙鐞嗘墍鏈夌敤鎴枫€佽闂叏閮ㄦā鍧?            | 
-            <strong style="color: var(--primary);">鏅€氱敤鎴?/strong> - 鍙兘璁块棶鍩虹妯″潡
+            💡 <strong>角色说明：</strong>
+            <strong style="color: var(--danger);">管理员</strong> - 可管理所有用户、访问全部模块
+            | 
+            <strong style="color: var(--primary);">普通用户</strong> - 只能访问基础模块
         </div>
         
         <div style="background: #eff6ff; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-size: 0.9rem; color: #1e40af;">
-            馃挕 <strong>鏉冮檺璇存槑锛?/strong>
-            <strong>鍏ㄩ儴妯″潡</strong> - 鍙闂秺鍗楄鍜岄棶棰樿拷韪?            | 
-            <strong>鍩虹妯″潡</strong> - 鍙兘璁块棶瓒婂崡璇?        </div>
+            💡 <strong>权限说明：</strong>
+            <strong>全部模块</strong> - 可访问越南语和问题追踪
+            | 
+            <strong>基础模块</strong> - 只能访问越南语
+        </div>
 
-        <button class="btn-primary" onclick="showAddUserModal()">鉃?娣诲姞鏂扮敤鎴?/button>
+        <button class="btn-primary" onclick="showAddUserModal()">➕ 添加新用户</button>
 
         <table>
             <thead>
                 <tr>
-                    <th>鐢ㄦ埛鍚?/th>
-                    <th>瑙掕壊</th>
-                    <th>璁块棶鏉冮檺</th>
-                    <th>鍒涘缓鑰?/th>
-                    <th>鎿嶄綔</th>
+                    <th>用户名</th>
+                    <th>角色</th>
+                    <th>访问权限</th>
+                    <th>创建者</th>
+                    <th>操作</th>
                 </tr>
             </thead>
             <tbody id="userTableBody"></tbody>
         </table>
     </div>
 
-    <!-- ==================== 瀵嗙爜淇敼闈㈡澘 ==================== -->
+    <!-- ==================== 密码修改面板 ==================== -->
     <div class="panel hidden" id="passwordPanel">
-        <h3>馃攽 淇敼瀵嗙爜</h3>
-        <p>淇敼鎮ㄥ綋鍓嶈处鍙风殑鐧诲綍瀵嗙爜銆?/p>
+        <h3>🔑 修改密码</h3>
+        <p>修改您当前账号的登录密码。</p>
         
         <div class="form-row">
             <div class="form-group">
-                <label>褰撳墠瀵嗙爜</label>
-                <input type="password" id="currentPass" placeholder="璇疯緭鍏ュ綋鍓嶅瘑鐮?>
+                <label>当前密码</label>
+                <input type="password" id="currentPass" placeholder="请输入当前密码">
             </div>
             <div class="form-group">
-                <label>鏂板瘑鐮?/label>
-                <input type="password" id="newPass" placeholder="璇疯緭鍏ユ柊瀵嗙爜锛堣嚦灏?浣嶏級">
+                <label>新密码</label>
+                <input type="password" id="newPass" placeholder="请输入新密码（至少4位）">
             </div>
             <div class="form-group">
-                <label>纭鏂板瘑鐮?/label>
-                <input type="password" id="confirmPass" placeholder="璇峰啀娆¤緭鍏ユ柊瀵嗙爜">
+                <label>确认新密码</label>
+                <input type="password" id="confirmPass" placeholder="请再次输入新密码">
             </div>
         </div>
         
-        <button class="btn-success" onclick="changePassword()">鉁?纭淇敼</button>
+        <button class="btn-success" onclick="changePassword()">✅ 确认修改</button>
     </div>
 
-    <div class="footer">Apex Personal Workspace 漏 2026</div>
+    <div class="footer">Apex Personal Workspace © 2026</div>
 </div>
 
-<!-- 娣诲姞鐢ㄦ埛妯℃€佹 -->
+<!-- 添加用户模态框 -->
 <div class="modal" id="addUserModal">
     <div class="modal-content">
         <button class="modal-close" onclick="closeModal('addUserModal')">&times;</button>
-        <h3>鉃?娣诲姞鏂扮敤鎴?/h3>
+        <h3>➕ 添加新用户</h3>
         
         <div class="form-group">
-            <label>鐢ㄦ埛鍚?/label>
-            <input type="text" id="newUserName" placeholder="杈撳叆鐢ㄦ埛鍚嶏紙鑻辨枃/鏁板瓧锛?>
+            <label>用户名</label>
+            <input type="text" id="newUserName" placeholder="输入用户名（英文/数字）">
         </div>
         <div class="form-group">
-            <label>瀵嗙爜</label>
-            <input type="password" id="newUserPass" placeholder="杈撳叆瀵嗙爜锛堣嚦灏?浣嶏級">
+            <label>密码</label>
+            <input type="password" id="newUserPass" placeholder="输入密码（至少4位）">
         </div>
         <div class="form-group">
-            <label>馃幆 鍒嗛厤瑙掕壊</label>
+            <label>🎯 分配角色</label>
             <select id="newUserRole">
-                <option value="user">鏅€氱敤鎴?(user) - 鍩虹璁块棶</option>
-                <option value="admin">绠＄悊鍛?(admin) - 瀹屽叏璁块棶</option>
+                <option value="user">普通用户 (user) - 基础访问</option>
+                <option value="admin">管理员 (admin) - 完全访问</option>
             </select>
         </div>
         <div class="form-group">
-            <label>馃攼 璁块棶鏉冮檺</label>
+            <label>🔐 访问权限</label>
             <select id="newUserModules">
-                <option value="basic">鍩虹妯″潡 - 瓒婂崡璇璇?/option>
-                <option value="full">鍏ㄩ儴妯″潡 - 瓒婂崡璇?+ 闂杩借釜</option>
+                <option value="basic">基础模块 - 越南语对话</option>
+                <option value="full">全部模块 - 越南语 + 问题追踪</option>
             </select>
         </div>
         
         <div class="modal-footer">
-            <button class="btn-secondary" onclick="closeModal('addUserModal')">鍙栨秷</button>
-            <button class="btn-primary" onclick="addUser()">娣诲姞鐢ㄦ埛</button>
+            <button class="btn-secondary" onclick="closeModal('addUserModal')">取消</button>
+            <button class="btn-primary" onclick="addUser()">添加用户</button>
         </div>
     </div>
 </div>
@@ -296,7 +299,7 @@ body { font-family: "Outfit", sans-serif; background: var(--bg); color: var(--te
 <div id="toastContainer"></div>
 
 <script>
-// ==================== 鏁版嵁缁撴瀯 ====================
+// ==================== 数据结构 ====================
 var DEFAULT_USERS = [
     { username: "apex", password: "apex2026", role: "admin", modules: "full", createdBy: "system" },
     { username: "test", password: "test2026", role: "user", modules: "basic", createdBy: "system" }
@@ -311,7 +314,7 @@ function initData() {
 function getUsers() { return JSON.parse(localStorage.getItem("apex_users") || "[]"); }
 function saveUsers(users) { localStorage.setItem("apex_users", JSON.stringify(users)); }
 
-// ==================== 璁よ瘉 ====================
+// ==================== 认证 ====================
 function checkAuth() {
     var auth = sessionStorage.getItem("apex_auth");
     var username = sessionStorage.getItem("apex_username");
@@ -335,7 +338,7 @@ function doLogin() {
         showAppPage(found);
     } else {
         document.getElementById("loginError").style.display = "block";
-        showToast("鐢ㄦ埛鍚嶆垨瀵嗙爜閿欒", "error");
+        showToast("用户名或密码错误", "error");
     }
 }
 
@@ -343,7 +346,7 @@ function doLogout() {
     sessionStorage.removeItem("apex_auth");
     sessionStorage.removeItem("apex_username");
     showLoginPage();
-    showToast("宸查€€鍑虹櫥褰?, "success");
+    showToast("已退出登录", "success");
 }
 
 function showLoginPage() {
@@ -355,18 +358,20 @@ function showAppPage(user) {
     document.getElementById("loginPage").style.display = "none";
     document.getElementById("appPage").style.display = "block";
     
-    // 鏇存柊鐢ㄦ埛淇℃伅
+    // 更新用户信息
     document.getElementById("currentUserName").textContent = user.username;
     var roleEl = document.getElementById("currentUserRole");
-    roleEl.textContent = user.role === "admin" ? "绠＄悊鍛? : "鏅€氱敤鎴?;
+    roleEl.textContent = user.role === "admin" ? "管理员" : "普通用户";
     roleEl.className = "role-badge role-" + user.role;
     
-    // 绠＄悊鍛樻樉绀虹敤鎴风鐞嗘寜閽?    document.getElementById("btnUserMgmt").style.display = user.role === "admin" ? "flex" : "none";
+    // 管理员显示用户管理按钮
+    document.getElementById("btnUserMgmt").style.display = user.role === "admin" ? "flex" : "none";
     
-    // 鏇存柊妯″潡璁块棶
+    // 更新模块访问
     updateModuleAccess(user);
     
-    // 闅愯棌鎵€鏈夐潰鏉?    hideAllPanels();
+    // 隐藏所有面板
+    hideAllPanels();
 }
 
 function hideAllPanels() {
@@ -375,40 +380,40 @@ function hideAllPanels() {
 }
 
 function updateModuleAccess(user) {
-    // 瓒婂崡璇?- 鎵€鏈変汉
+    // 越南语 - 所有人
     document.getElementById("mod-vietnamese").classList.remove("locked");
-    document.getElementById("mod-vietnamese").querySelector(".module-badge").textContent = "鍙敤";
+    document.getElementById("mod-vietnamese").querySelector(".module-badge").textContent = "可用";
     document.getElementById("mod-vietnamese").querySelector(".module-badge").className = "module-badge active";
     
-    // 闂杩借釜
+    // 问题追踪
     if (user.role === "admin" || user.modules === "full") {
         document.getElementById("mod-tracker").classList.remove("locked");
-        document.getElementById("mod-tracker-badge").textContent = "鍙敤";
+        document.getElementById("mod-tracker-badge").textContent = "可用";
         document.getElementById("mod-tracker-badge").className = "module-badge active";
     } else {
         document.getElementById("mod-tracker").classList.add("locked");
-        document.getElementById("mod-tracker-badge").textContent = "闇€鏉冮檺";
+        document.getElementById("mod-tracker-badge").textContent = "需权限";
         document.getElementById("mod-tracker-badge").className = "module-badge";
     }
     
-    // 缁熻鎶ヨ〃 - 浠呯鐞嗗憳
+    // 统计报表 - 仅管理员
     if (user.role === "admin") {
         document.getElementById("mod-stats").classList.remove("locked");
-        document.getElementById("mod-stats-badge").textContent = "鍙敤";
+        document.getElementById("mod-stats-badge").textContent = "可用";
         document.getElementById("mod-stats-badge").className = "module-badge active";
     } else {
         document.getElementById("mod-stats").classList.add("locked");
-        document.getElementById("mod-stats-badge").textContent = "绠＄悊鍛?;
+        document.getElementById("mod-stats-badge").textContent = "管理员";
         document.getElementById("mod-stats-badge").className = "module-badge";
     }
     
     document.getElementById("mod-locked").classList.add("locked");
     
-    // 鏇存柊鎻愮ず
-    document.getElementById("moduleHint").textContent = user.role === "admin" ? "鎮ㄦ槸绠＄悊鍛橈紝鍙闂叏閮ㄦā鍧? : "鎮ㄧ殑鏉冮檺锛氬熀纭€璁块棶";
+    // 更新提示
+    document.getElementById("moduleHint").textContent = user.role === "admin" ? "您是管理员，可访问全部模块" : "您的权限：基础访问";
 }
 
-// ==================== 闈㈡澘鍒囨崲 ====================
+// ==================== 面板切换 ====================
 function showUserManagement() {
     hideAllPanels();
     document.getElementById("userManagementPanel").classList.remove("hidden");
@@ -425,20 +430,20 @@ function showPasswordPanel() {
     window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-// ==================== 鐢ㄦ埛绠＄悊 ====================
+// ==================== 用户管理 ====================
 function renderUserTable() {
     var users = getUsers();
     var currentUser = sessionStorage.getItem("apex_username");
     var tbody = document.getElementById("userTableBody");
     
     tbody.innerHTML = users.map(u => {
-        var roleText = u.role === "admin" ? "绠＄悊鍛? : "鏅€氱敤鎴?;
-        var moduleText = u.modules === "full" ? "鍏ㄩ儴" : "鍩虹";
+        var roleText = u.role === "admin" ? "管理员" : "普通用户";
+        var moduleText = u.modules === "full" ? "全部" : "基础";
         var canDelete = u.username !== currentUser && u.username !== "apex";
         
         var deleteBtn = canDelete
-            ? '<button class="btn-danger" onclick="deleteUser(\'' + u.username + '\')">馃棏 鍒犻櫎</button>'
-            : '<span style="color: var(--text-muted); font-size: 0.8rem;">绯荤粺淇濇姢</span>';
+            ? '<button class="btn-danger" onclick="deleteUser(\'' + u.username + '\')">🗑 删除</button>'
+            : '<span style="color: var(--text-muted); font-size: 0.8rem;">系统保护</span>';
         return '<tr>' +
             '<td>' + u.username + '</td>' +
             '<td><span class="role-badge role-' + u.role + '">' + roleText + '</span></td>' +
@@ -464,18 +469,18 @@ function addUser() {
     var modules = document.getElementById("newUserModules").value;
     
     if (!username || !password) {
-        showToast("璇峰～鍐欑敤鎴峰悕鍜屽瘑鐮?, "error"); return;
+        showToast("请填写用户名和密码", "error"); return;
     }
     if (password.length < 4) {
-        showToast("瀵嗙爜鑷冲皯4浣?, "error"); return;
+        showToast("密码至少4位", "error"); return;
     }
     if (!/^[a-z0-9]+$/.test(username)) {
-        showToast("鐢ㄦ埛鍚嶅彧鑳藉寘鍚嫳鏂囧拰鏁板瓧", "error"); return;
+        showToast("用户名只能包含英文和数字", "error"); return;
     }
     
     var users = getUsers();
     if (users.find(u => u.username === username)) {
-        showToast("鐢ㄦ埛鍚嶅凡瀛樺湪", "error"); return;
+        showToast("用户名已存在", "error"); return;
     }
     
     users.push({
@@ -489,20 +494,20 @@ function addUser() {
     saveUsers(users);
     closeModal("addUserModal");
     renderUserTable();
-    showToast("鐢ㄦ埛 " + username + " 娣诲姞鎴愬姛", "success");
+    showToast("用户 " + username + " 添加成功", "success");
 }
 
 function deleteUser(username) {
-    if (!confirm("纭畾瑕佸垹闄ょ敤鎴?\"" + username + "\" 鍚楋紵\n姝ゆ搷浣滀笉鍙挙閿€銆?)) return;
+    if (!confirm("确定要删除用户 \"" + username + "\" 吗？\n此操作不可撤销。")) return;
     
     var users = getUsers();
     users = users.filter(u => u.username !== username);
     saveUsers(users);
     renderUserTable();
-    showToast("鐢ㄦ埛 " + username + " 宸插垹闄?, "success");
+    showToast("用户 " + username + " 已删除", "success");
 }
 
-// ==================== 瀵嗙爜淇敼 ====================
+// ==================== 密码修改 ====================
 function changePassword() {
     var currentPass = document.getElementById("currentPass").value;
     var newPass = document.getElementById("newPass").value;
@@ -512,10 +517,10 @@ function changePassword() {
     var users = getUsers();
     var user = users.find(u => u.username === username);
     
-    if (!user) { showToast("鐢ㄦ埛涓嶅瓨鍦?, "error"); return; }
-    if (user.password !== currentPass) { showToast("褰撳墠瀵嗙爜閿欒", "error"); return; }
-    if (newPass.length < 4) { showToast("鏂板瘑鐮佽嚦灏?浣?, "error"); return; }
-    if (newPass !== confirmPass) { showToast("涓ゆ瀵嗙爜涓嶄竴鑷?, "error"); return; }
+    if (!user) { showToast("用户不存在", "error"); return; }
+    if (user.password !== currentPass) { showToast("当前密码错误", "error"); return; }
+    if (newPass.length < 4) { showToast("新密码至少4位", "error"); return; }
+    if (newPass !== confirmPass) { showToast("两次密码不一致", "error"); return; }
     
     user.password = newPass;
     saveUsers(users);
@@ -524,10 +529,10 @@ function changePassword() {
     document.getElementById("newPass").value = "";
     document.getElementById("confirmPass").value = "";
     
-    showToast("瀵嗙爜淇敼鎴愬姛", "success");
+    showToast("密码修改成功", "success");
 }
 
-// ==================== 宸ュ叿鍑芥暟 ====================
+// ==================== 工具函数 ====================
 function closeModal(id) { document.getElementById(id).classList.remove("active"); }
 
 function showToast(message, type) {
