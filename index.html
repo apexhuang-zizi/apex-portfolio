@@ -52,6 +52,7 @@ body { font-family: "Outfit", sans-serif; background: var(--bg); color: var(--te
 .module-card:hover { transform: translateY(-4px); border-color: var(--primary); box-shadow: 0 8px 32px rgba(37,99,235,.15); }
 .module-card .icon { font-size: 2.5rem; margin-bottom: 12px; }
 .module-card h4 { font-size: 1.1rem; font-weight: 600; margin-bottom: 6px; }
+.module-card h4 .module-vi { display: block; font-size: 0.75rem; font-weight: 400; color: var(--text-muted); margin-top: 4px; }
 .module-card p { color: var(--text-muted); font-size: .85rem; line-height: 1.4; }
 .module-card.locked { opacity: 0.5; cursor: not-allowed; }
 .module-card.locked:hover { transform: none; border-color: transparent; box-shadow: var(--shadow); }
@@ -171,14 +172,14 @@ body { font-family: "Outfit", sans-serif; background: var(--bg); color: var(--te
         <div class="module-grid">
             <a class="module-card" id="mod-vietnamese" href="vietnamese.html">
                 <div class="icon">🗣️</div>
-                <h4>越南语情景对话</h4>
+                <h4>越南语情景对话 <span class="module-vi">Hội thoại tiếng Việt</span></h4>
                 <p>每日越南语学习对话归档，支持中越双语对照</p>
                 <span class="module-badge active">可用</span>
             </a>
 
             <a class="module-card" id="mod-tracker" href="tracker.html">
                 <div class="icon">📋</div>
-                <h4>问题追踪表</h4>
+                <h4>问题追踪表 <span class="module-vi">Theo dõi vấn đề</span></h4>
                 <p>中越双语问题记录与追踪，支持自动翻译</p>
                 <span class="module-badge" id="mod-tracker-badge">需权限</span>
             </a>
