@@ -5,6 +5,16 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>问题追踪表</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<!-- 登录验证 -->
+<script>
+(function(){
+    var auth = sessionStorage.getItem("apex_auth");
+    var username = sessionStorage.getItem("apex_username");
+    if (auth !== "true" || !username) {
+        window.location.href = "index.html";
+    }
+})();
+</script>
 <style>
 :root{--primary:#2563eb;--bg:#f8fafc;--surface:#fff;--border:#e2e8f0;--text:#1e293b;--text-muted:#64748b;--success:#10b981;--danger:#ef4444}
 *{box-sizing:border-box;margin:0;padding:0}

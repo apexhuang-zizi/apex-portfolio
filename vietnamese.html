@@ -7,7 +7,18 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+<!-- 登录验证 -->
+<script>
+(function(){
+    var auth = sessionStorage.getItem("apex_auth");
+    var username = sessionStorage.getItem("apex_username");
+    if (auth !== "true" || !username) {
+        window.location.href = "index.html";
+    }
+})();
+</script>
 <style>
 :root{--primary:#2563eb;--primary-dark:#1d4ed8;--bg:#f0f4ff;--surface:#fff;--border:#e2e8f0;--text:#1e293b;--text-muted:#64748b;--success:#10b981;--danger:#ef4444;--shadow:0 4px 24px rgba(0,0,0,.08)}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -133,6 +144,17 @@ const firebaseConfig = {
 // 初始化 Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+const auth = firebase.auth();
+
+// 匿名登录后再加载数据（用于 Firestore 安全规则）
+auth.signInAnonymously().then(function() {
+    console.log("Firebase 匿名登录成功");
+    loadFromFirebase();
+}).catch(function(error) {
+    console.log("Firebase 匿名登录失败:", error.message);
+    // 登录失败也尝试加载（可能规则已更改）
+    loadFromFirebase();
+});
 
 // 预置对话数据（localStorage为空时使用）
 var defaultDialogues = [
@@ -167,8 +189,8 @@ function getLocalDate() {
 function init() {
     document.getElementById('addDate').value = getLocalDate();
     
-    // 从 Firebase 加载数据
-    loadFromFirebase();
+    // 数据加载在匿名登录完成后自动执行
+    // loadFromFirebase() 已移到 auth.signInAnonymously().then() 中
     
     // 检查URL参数，自动添加对话
     checkUrlParams();
