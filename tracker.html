@@ -302,8 +302,8 @@ function getCurrentUserRole() {
 // ========== 是否为管理员 ==========
 function isAdmin() {
     var role = getCurrentUserRole();
-    console.log('Checking admin - role:', role, 'username:', sessionStorage.getItem("apex_username"));
-    return role === 'admin';
+    console.log('Checking admin - role:', role, '→ lower:', role?.toLowerCase(), 'username:', sessionStorage.getItem("apex_username"));
+    return (role || '').toLowerCase() === 'admin';
 }
 
 // ========== Firebase 初始化 ==========
@@ -430,25 +430,36 @@ function uploadImageToStorage(base64Data, projectId, callback) {
 async function loadProjectList() {
     try {
         var username = sessionStorage.getItem("apex_username") || 'guest';
-        var isUserAdmin = isAdmin();
+        var role = sessionStorage.getItem("apex_role") || 'user';
+        var isUserAdmin = role === 'admin';
+
+        var roleLower = role.toLowerCase();
+        var usernameLower = username.toLowerCase();
+        var isUserAdmin = roleLower === 'admin';
+
+        console.log('loadProjectList - username:', username, '→', usernameLower, 'role:', role, '→', roleLower, 'isAdmin:', isUserAdmin);
 
         // 管理员可以看所有项目，普通用户只看自己的
         var query;
         if (isUserAdmin) {
-            // 管理员：加载所有项目
+            // 管理员：加载所有项目（不添加任何过滤）
+            console.log('管理员模式：加载所有项目');
             query = db.collection('tracker_projects');
         } else {
-            // 普通用户：只加载自己的项目
-            query = db.collection('tracker_projects').where('user', '==', username);
+            // 普通用户：只加载自己（小写匹配）
+            console.log('普通用户模式：只加载自己(user=' + usernameLower + ')的项目');
+            query = db.collection('tracker_projects').where('user', '==', usernameLower);
         }
 
         var snapshot = await query.get();
+        console.log('loadProjectList - 查询到', snapshot.size, '个文档');
 
         projectList = [];
         snapshot.forEach(function(doc) {
             var data = doc.data();
             data.id = doc.id;
             projectList.push(data);
+            console.log('  加载项目:', data.id, '- user:', data.user, '- header.project:', data.header?.project);
         });
 
         // 在本地按 updatedAt 排序
@@ -549,14 +560,14 @@ function renderProjectList(filter) {
 
 // ========== 新建项目 ==========
 async function createNewProject() {
-    var username = sessionStorage.getItem("apex_username") || 'guest';
+    var username = (sessionStorage.getItem("apex_username") || 'guest').toLowerCase();
     var now = new Date().toISOString();
 
     var newProject = {
-        user: username,  // 保存创建者的用户名，用于权限控制
+        user: username,  // 保存创建者的用户名，用于权限控制（小写）
         header: {
             date: getLocalDate(),
-            recorder: username,  // 默认记录人为登录用户名
+            recorder: username,  // 默认记录人为登录用户名（小写）
             project: '',
             ticket: ''
         },
@@ -1332,7 +1343,7 @@ async function doExport() {
 }
 
 async function loadAllProjectsForExport() {
-    var username = sessionStorage.getItem('apex_username') || 'guest';
+    var username = (sessionStorage.getItem('apex_username') || 'guest').toLowerCase();
     var isUserAdmin = isAdmin();
     console.log('loadAllProjectsForExport - user:', username, 'isAdmin:', isUserAdmin);
     
@@ -1386,7 +1397,7 @@ function waitForTranslations() {
 }
 
 async function loadProjectsByNumber(projectNumber) {
-    var username = sessionStorage.getItem('apex_username') || 'guest';
+    var username = (sessionStorage.getItem('apex_username') || 'guest').toLowerCase();
     var isUserAdmin = isAdmin();
     
     // 管理员可以搜索所有项目，普通用户只能搜索自己的
