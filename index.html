@@ -307,8 +307,8 @@ body { font-family: "Outfit", sans-serif; background: var(--bg); color: var(--te
 // 2. Create a Bin, copy its URL
 // 3. Go to API Access -> Create Master Key
 // 4. Replace below with your credentials:
-var JSONBIN_MASTER_KEY = "";  // Your Master Key
-var JSONBIN_BIN_URL = "";      // Your Bin URL like: https://api.jsonbin.io/v3/b/xxxxx
+var JSONBIN_MASTER_KEY = "$2a$10$dvq5Bnng0ULXPK//iFh2AeZ7cDM2GpT5u23Bjo08/ZtdcQXJ65MUy";  // Your Master Key
+var JSONBIN_BIN_URL = "https://api.jsonbin.io/v3/b/69da84a336566621a8a1a0dc";      // Your Bin URL
 
 var DEFAULT_USERS = [
     {username:"apex",password:"apex2026",role:"admin",modules:"full",createdBy:"system"},
@@ -629,11 +629,10 @@ checkAuth();
 
 <!--
 ========================================
-CLOUD SYNC SETUP (JSONBin.io - FREE!)
+CLOUD SYNC (JSONBin.io) - CONFIGURED ✓
 ========================================
-1. Go to https://jsonbin.io/register (free signup)
-2. Create a new Bin (collection)
-3. Go to API Access -> Create Master Key
+Bin URL: https://api.jsonbin.io/v3/b/69da84a336566621a8a1a0dc
+Master Key: Configured (see line 310)
 4. Edit index.html:
    - Replace "YOUR_API_KEY_HERE" with your Master Key
    - Replace "YOUR_BIN_URL_HERE" with your Bin URL
