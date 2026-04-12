@@ -28,12 +28,14 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
 .header{display:flex;justify-content:space-between;align-items:center;padding:20px;background:var(--surface);border-radius:12px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,.05);flex-wrap:wrap;gap:16px}
 .header h1{font-size:1.5rem;font-weight:600}
 .header-actions{display:flex;gap:10px;flex-wrap:wrap}
-.btn{padding:10px 20px;border-radius:8px;border:none;font-size:.9rem;font-weight:500;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px}
+.btn{padding:8px 16px;border-radius:8px;border:none;font-size:.85rem;font-weight:500;cursor:pointer;font-family:inherit;transition:all .2s;display:inline-flex;align-items:center;gap:6px}
+.btn-back{background:none;border:1px solid var(--border);color:var(--text-muted)}
+.btn-back:hover{background:var(--bg)}
 .btn-primary{background:var(--primary);color:#fff}
 .btn-success{background:var(--success);color:#fff}
-.btn-danger{background:var(--danger);color:#fff}
-.btn-outline{background:var(--surface);border:1px solid var(--border);color:var(--text)}
-.btn-outline:hover{background:#f1f5f9}
+.btn-danger{background:var(--danger);color:#fff;font-size:.75rem;padding:4px 10px}
+.btn-outline{background:none;border:1px solid var(--border);color:var(--text)}
+.btn-outline:hover{background:var(--bg)}
 .table-wrapper{overflow-x:auto;background:var(--surface);border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
 table{width:100%;border-collapse:collapse;table-layout:fixed}
 th,td{border:1px solid var(--border);padding:0;vertical-align:top}
