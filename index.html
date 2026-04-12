@@ -155,6 +155,9 @@ body { font-family: "Outfit", sans-serif; background: var(--bg); color: var(--te
         <button class="quick-btn btn-users" id="btnUserMgmt" onclick="showUserManagement()">
             👥 用户管理
         </button>
+        <button class="quick-btn btn-users" id="btnLogs" onclick="showLogsPanel()">
+            📜 状态日志
+        </button>
     </div>
 
     <!-- 功能模块区 -->
@@ -178,13 +181,6 @@ body { font-family: "Outfit", sans-serif; background: var(--bg); color: var(--te
                 <h4>问题追踪表</h4>
                 <p>中越双语问题记录与追踪，支持自动翻译</p>
                 <span class="module-badge" id="mod-tracker-badge">需权限</span>
-            </a>
-
-            <a class="module-card" id="mod-logs" href="#" onclick="showLogsPanel(); return false;">
-                <div class="icon">📜</div>
-                <h4>状态日志</h4>
-                <p>用户登录与操作记录，仅管理员可查看</p>
-                <span class="module-badge" id="mod-logs-badge">管理员</span>
             </a>
         </div>
     </div>
@@ -479,11 +475,11 @@ function updateModuleAccess(user) {
         document.getElementById("mod-tracker").style.display = "none";
     }
     
-    // 状态日志 - 仅管理员可见
+    // 状态日志按钮 - 仅管理员可见（在快捷操作栏中）
     if (user.role === "admin") {
-        document.getElementById("mod-logs").style.display = "block";
+        document.getElementById("btnLogs").style.display = "inline-flex";
     } else {
-        document.getElementById("mod-logs").style.display = "none";
+        document.getElementById("btnLogs").style.display = "none";
     }
     
     // 更新提示
