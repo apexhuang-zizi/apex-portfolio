@@ -416,6 +416,7 @@ function doLogin() {
     if (found) {
         sessionStorage.setItem("apex_auth", "true");
         sessionStorage.setItem("apex_username", found.username);
+        sessionStorage.setItem("apex_role", found.role);  // 保存角色
         document.getElementById("loginError").style.display = "none";
         showAppPage(found);
         // 记录登录日志
@@ -431,6 +432,7 @@ function doLogout() {
     addLog("退出", "");
     sessionStorage.removeItem("apex_auth");
     sessionStorage.removeItem("apex_username");
+    sessionStorage.removeItem("apex_role");  // 清除角色
     showLoginPage();
     showToast("已退出登录", "success");
 }
