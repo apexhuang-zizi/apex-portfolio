@@ -1474,56 +1474,64 @@
             localStorage.setItem("quest_history_all", JSON.stringify(localRecords));
             renderHistoryQuest(localRecords);  // 立即渲染本地数据
             
-            // Step 2: 后台从 Firebase 查询（跨设备记录，只读展示，不合并回 localStorage）
-            // 注意：不使用 orderBy 避免索引问题，直接按时间戳过滤
-            var oneWeekAgo = new Date();
-            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-            
+            // Step 2: 后台从 Firebase 查询（跨设备记录）
+            // 简单查询：只按 type 过滤，获取最近记录后本地过滤
             db.collection("english_records")
                 .where("type", "==", "word-quest")
-                .where("timestamp", ">=", oneWeekAgo.toISOString())
-                .limit(200)
+                .limit(500)
                 .get()
                 .then(function(snap) {
-                    if (snap.empty) return;
+                    if (snap.empty) {
+                        console.log("Firebase: 无云端记录");
+                        return;
+                    }
                     
                     var fbRecords = [];
                     snap.forEach(function(doc) { fbRecords.push(doc.data()); });
                     
-                    // 构建 Firebase key 集合（用 ISO 时间戳 + score 做唯一键）
+                    // 本地过滤：只保留7天内的记录
+                    var oneWeekAgo = new Date();
+                    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+                    var weekAgoIso = oneWeekAgo.toISOString();
+                    
+                    fbRecords = fbRecords.filter(function(r) {
+                        var ts = fbTsToIso(r.timestamp);
+                        return ts >= weekAgoIso;
+                    });
+                    
+                    // 构建 Firebase key 集合
                     var fbKeys = {};
                     fbRecords.forEach(function(r) { fbKeys[fbTsToIso(r.timestamp) + "_" + (r.score || "")] = true; });
                     
-                    // 构建本地 key 集合（已转换为 ISO）
+                    // 构建本地 key 集合
                     var localKeys = {};
                     localRecords.forEach(function(r) { localKeys[fbTsToIso(r.timestamp) + "_" + (r.score || "")] = true; });
                     
-                    // 筛选出本地没有的记录（真正的跨设备新记录）
+                    // 筛选出本地没有的记录
                     var newFromFb = fbRecords.filter(function(r) {
                         var k = fbTsToIso(r.timestamp) + "_" + (r.score || "");
                         return !localKeys[k];
                     });
                     
-                    console.log("Firebase同步: 本地" + localRecords.length + "条, 云端" + fbRecords.length + "条, 新增" + newFromFb.length + "条");
+                    console.log("Firebase同步: 云端" + fbRecords.length + "条(7天内), 本地" + localRecords.length + "条, 新增" + newFromFb.length + "条");
                     
-                    // 合并：本地记录 + 跨设备新记录，统一转 ISO 时间戳
+                    // 合并
                     var merged = localRecords.concat(newFromFb.map(function(r) {
                         r.timestamp = fbTsToIso(r.timestamp);
                         return r;
                     }));
                     
-                    // 按时间倒序，最多 200 条
+                    // 按时间倒序
                     merged.sort(function(a, b) {
                         return new Date(fbTsToIso(b.timestamp) || 0) - new Date(fbTsToIso(a.timestamp) || 0);
                     });
                     merged = merged.slice(0, 200);
                     
-                    // 重新渲染（包含本地 + 跨设备新记录）
+                    // 重新渲染
                     renderHistoryQuest(merged);
                 })
                 .catch(function(err) {
-                    // Firebase 查询失败 → 本地缓存已在 Step1 显示了，无影响
-                    console.warn("Firebase同步失败（本地缓存已显示）:", err.message);
+                    console.warn("Firebase同步失败:", err.message);
                 });
         }
         
