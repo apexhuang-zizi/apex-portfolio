@@ -1126,8 +1126,14 @@
                     });
                     
                     fbRecords.forEach(function(r){
-                        var key = (r.timestamp||"") + "_" + (r.score||"");
+                        // Firebase timestamp 可能是 Timestamp 对象，转为 ISO 字符串后做 key
+                        var ts = r.timestamp;
+                        var tsStr = "";
+                        try { tsStr = ts && ts.toDate ? ts.toDate().toISOString() : (ts || ""); } catch(e){ tsStr = String(ts||""); }
+                        var key = tsStr + "_" + (r.score||"");
                         if(!localIds[key]){
+                            // 将 Firebase Timestamp 统一转为 ISO 字符串存储（保持一致）
+                            try { r.timestamp = ts && ts.toDate ? ts.toDate().toISOString() : (ts || ""); } catch(e){}
                             localRecords.push(r);
                             changed = true;
                         }
@@ -1135,9 +1141,13 @@
                     
                     // 按时间倒序，保存回 localStorage，再重新渲染
                     if(changed){
+                        // 统一时间格式：统一转为 Date 对象再排序
                         localRecords.sort(function(a,b){
-                            var ta = a.timestamp ? new Date(a.timestamp) : new Date(0);
-                            var tb = b.timestamp ? new Date(b.timestamp) : new Date(0);
+                            var ta = a.timestamp;
+                            var tb = b.timestamp;
+                            // Firebase Timestamp 转 Date
+                            try { if(ta && ta.toDate) ta = ta.toDate(); else ta = new Date(ta||0); } catch(e){ ta = new Date(0); }
+                            try { if(tb && tb.toDate) tb = tb.toDate(); else tb = new Date(tb||0); } catch(e){ tb = new Date(0); }
                             return tb - ta;
                         });
                         localRecords = localRecords.slice(0, 50);  // 最多50条
