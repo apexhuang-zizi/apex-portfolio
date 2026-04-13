@@ -1618,90 +1618,38 @@
             var totalWrongWords = wrongEntries.length;
             var highFreqWrong = wrongEntries.filter(function(w){ return w.count >= 3; });
             
-            // 按年级统计
-            var gradeStats = {};
-            myRecords.forEach(function(r){
-                var key = (r.grade||"?") + "-" + (r.semester||"?");
-                if (!gradeStats[key]) gradeStats[key] = { count: 0, total: 0, scores: [] };
-                gradeStats[key].count++;
-                gradeStats[key].total += (r.correct||0);
-                gradeStats[key].scores.push(r.score||0);
-            });
-            
             // AI分析文本
             var aiAnalysis = "";
-            // 趋势分析
             if (scores.length >= 3) {
                 var recent = scores.slice(-3);
                 var older = scores.slice(0, -3);
                 if (older.length > 0) {
                     var recentAvg = recent.reduce(function(a,b){return a+b;},0) / recent.length;
                     var olderAvg = older.reduce(function(a,b){return a+b;},0) / older.length;
-                    if (recentAvg > olderAvg + 5) {
-                        aiAnalysis += "📈 学习趋势：成绩呈上升趋势，最近表现优于之前，继续保持！\n";
-                    } else if (recentAvg < olderAvg - 5) {
-                        aiAnalysis += "📉 学习趋势：近期成绩有所下滑，建议回顾之前学过的词汇。\n";
-                    } else {
-                        aiAnalysis += "📊 学习趋势：成绩稳定，保持良好的学习节奏。\n";
-                    }
+                    if (recentAvg > olderAvg + 5) aiAnalysis += "📈 学习趋势：成绩呈上升趋势，继续保持！\n";
+                    else if (recentAvg < olderAvg - 5) aiAnalysis += "📉 学习趋势：近期成绩有所下滑，建议回顾之前学过的词汇。\n";
+                    else aiAnalysis += "📊 学习趋势：成绩稳定，保持良好的学习节奏。\n";
                 }
             }
-            // 正确率分析
-            if (accuracy >= 90) {
-                aiAnalysis += "🎯 正确率：" + accuracy + "%，表现优秀！词汇掌握扎实。\n";
-            } else if (accuracy >= 70) {
-                aiAnalysis += "🎯 正确率：" + accuracy + "%，良好水平，仍有提升空间。\n";
-            } else {
-                aiAnalysis += "🎯 正确率：" + accuracy + "%，需要加强练习，建议多复习错词。\n";
-            }
-            // 连击分析
-            if (maxCombo >= 10) {
-                aiAnalysis += "🔥 最高连击：" + maxCombo + "连击，专注力很强！\n";
-            } else if (maxCombo >= 5) {
-                aiAnalysis += "⚡ 最高连击：" + maxCombo + "连击，保持专注可以更高！\n";
-            } else {
-                aiAnalysis += "💡 最高连击：" + maxCombo + "连击，建议集中注意力，减少中断。\n";
-            }
-            // 错词分析
+            if (accuracy >= 90) aiAnalysis += "🎯 正确率：" + accuracy + "%，表现优秀！\n";
+            else if (accuracy >= 70) aiAnalysis += "🎯 正确率：" + accuracy + "%，良好水平。\n";
+            else aiAnalysis += "🎯 正确率：" + accuracy + "%，需要加强练习。\n";
+            if (maxCombo >= 10) aiAnalysis += "🔥 最高连击：" + maxCombo + "连击，专注力很强！\n";
+            else aiAnalysis += "⚡ 最高连击：" + maxCombo + "连击，继续加油！\n";
             if (highFreqWrong.length > 0) {
-                aiAnalysis += "⚠️ 高频错词：" + highFreqWrong.length + "个词错误3次以上，需要重点复习：";
-                aiAnalysis += highFreqWrong.slice(0,5).map(function(w){return w.en;}).join(", ");
-                aiAnalysis += "。\n";
-            } else if (totalWrongWords > 0) {
-                aiAnalysis += "✅ 错词分散，暂无高频错误词，整体掌握良好。\n";
-            } else {
-                aiAnalysis += "🎉 全部答对！词汇掌握完美！\n";
+                aiAnalysis += "⚠️ 高频错词：" + highFreqWrong.length + "个词错误3次以上。\n";
             }
-            // 建议
-            aiAnalysis += "\n📝 学习建议：\n";
-            if (totalWrongWords > 10) {
-                aiAnalysis += "• 建议每天复习10-15个错词，重点攻克薄弱词汇。\n";
-            }
-            if (avg < 70) {
-                aiAnalysis += "• 建议降低挑战难度，先巩固基础词汇。\n";
-            }
-            aiAnalysis += "• 保持每天练习的习惯，积少成多。\n";
-            aiAnalysis += "• 尝试不同年级的挑战，拓展词汇量。";
+            aiAnalysis += "\n📝 学习建议：保持每天练习的习惯，积少成多。";
             
             // 儿童鼓励语
             var encouragement = "";
-            if (avg >= 90) {
-                encouragement = "🌟 哇！" + currentUserName + "太棒啦！你是英语小天才！继续保持，未来的英语大师就是你！加油加油！💪";
-            } else if (avg >= 80) {
-                encouragement = "👏 做得好！" + currentUserName + "越来越厉害了！再努力一点点，就能成为英语小达人！相信自己！✨";
-            } else if (avg >= 70) {
-                encouragement = "💪 " + currentUserName + "很努力哦！每一点进步都值得骄傲！继续加油，你一定可以的！🌈";
-            } else if (avg >= 60) {
-                encouragement = "🌱 " + currentUserName + "正在进步中！不要放弃，每一次练习都是成长！坚持就是胜利！⭐";
-            } else {
-                encouragement = "💪 " + currentUserName + "加油！学习英语就像爬山，一步一步来，一定能到达山顶！我们都相信你！🌟";
-            }
-            encouragement += "\n\n🎯 小目标：下次挑战争取比这次多拿5分，你一定行！";
+            if (avg >= 90) encouragement = "🌟 " + currentUserName + "太棒啦！你是英语小天才！💪";
+            else if (avg >= 80) encouragement = "👏 " + currentUserName + "越来越厉害了！继续加油！✨";
+            else if (avg >= 70) encouragement = "💪 " + currentUserName + "很努力哦！每一点进步都值得骄傲！🌈";
+            else encouragement = "🌱 " + currentUserName + "正在进步中！坚持就是胜利！⭐";
             
             // 构建HTML内容
             var html = '<div style="font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; background: white;">';
-            
-            // 标题
             html += '<div style="text-align: center; margin-bottom: 30px;">';
             html += '<h1 style="margin: 0; color: #1e40af; font-size: 28px;">🌟 ' + currentUserName + ' - 成绩汇总报告</h1>';
             html += '<p style="color: #374151; margin-top: 10px; font-size: 14px;">汇总日期：' + new Date().toLocaleDateString("zh-CN") + '</p>';
@@ -1717,7 +1665,7 @@
             html += '<div style="flex: 1; min-width: 100px;"><div style="font-size: 32px; font-weight: bold;">' + accuracy + '%</div><div style="font-size: 13px;">正确率</div></div>';
             html += '</div></div>';
             
-            // 历史记录表
+            // 历史记录表（最多20条）
             html += '<div style="margin-bottom: 25px;">';
             html += '<h2 style="color: #1e293b; font-size: 18px; margin-bottom: 12px; border-bottom: 2px solid #3b82f6; padding-bottom: 8px;">📋 历史得分记录</h2>';
             html += '<table style="width: 100%; border-collapse: collapse; font-size: 14px;">';
@@ -1729,8 +1677,9 @@
             html += '<th style="padding: 12px 8px; text-align: center;">连击</th>';
             html += '</tr></thead><tbody>';
             
-            for (var i = 0; i < myRecords.length; i++) {
-                var r = myRecords[i];
+            var displayRecords = myRecords.slice(0, 20);  // 只显示最近20条
+            for (var i = 0; i < displayRecords.length; i++) {
+                var r = displayRecords[i];
                 var d = null;
                 try { d = r.timestamp ? new Date(r.timestamp) : null; } catch(e) {}
                 var dateStr = d ? (d.getMonth()+1)+"/"+d.getDate() + " " + String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0") : "--";
@@ -1746,14 +1695,16 @@
                 html += '<td style="padding: 10px 8px; border-bottom: 1px solid #cbd5e1; text-align: center; color: #334155;">🔥' + (r.maxCombo||0) + '</td>';
                 html += '</tr>';
             }
+            if (myRecords.length > 20) {
+                html += '<tr><td colspan="5" style="padding: 10px; text-align: center; color: #475569;">... 还有 ' + (myRecords.length - 20) + ' 条记录</td></tr>';
+            }
             html += '</tbody></table></div>';
             
-            // 错词汇总
+            // 错词汇总（最多15条）
             html += '<div style="margin-bottom: 25px;">';
-            html += '<h2 style="color: #1e293b; font-size: 18px; margin-bottom: 12px; border-bottom: 2px solid #ea580c; padding-bottom: 8px;">❌ 错词汇总（按错误次数排序）</h2>';
-            
+            html += '<h2 style="color: #1e293b; font-size: 18px; margin-bottom: 12px; border-bottom: 2px solid #ea580c; padding-bottom: 8px;">❌ 错词汇总</h2>';
             if (wrongEntries.length === 0) {
-                html += '<div style="background: #dcfce7; color: #166534; padding: 20px; border-radius: 8px; text-align: center; font-size: 16px; font-weight: 600;">🎉 恭喜！暂无错词记录，表现完美！</div>';
+                html += '<div style="background: #dcfce7; color: #166534; padding: 20px; border-radius: 8px; text-align: center; font-size: 16px;">🎉 暂无错词记录！</div>';
             } else {
                 html += '<table style="width: 100%; border-collapse: collapse; font-size: 14px;">';
                 html += '<thead><tr style="background: #ea580c; color: white;">';
@@ -1762,24 +1713,19 @@
                 html += '<th style="padding: 12px 8px; text-align: left;">中文</th>';
                 html += '<th style="padding: 12px 8px; text-align: center; width: 80px;">错误次数</th>';
                 html += '</tr></thead><tbody>';
-                
-                for (var wi = 0; wi < Math.min(wrongEntries.length, 30); wi++) {
+                for (var wi = 0; wi < Math.min(wrongEntries.length, 15); wi++) {
                     var we = wrongEntries[wi];
                     var bg = wi % 2 === 0 ? "#fff7ed" : "white";
                     var countColor = we.count >= 3 ? "#b91c1c" : "#57534e";
-                    var countBg = we.count >= 3 ? "#fef2f2" : "transparent";
                     html += '<tr style="background: ' + bg + ';">';
-                    html += '<td style="padding: 10px 8px; border-bottom: 1px solid #fed7aa; text-align: center; color: #1e293b;">' + (wi+1) + '</td>';
-                    html += '<td style="padding: 10px 8px; border-bottom: 1px solid #fed7aa; font-weight: 600; color: #1e293b;">' + we.en + '</td>';
-                    html += '<td style="padding: 10px 8px; border-bottom: 1px solid #fed7aa; color: #334155;">' + we.cn + '</td>';
-                    html += '<td style="padding: 10px 8px; border-bottom: 1px solid #fed7aa; text-align: center; color: ' + countColor + '; font-weight: bold; background: ' + countBg + ';">' + we.count + '次</td>';
+                    html += '<td style="padding: 10px 8px; border-bottom: 1px solid #fed7aa; text-align: center;">' + (wi+1) + '</td>';
+                    html += '<td style="padding: 10px 8px; border-bottom: 1px solid #fed7aa; font-weight: 600;">' + we.en + '</td>';
+                    html += '<td style="padding: 10px 8px; border-bottom: 1px solid #fed7aa;">' + we.cn + '</td>';
+                    html += '<td style="padding: 10px 8px; border-bottom: 1px solid #fed7aa; text-align: center; color: ' + countColor + ';">' + we.count + '次</td>';
                     html += '</tr>';
                 }
-                if (wrongEntries.length > 30) {
-                    html += '<tr><td colspan="4" style="padding: 10px; text-align: center; color: #475569;">... 还有 ' + (wrongEntries.length - 30) + ' 个错词未显示</td></tr>';
-                }
                 html += '</tbody></table>';
-                html += '<p style="color: #475569; font-size: 13px; margin-top: 10px;">共 ' + totalWrongWords + ' 个错词，其中 ' + highFreqWrong.length + ' 个高频错词（错误≥3次）</p>';
+                html += '<p style="color: #475569; font-size: 13px; margin-top: 10px;">共 ' + totalWrongWords + ' 个错词</p>';
             }
             html += '</div>';
             
@@ -1792,7 +1738,7 @@
             // 儿童鼓励语
             html += '<div style="background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%); border-left: 4px solid #db2777; padding: 20px; border-radius: 0 12px 12px 0; margin-bottom: 25px;">';
             html += '<h2 style="color: #9d174d; font-size: 18px; margin: 0 0 15px 0;">💪 给' + currentUserName + '的鼓励</h2>';
-            html += '<div style="color: #831843; font-size: 15px; line-height: 1.8; white-space: pre-wrap; font-weight: 500;">' + encouragement + '</div>';
+            html += '<div style="color: #831843; font-size: 15px; line-height: 1.8; font-weight: 500;">' + encouragement + '</div>';
             html += '</div>';
             
             // 页脚
@@ -1800,48 +1746,87 @@
             html += 'English Planet 学习报告 | 生成时间：' + new Date().toLocaleString("zh-CN");
             html += '</div></div>';
             
-            // 创建临时容器
-            var container = document.createElement("div");
-            container.id = "pdf-container";
-            container.style.cssText = "position: fixed; left: 0; top: 0; width: 800px; background: white; z-index: 9999; padding: 20px; box-sizing: border-box;";
-            container.innerHTML = html;
-            document.body.appendChild(container);
+            // 创建预览弹窗（带滚动条）
+            var modal = document.createElement("div");
+            modal.id = "pdf-modal";
+            modal.style.cssText = "position: fixed; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9998; display: flex; align-items: center; justify-content: center;";
             
-            // 等待渲染完成后显示按钮
-            setTimeout(function() {
-                var btnBar = document.createElement("div");
-                btnBar.style.cssText = "position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 10000; display: flex; gap: 12px;";
+            var modalContent = document.createElement("div");
+            modalContent.style.cssText = "width: 90%; max-width: 850px; height: 85%; background: white; border-radius: 12px; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.3);";
+            
+            // 标题栏
+            var header = document.createElement("div");
+            header.style.cssText = "padding: 16px 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;";
+            header.innerHTML = '<h3 style="margin: 0; font-size: 18px; color: #1e40af;">📄 成绩汇总预览</h3>';
+            
+            // 滚动内容区
+            var scrollArea = document.createElement("div");
+            scrollArea.style.cssText = "flex: 1; overflow-y: auto; padding: 20px;";
+            scrollArea.innerHTML = html;
+            
+            // 按钮栏
+            var btnBar = document.createElement("div");
+            btnBar.style.cssText = "padding: 16px 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: center; gap: 12px; flex-shrink: 0;";
+            
+            var confirmBtn = document.createElement("button");
+            confirmBtn.textContent = "📥 下载PDF";
+            confirmBtn.style.cssText = "padding: 12px 32px; font-size: 16px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;";
+            
+            var cancelBtn = document.createElement("button");
+            cancelBtn.textContent = "✖ 关闭";
+            cancelBtn.style.cssText = "padding: 12px 32px; font-size: 16px; background: #6b7280; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;";
+            
+            btnBar.appendChild(confirmBtn);
+            btnBar.appendChild(cancelBtn);
+            
+            modalContent.appendChild(header);
+            modalContent.appendChild(scrollArea);
+            modalContent.appendChild(btnBar);
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+            
+            // 关闭按钮
+            cancelBtn.onclick = function() {
+                document.body.removeChild(modal);
+            };
+            modal.onclick = function(e) {
+                if (e.target === modal) document.body.removeChild(modal);
+            };
+            
+            // 下载PDF
+            confirmBtn.onclick = function() {
+                confirmBtn.disabled = true;
+                confirmBtn.textContent = "⏳ 生成中...";
                 
-                var confirmBtn = document.createElement("button");
-                confirmBtn.textContent = "📥 确认下载PDF";
-                confirmBtn.style.cssText = "padding: 14px 28px; font-size: 16px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 12px rgba(59,130,246,0.4);";
-                confirmBtn.onclick = function() {
-                    confirmBtn.disabled = true;
-                    confirmBtn.textContent = "⏳ 正在生成PDF...";
+                // 使用 html2canvas
+                html2canvas(scrollArea.firstChild, {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: '#ffffff',
+                    width: 800,
+                    windowWidth: 850
+                }).then(function(canvas) {
+                    console.log("Canvas生成成功:", canvas.width, "x", canvas.height);
                     
-                    // 使用 html2canvas 直接截图，然后用 jsPDF 生成
-                    html2canvas(container, {
-                        scale: 2,
-                        useCORS: true,
-                        logging: true,  // 开启日志调试
-                        backgroundColor: '#ffffff',
-                        width: 800,
-                        windowWidth: 850
-                    }).then(function(canvas) {
-                        console.log("Canvas生成成功:", canvas.width, "x", canvas.height);
-                        
-                        var imgData = canvas.toDataURL('image/jpeg', 0.95);
-                        var imgWidth = 190; // A4宽度减去边距
-                        var imgHeight = (canvas.height * imgWidth) / canvas.width;
-                        
-                        // 动态加载 jsPDF
+                    var imgData = canvas.toDataURL('image/jpeg', 0.92);
+                    var imgWidth = 190;
+                    var imgHeight = (canvas.height * imgWidth) / canvas.width;
+                    
+                    // 加载 jsPDF
+                    if (window.jspdf) {
+                        generatePDF();
+                    } else {
                         var script = document.createElement('script');
                         script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-                        script.onload = function() {
+                        script.onload = generatePDF;
+                        document.head.appendChild(script);
+                    }
+                    
+                    function generatePDF() {
+                        try {
                             var { jsPDF } = window.jspdf;
                             var pdf = new jsPDF('p', 'mm', 'a4');
                             
-                            // 如果内容超过一页，分页处理
                             var pageHeight = 280;
                             var heightLeft = imgHeight;
                             var position = 10;
@@ -1857,31 +1842,22 @@
                             }
                             
                             pdf.save("成绩汇总_" + currentUserName + "_" + new Date().toISOString().slice(0,10) + ".pdf");
-                            
-                            document.body.removeChild(container);
-                            document.body.removeChild(btnBar);
-                        };
-                        document.head.appendChild(script);
-                    }).catch(function(err) {
-                        console.error("Canvas生成失败:", err);
-                        confirmBtn.disabled = false;
-                        confirmBtn.textContent = "📥 确认下载PDF";
-                        alert("PDF生成失败: " + err.message);
-                    });
-                };
-                
-                var cancelBtn = document.createElement("button");
-                cancelBtn.textContent = "✖ 关闭";
-                cancelBtn.style.cssText = "padding: 14px 28px; font-size: 16px; background: #6b7280; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;";
-                cancelBtn.onclick = function() {
-                    document.body.removeChild(container);
-                    document.body.removeChild(btnBar);
-                };
-                
-                btnBar.appendChild(confirmBtn);
-                btnBar.appendChild(cancelBtn);
-                document.body.appendChild(btnBar);
-            }, 200);
+                            console.log("PDF下载成功");
+                            document.body.removeChild(modal);
+                        } catch (err) {
+                            console.error("PDF生成失败:", err);
+                            alert("PDF生成失败: " + err.message);
+                            confirmBtn.disabled = false;
+                            confirmBtn.textContent = "📥 下载PDF";
+                        }
+                    }
+                }).catch(function(err) {
+                    console.error("Canvas生成失败:", err);
+                    alert("生成失败: " + err.message);
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = "📥 下载PDF";
+                });
+            };
         }
 
         // ==================== 输入监听 ====================
