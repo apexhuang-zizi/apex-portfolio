@@ -1583,21 +1583,38 @@
             
             // 等待渲染完成后生成PDF
             setTimeout(function() {
-                var opt = {
-                    margin: 10,
-                    filename: "成绩汇总_" + currentUserName + "_" + new Date().toISOString().slice(0,10) + ".pdf",
-                    image: { type: "jpeg", quality: 0.98 },
-                    html2canvas: { scale: 2, useCORS: true, logging: false },
-                    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+                // 添加确认按钮
+                var btnBar = document.createElement("div");
+                btnBar.style.cssText = "position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 10000; display: flex; gap: 12px;";
+                
+                var confirmBtn = document.createElement("button");
+                confirmBtn.textContent = "📥 确认下载PDF";
+                confirmBtn.style.cssText = "padding: 14px 28px; font-size: 16px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 12px rgba(59,130,246,0.4);";
+                confirmBtn.onclick = function() {
+                    var opt = {
+                        margin: 10,
+                        filename: "成绩汇总_" + currentUserName + "_" + new Date().toISOString().slice(0,10) + ".pdf",
+                        image: { type: "jpeg", quality: 0.98 },
+                        html2canvas: { scale: 2, useCORS: true, logging: false },
+                        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+                    };
+                    html2pdf().set(opt).from(container).save().then(function() {
+                        document.body.removeChild(container);
+                        document.body.removeChild(btnBar);
+                    });
                 };
                 
-                html2pdf().set(opt).from(container).save().then(function() {
+                var cancelBtn = document.createElement("button");
+                cancelBtn.textContent = "✖ 关闭";
+                cancelBtn.style.cssText = "padding: 14px 28px; font-size: 16px; background: #6b7280; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;";
+                cancelBtn.onclick = function() {
                     document.body.removeChild(container);
-                }).catch(function(err) {
-                    console.error("PDF生成失败:", err);
-                    document.body.removeChild(container);
-                    alert("PDF生成失败，请重试");
-                });
+                    document.body.removeChild(btnBar);
+                };
+                
+                btnBar.appendChild(confirmBtn);
+                btnBar.appendChild(cancelBtn);
+                document.body.appendChild(btnBar);
             }, 100);
         }
 
