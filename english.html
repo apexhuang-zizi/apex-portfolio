@@ -695,7 +695,7 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js"></script>
     
     <script>
         // ==================== Firebase ====================
@@ -1380,95 +1380,21 @@
         function generateScorePDF() {
             var currentUserName = sessionStorage.getItem("apex_username") || "未知用户";
             var local = JSON.parse(localStorage.getItem("quest_history_all") || "[]");
-            // 筛选当前用户的记录
             var myRecords = local.filter(function(r){ return r.user === currentUserName; });
             if (myRecords.length === 0) { alert("暂无成绩记录！"); return; }
             
-            var jsPDF = window.jspdf.jsPDF;
-            var doc = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });
-            var pageW = 210, marginL = 15, marginR = 15, contentW = pageW - marginL - marginR;
-            var y = 15;
-            
-            // 标题
-            doc.setFontSize(20);
-            doc.setFont(undefined, "bold");
-            doc.text(currentUserName + " - 成绩汇总", pageW / 2, y, { align: "center" });
-            y += 8;
-            doc.setFontSize(10);
-            doc.setFont(undefined, "normal");
-            doc.text("汇总日期：" + new Date().toLocaleDateString("zh-CN"), pageW / 2, y, { align: "center" });
-            y += 10;
-            
-            // ==== 第一部分：历史得分数据表 ====
-            doc.setFontSize(14);
-            doc.setFont(undefined, "bold");
-            doc.text("一、历史得分记录", marginL, y);
-            y += 8;
-            
-            // 表头
-            doc.setFontSize(8);
-            doc.setFont(undefined, "bold");
-            var headers = ["日期", "年级", "得分", "正确/总题", "连击", "错词数"];
-            var colW = [28, 20, 18, 28, 18, 18];
-            doc.setFillColor(66, 135, 245);
-            doc.setTextColor(255, 255, 255);
-            var cx = marginL;
-            for (var h = 0; h < headers.length; h++) {
-                doc.rect(cx, y - 4, colW[h], 6, "F");
-                doc.text(headers[h], cx + 1, y, { align: "left" });
-                cx += colW[h];
-            }
-            doc.setTextColor(0, 0, 0);
-            y += 5;
-            
-            // 数据行
-            doc.setFont(undefined, "normal");
-            doc.setFontSize(7);
-            for (var i = 0; i < myRecords.length; i++) {
-                if (y > 275) { doc.addPage(); y = 15; }
-                var r = myRecords[i];
-                var d = null;
-                try { d = r.timestamp ? new Date(r.timestamp) : null; } catch(e) {}
-                var dateStr = d ? (d.getMonth()+1)+"/"+d.getDate() + " " + String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0") : "--";
-                var gradeStr = (r.grade||"") + "年级" + (r.semester==="1"?"上":"下") + "册";
-                
-                cx = marginL;
-                var row = [dateStr, gradeStr, (r.score||0)+"分", (r.correct||0)+"/"+(r.total||0), (r.maxCombo||0)+"连击", (r.wrongCount||0)+"个"];
-                for (var c = 0; c < row.length; c++) {
-                    doc.text(row[c], cx + 1, y);
-                    cx += colW[c];
-                }
-                // 交替行背景
-                if (i % 2 === 0) {
-                    cx = marginL;
-                    doc.setFillColor(240, 245, 255);
-                    for (var c2 = 0; c2 < colW.length; c2++) {
-                        doc.rect(cx, y - 3.5, colW[c2], 5, "F");
-                        cx += colW[c2];
-                    }
-                }
-                y += 5;
-            }
-            
-            // 统计摘要
-            y += 5;
-            if (y > 270) { doc.addPage(); y = 15; }
+            // 统计数据
             var scores = myRecords.map(function(r){return r.score||0;});
             var avg = (scores.reduce(function(a,b){return a+b;},0) / scores.length).toFixed(1);
             var maxS = Math.max.apply(null, scores);
+            var minS = Math.min.apply(null, scores);
             var totalGames = myRecords.length;
-            doc.setFontSize(9);
-            doc.setFont(undefined, "bold");
-            doc.text("共 "+totalGames+" 次挑战 | 平均分 "+avg+" | 最高分 "+maxS, marginL, y);
+            var totalCorrect = myRecords.reduce(function(a,r){return a+(r.correct||0);},0);
+            var totalQuestions = myRecords.reduce(function(a,r){return a+(r.total||0);},0);
+            var accuracy = totalQuestions > 0 ? ((totalCorrect/totalQuestions)*100).toFixed(1) : 0;
+            var maxCombo = Math.max.apply(null, myRecords.map(function(r){return r.maxCombo||0;}));
             
-            // ==== 第二部分：错词汇总 ====
-            y += 12;
-            if (y > 260) { doc.addPage(); y = 15; }
-            doc.setFontSize(14);
-            doc.text("二、错词汇总（按错误次数排序）", marginL, y);
-            y += 8;
-            
-            // 统计错词频率
+            // 统计错词
             var wrongMap = {};
             for (var j = 0; j < myRecords.length; j++) {
                 var ww = myRecords[j].wrongWords || [];
@@ -1477,73 +1403,196 @@
                     wrongMap[word] = (wrongMap[word] || 0) + 1;
                 }
             }
-            
-            // 找到中文释义
             var allVocab = [];
             for (var vk in LOCAL_VOCAB) { allVocab = allVocab.concat(LOCAL_VOCAB[vk]); }
             var vocabMap = {};
             for (var vi = 0; vi < allVocab.length; vi++) { vocabMap[allVocab[vi].en.toLowerCase()] = allVocab[vi].cn; }
-            
-            // 按次数排序
             var wrongEntries = [];
             for (var wm in wrongMap) { wrongEntries.push({ en: wm, count: wrongMap[wm], cn: vocabMap[wm.toLowerCase()] || "" }); }
             wrongEntries.sort(function(a, b){ return b.count - a.count; });
+            var totalWrongWords = wrongEntries.length;
+            var highFreqWrong = wrongEntries.filter(function(w){ return w.count >= 3; });
+            
+            // 按年级统计
+            var gradeStats = {};
+            myRecords.forEach(function(r){
+                var key = (r.grade||"?") + "-" + (r.semester||"?");
+                if (!gradeStats[key]) gradeStats[key] = { count: 0, total: 0, scores: [] };
+                gradeStats[key].count++;
+                gradeStats[key].total += (r.correct||0);
+                gradeStats[key].scores.push(r.score||0);
+            });
+            
+            // AI分析文本
+            var aiAnalysis = "";
+            // 趋势分析
+            if (scores.length >= 3) {
+                var recent = scores.slice(-3);
+                var older = scores.slice(0, -3);
+                if (older.length > 0) {
+                    var recentAvg = recent.reduce(function(a,b){return a+b;},0) / recent.length;
+                    var olderAvg = older.reduce(function(a,b){return a+b;},0) / older.length;
+                    if (recentAvg > olderAvg + 5) {
+                        aiAnalysis += "📈 学习趋势：成绩呈上升趋势，最近表现优于之前，继续保持！\n";
+                    } else if (recentAvg < olderAvg - 5) {
+                        aiAnalysis += "📉 学习趋势：近期成绩有所下滑，建议回顾之前学过的词汇。\n";
+                    } else {
+                        aiAnalysis += "📊 学习趋势：成绩稳定，保持良好的学习节奏。\n";
+                    }
+                }
+            }
+            // 正确率分析
+            if (accuracy >= 90) {
+                aiAnalysis += "🎯 正确率：" + accuracy + "%，表现优秀！词汇掌握扎实。\n";
+            } else if (accuracy >= 70) {
+                aiAnalysis += "🎯 正确率：" + accuracy + "%，良好水平，仍有提升空间。\n";
+            } else {
+                aiAnalysis += "🎯 正确率：" + accuracy + "%，需要加强练习，建议多复习错词。\n";
+            }
+            // 连击分析
+            if (maxCombo >= 10) {
+                aiAnalysis += "🔥 最高连击：" + maxCombo + "连击，专注力很强！\n";
+            } else if (maxCombo >= 5) {
+                aiAnalysis += "⚡ 最高连击：" + maxCombo + "连击，保持专注可以更高！\n";
+            } else {
+                aiAnalysis += "💡 最高连击：" + maxCombo + "连击，建议集中注意力，减少中断。\n";
+            }
+            // 错词分析
+            if (highFreqWrong.length > 0) {
+                aiAnalysis += "⚠️ 高频错词：" + highFreqWrong.length + "个词错误3次以上，需要重点复习：";
+                aiAnalysis += highFreqWrong.slice(0,5).map(function(w){return w.en;}).join(", ");
+                aiAnalysis += "。\n";
+            } else if (totalWrongWords > 0) {
+                aiAnalysis += "✅ 错词分散，暂无高频错误词，整体掌握良好。\n";
+            } else {
+                aiAnalysis += "🎉 全部答对！词汇掌握完美！\n";
+            }
+            // 建议
+            aiAnalysis += "\n📝 学习建议：\n";
+            if (totalWrongWords > 10) {
+                aiAnalysis += "• 建议每天复习10-15个错词，重点攻克薄弱词汇。\n";
+            }
+            if (avg < 70) {
+                aiAnalysis += "• 建议降低挑战难度，先巩固基础词汇。\n";
+            }
+            aiAnalysis += "• 保持每天练习的习惯，积少成多。\n";
+            aiAnalysis += "• 尝试不同年级的挑战，拓展词汇量。";
+            
+            // 构建HTML内容
+            var html = '<div style="font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; background: white;">';
+            
+            // 标题
+            html += '<div style="text-align: center; margin-bottom: 30px;">';
+            html += '<h1 style="margin: 0; color: #2563eb; font-size: 28px;">🌟 ' + currentUserName + ' - 成绩汇总报告</h1>';
+            html += '<p style="color: #666; margin-top: 10px;">汇总日期：' + new Date().toLocaleDateString("zh-CN") + '</p>';
+            html += '</div>';
+            
+            // 统计概览
+            html += '<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px; margin-bottom: 25px;">';
+            html += '<h2 style="margin: 0 0 15px 0; font-size: 18px;">📊 学习概览</h2>';
+            html += '<div style="display: flex; flex-wrap: wrap; gap: 20px;">';
+            html += '<div style="flex: 1; min-width: 100px;"><div style="font-size: 32px; font-weight: bold;">' + totalGames + '</div><div style="font-size: 12px; opacity: 0.9;">挑战次数</div></div>';
+            html += '<div style="flex: 1; min-width: 100px;"><div style="font-size: 32px; font-weight: bold;">' + avg + '</div><div style="font-size: 12px; opacity: 0.9;">平均分</div></div>';
+            html += '<div style="flex: 1; min-width: 100px;"><div style="font-size: 32px; font-weight: bold;">' + maxS + '</div><div style="font-size: 12px; opacity: 0.9;">最高分</div></div>';
+            html += '<div style="flex: 1; min-width: 100px;"><div style="font-size: 32px; font-weight: bold;">' + accuracy + '%</div><div style="font-size: 12px; opacity: 0.9;">正确率</div></div>';
+            html += '</div></div>';
+            
+            // 历史记录表
+            html += '<div style="margin-bottom: 25px;">';
+            html += '<h2 style="color: #1f2937; font-size: 18px; margin-bottom: 12px; border-bottom: 2px solid #3b82f6; padding-bottom: 8px;">📋 历史得分记录</h2>';
+            html += '<table style="width: 100%; border-collapse: collapse; font-size: 13px;">';
+            html += '<thead><tr style="background: #3b82f6; color: white;">';
+            html += '<th style="padding: 10px 8px; text-align: left;">日期</th>';
+            html += '<th style="padding: 10px 8px; text-align: left;">年级</th>';
+            html += '<th style="padding: 10px 8px; text-align: center;">得分</th>';
+            html += '<th style="padding: 10px 8px; text-align: center;">正确率</th>';
+            html += '<th style="padding: 10px 8px; text-align: center;">连击</th>';
+            html += '</tr></thead><tbody>';
+            
+            for (var i = 0; i < myRecords.length; i++) {
+                var r = myRecords[i];
+                var d = null;
+                try { d = r.timestamp ? new Date(r.timestamp) : null; } catch(e) {}
+                var dateStr = d ? (d.getMonth()+1)+"/"+d.getDate() + " " + String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0") : "--";
+                var gradeStr = (r.grade||"") + "年级" + (r.semester==="1"?"上":"下") + "册";
+                var acc = r.total > 0 ? ((r.correct/r.total)*100).toFixed(0) + "%" : "--";
+                var bg = i % 2 === 0 ? "#f8fafc" : "white";
+                var scoreColor = (r.score||0) >= 80 ? "#16a34a" : (r.score||0) >= 60 ? "#ca8a04" : "#dc2626";
+                html += '<tr style="background: ' + bg + ';">';
+                html += '<td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">' + dateStr + '</td>';
+                html += '<td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">' + gradeStr + '</td>';
+                html += '<td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: center; color: ' + scoreColor + '; font-weight: bold;">' + (r.score||0) + '</td>';
+                html += '<td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: center;">' + (r.correct||0) + '/' + (r.total||0) + '</td>';
+                html += '<td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: center;">🔥' + (r.maxCombo||0) + '</td>';
+                html += '</tr>';
+            }
+            html += '</tbody></table></div>';
+            
+            // 错词汇总
+            html += '<div style="margin-bottom: 25px;">';
+            html += '<h2 style="color: #1f2937; font-size: 18px; margin-bottom: 12px; border-bottom: 2px solid #f97316; padding-bottom: 8px;">❌ 错词汇总（按错误次数排序）</h2>';
             
             if (wrongEntries.length === 0) {
-                doc.setFontSize(10);
-                doc.setFont(undefined, "normal");
-                doc.text("恭喜！暂无错词记录 🎉", marginL, y);
+                html += '<div style="background: #dcfce7; color: #166534; padding: 20px; border-radius: 8px; text-align: center; font-size: 16px;">🎉 恭喜！暂无错词记录，表现完美！</div>';
             } else {
-                // 错词表头
-                doc.setFontSize(8);
-                doc.setFont(undefined, "bold");
-                doc.setFillColor(249, 115, 22);
-                doc.setTextColor(255, 255, 255);
-                var wHeaders = ["序号", "English", "中文", "错误次数"];
-                var wColW = [15, 60, 60, 25];
-                cx = marginL;
-                for (var wh = 0; wh < wHeaders.length; wh++) {
-                    doc.rect(cx, y - 4, wColW[wh], 6, "F");
-                    doc.text(wHeaders[wh], cx + 1, y);
-                    cx += wColW[wh];
-                }
-                doc.setTextColor(0, 0, 0);
-                y += 5;
+                html += '<table style="width: 100%; border-collapse: collapse; font-size: 13px;">';
+                html += '<thead><tr style="background: #f97316; color: white;">';
+                html += '<th style="padding: 10px 8px; text-align: center; width: 50px;">#</th>';
+                html += '<th style="padding: 10px 8px; text-align: left;">English</th>';
+                html += '<th style="padding: 10px 8px; text-align: left;">中文</th>';
+                html += '<th style="padding: 10px 8px; text-align: center; width: 80px;">错误次数</th>';
+                html += '</tr></thead><tbody>';
                 
-                doc.setFont(undefined, "normal");
-                doc.setFontSize(8);
-                for (var wi = 0; wi < wrongEntries.length; wi++) {
-                    if (y > 278) { doc.addPage(); y = 15; }
+                for (var wi = 0; wi < Math.min(wrongEntries.length, 30); wi++) {
                     var we = wrongEntries[wi];
-                    cx = marginL;
-                    doc.text(String(wi + 1), cx + 1, y); cx += wColW[0];
-                    doc.text(we.en, cx + 1, y); cx += wColW[1];
-                    doc.text(we.cn, cx + 1, y); cx += wColW[2];
-                    doc.text(we.count + " 次", cx + 1, y);
-                    // 高频错词标红
-                    if (we.count >= 3) {
-                        doc.setTextColor(220, 38, 38);
-                        cx = marginL;
-                        doc.text(String(wi + 1), cx + 1, y); cx += wColW[0];
-                        doc.text(we.en, cx + 1, y); cx += wColW[1];
-                        doc.text(we.cn, cx + 1, y); cx += wColW[2];
-                        doc.text(we.count + " 次", cx + 1, y);
-                        doc.setTextColor(0, 0, 0);
-                    }
-                    y += 5;
+                    var bg = wi % 2 === 0 ? "#fff7ed" : "white";
+                    var countColor = we.count >= 3 ? "#dc2626" : "#78716c";
+                    var countBg = we.count >= 3 ? "#fef2f2" : "transparent";
+                    html += '<tr style="background: ' + bg + ';">';
+                    html += '<td style="padding: 8px; border-bottom: 1px solid #fed7aa; text-align: center;">' + (wi+1) + '</td>';
+                    html += '<td style="padding: 8px; border-bottom: 1px solid #fed7aa; font-weight: 600;">' + we.en + '</td>';
+                    html += '<td style="padding: 8px; border-bottom: 1px solid #fed7aa;">' + we.cn + '</td>';
+                    html += '<td style="padding: 8px; border-bottom: 1px solid #fed7aa; text-align: center; color: ' + countColor + '; font-weight: bold; background: ' + countBg + ';">' + we.count + '次</td>';
+                    html += '</tr>';
                 }
+                if (wrongEntries.length > 30) {
+                    html += '<tr><td colspan="4" style="padding: 10px; text-align: center; color: #666;">... 还有 ' + (wrongEntries.length - 30) + ' 个错词未显示</td></tr>';
+                }
+                html += '</tbody></table>';
+                html += '<p style="color: #666; font-size: 12px; margin-top: 10px;">共 ' + totalWrongWords + ' 个错词，其中 ' + highFreqWrong.length + ' 个高频错词（错误≥3次）</p>';
             }
+            html += '</div>';
+            
+            // AI分析
+            html += '<div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-left: 4px solid #f59e0b; padding: 20px; border-radius: 0 12px 12px 0; margin-bottom: 25px;">';
+            html += '<h2 style="color: #92400e; font-size: 18px; margin: 0 0 15px 0;">🤖 AI 学习分析</h2>';
+            html += '<div style="color: #78350f; font-size: 14px; line-height: 1.8; white-space: pre-wrap;">' + aiAnalysis + '</div>';
+            html += '</div>';
             
             // 页脚
-            var totalPages = doc.internal.getNumberOfPages();
-            for (var p = 1; p <= totalPages; p++) {
-                doc.setPage(p);
-                doc.setFontSize(7);
-                doc.setTextColor(150);
-                doc.text("English Planet Score Report - " + currentUserName + " - Page " + p + "/" + totalPages, pageW / 2, 290, { align: "center" });
-            }
+            html += '<div style="text-align: center; color: #9ca3af; font-size: 11px; margin-top: 30px; padding-top: 15px; border-top: 1px solid #e5e7eb;">';
+            html += 'English Planet 学习报告 | 生成时间：' + new Date().toLocaleString("zh-CN");
+            html += '</div></div>';
             
-            doc.save("成绩汇总_" + currentUserName + "_" + new Date().toISOString().slice(0,10) + ".pdf");
+            // 创建临时容器
+            var container = document.createElement("div");
+            container.id = "pdf-container";
+            container.style.cssText = "position: fixed; left: -9999px; top: 0; width: 800px; background: white;";
+            container.innerHTML = html;
+            document.body.appendChild(container);
+            
+            // 生成PDF
+            var opt = {
+                margin: 10,
+                filename: "成绩汇总_" + currentUserName + "_" + new Date().toISOString().slice(0,10) + ".pdf",
+                image: { type: "jpeg", quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+            };
+            
+            html2pdf().set(opt).from(container).save().then(function() {
+                document.body.removeChild(container);
+            });
         }
 
         // ==================== 输入监听 ====================
