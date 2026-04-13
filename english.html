@@ -228,6 +228,14 @@
             gap: 10px;
             flex-wrap: wrap;
             margin-bottom: 16px;
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .selector-row {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
         }
         
         .selector-label {
@@ -254,6 +262,24 @@
         .selector-btn.selected { 
             border-color: var(--primary); 
             background: linear-gradient(135deg, var(--primary), var(--primary-dark)); 
+            color: white;
+        }
+        
+        .selector-unit-btn {
+            padding: 8px 14px;
+            background: rgba(30, 41, 59, 0.8);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .selector-unit-btn:hover { border-color: var(--primary); }
+        .selector-unit-btn.selected {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
             color: white;
         }
         
@@ -493,10 +519,16 @@
                     <button class="selector-btn" data-grade="5" onclick="selectGrade(this)">五年级</button>
                     <button class="selector-btn" data-grade="6" onclick="selectGrade(this)">六年级</button>
                 </div>
-                <div class="selector-group">
-                    <div class="selector-label">📖 选择学期</div>
-                    <button class="selector-btn selected" data-semester="1" onclick="selectSemester(this)">上册</button>
-                    <button class="selector-btn" data-semester="2" onclick="selectSemester(this)">下册</button>
+                <div class="selector-row">
+                    <div class="selector-group">
+                        <div class="selector-label">📖 选择学期</div>
+                        <button class="selector-btn selected" data-semester="1" onclick="selectSemester(this)">上册</button>
+                        <button class="selector-btn" data-semester="2" onclick="selectSemester(this)">下册</button>
+                    </div>
+                    <div class="selector-group" id="unitSelector" style="display:none;">
+                        <div class="selector-label">📝 选择单元</div>
+                        <button class="selector-unit-btn selected" data-unit="all" onclick="selectUnit(this)">全部</button>
+                    </div>
                 </div>
                 
                 <div id="startBtn" style="text-align:center; margin:24px 0;">
@@ -803,6 +835,84 @@
             ]
         };
         
+        // 单元单词数量分布（用于按单元筛选词汇）
+        var UNIT_COUNTS = {
+            "3-1": [18, 14, 12, 16, 21, 21, 14],
+            "3-2": [16, 16, 13, 16, 15, 20],
+            "4-1": [21, 13, 18, 15, 20, 14],
+            "4-2": [18, 15, 17, 16, 13, 18],
+            "5-1": [12, 15, 17, 14, 18, 20],
+            "5-2": [19, 20, 20, 22, 18],
+            "6-1": [23, 20, 20, 20, 10, 10],
+            "6-2": [19, 21, 21, 13, 10, 9]
+        };
+        
+        // 获取指定学期指定单元范围的词汇
+        function getVocabByUnits(allVocab, grade, semester, maxUnit) {
+            var key = grade + "-" + semester;
+            var counts = UNIT_COUNTS[key];
+            if (!counts || maxUnit === 0) return allVocab.slice();
+            var total = 0;
+            for (var i = 0; i < maxUnit && i < counts.length; i++) total += counts[i];
+            // 如果有综合词汇（超过所有单元之和的部分），也包含进来
+            var unitSum = counts.reduce(function(a,b){return a+b;},0);
+            if (allVocab.length > unitSum) total = allVocab.length; // 综合词汇存在，包含全部
+            return allVocab.slice(0, total);
+        }
+        
+        // 根据选中单元范围获取词汇（含跨学期最少3单元规则）
+        function getVocabForGame(allVocab, grade, semester, maxUnit) {
+            var key = grade + "-" + semester;
+            var counts = UNIT_COUNTS[key];
+            
+            // 全部单元
+            if (maxUnit === 0 || !counts) return allVocab.slice();
+            
+            var unitCount = Math.min(maxUnit, counts.length);
+            
+            // 已选单元数 >= 3，直接返回
+            if (unitCount >= 3) {
+                return getVocabByUnits(allVocab, grade, semester, maxUnit);
+            }
+            
+            // 需要 padding 到至少 3 个单元
+            var need = 3 - unitCount;
+            var paddedVocab = getVocabByUnits(allVocab, grade, semester, maxUnit);
+            
+            // 尝试从上一个学期向后补
+            var prevKey = getPrevSemesterKey(grade, semester);
+            if (prevKey) {
+                var prevVocab = LOCAL_VOCAB[prevKey];
+                var prevCounts = UNIT_COUNTS[prevKey];
+                if (prevVocab && prevCounts) {
+                    // 从上一个学期最后 need 个单元取词汇
+                    var start = Math.max(0, prevCounts.length - need);
+                    var prevWords = [];
+                    var pos = 0;
+                    for (var u = 0; u < prevCounts.length; u++) {
+                        if (u >= start) {
+                            prevWords = prevWords.concat(prevVocab.slice(pos, pos + prevCounts[u]));
+                        }
+                        pos += prevCounts[u];
+                    }
+                    paddedVocab = prevWords.concat(paddedVocab);
+                    return paddedVocab;
+                }
+            }
+            
+            // 无法向前补，从当前学期向后扩展
+            var expandedUnit = Math.min(unitCount + need, counts.length);
+            return getVocabByUnits(allVocab, grade, semester, expandedUnit);
+        }
+        
+        // 获取上一个学期的 key
+        function getPrevSemesterKey(grade, semester) {
+            if (semester === "2") return grade + "-1";
+            var g = parseInt(grade) - 1;
+            if (g < 3) return null;
+            return g + "-2";
+        }
+        
         // ==================== 音效 ====================
         function initAudio() {
             if (!window._ac) window._ac = new (window.AudioContext || window.webkitAudioContext)();
@@ -879,7 +989,7 @@
         
         // ==================== 游戏状态 ====================
         var G = {
-            grade:"4", semester:"1",
+            grade:"4", semester:"1", unit:0,
             words:[], idx:0,
             combo:0, maxCombo:0,
             correct:0, total:0,
@@ -892,12 +1002,37 @@
             document.querySelectorAll('[data-grade]').forEach(function(b){b.classList.remove('selected');});
             el.classList.add('selected');
             G.grade = el.dataset.grade;
+            updateUnitButtons();
         }
         
         function selectSemester(el) {
             document.querySelectorAll('[data-semester]').forEach(function(b){b.classList.remove('selected');});
             el.classList.add('selected');
             G.semester = el.dataset.semester;
+            updateUnitButtons();
+        }
+        
+        function selectUnit(el) {
+            document.querySelectorAll('.selector-unit-btn').forEach(function(b){b.classList.remove('selected');});
+            el.classList.add('selected');
+            G.unit = el.dataset.unit === "all" ? 0 : parseInt(el.dataset.unit);
+        }
+        
+        // 更新单元选择按钮
+        function updateUnitButtons() {
+            var container = document.getElementById("unitSelector");
+            var key = G.grade + "-" + G.semester;
+            var counts = UNIT_COUNTS[key];
+            if (!counts) { container.style.display = "none"; return; }
+            
+            container.style.display = "flex";
+            var html = '<div class="selector-label">📝 选择单元</div>';
+            html += '<button class="selector-unit-btn selected" data-unit="all" onclick="selectUnit(this)">全部</button>';
+            for (var i = 0; i < counts.length; i++) {
+                html += '<button class="selector-unit-btn" data-unit="'+(i+1)+'" onclick="selectUnit(this)">U'+(i+1)+'</button>';
+            }
+            container.innerHTML = html;
+            G.unit = 0; // 默认全部
         }
         
         function shuffle(a) {
@@ -913,18 +1048,21 @@
             var key = G.grade+"-"+G.semester;
             
             // 先尝试从数据库加载
-            var vocab = await loadVocabFromDB(G.grade, G.semester);
+            var allVocab = await loadVocabFromDB(G.grade, G.semester);
             
             // 如果数据库没有，使用本地备份
-            if (!vocab || vocab.length === 0) {
-                vocab = LOCAL_VOCAB[key] || [];
+            if (!allVocab || allVocab.length === 0) {
+                allVocab = LOCAL_VOCAB[key] || [];
                 // 同时保存到数据库
-                if (vocab.length > 0) {
-                    saveVocabToDB(G.grade, G.semester, vocab);
+                if (allVocab.length > 0) {
+                    saveVocabToDB(G.grade, G.semester, allVocab);
                 }
             }
             
-            if(vocab.length===0){alert("该年级词汇库整理中！");return;}
+            if(allVocab.length===0){alert("该年级词汇库整理中！");return;}
+            
+            // 根据单元选择筛选词汇
+            var vocab = getVocabForGame(allVocab, G.grade, G.semester, G.unit || 0);
             
             G.words=shuffle(vocab.slice());
             G.idx=0; G.combo=0; G.maxCombo=0;
@@ -1232,6 +1370,7 @@
         // ==================== 页面初始化 ====================
         window.onload = function(){
             if(checkLogin()) {
+                updateUnitButtons();  // 初始化单元选择按钮
                 loadHistoryQuest();   // 同步读取 localStorage，立即渲染
                 // initVocabDatabase() 是纯后台操作，不影响页面显示，无需 await
             }
