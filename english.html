@@ -1082,80 +1082,71 @@
             });
         }
         
-        // ========== 历史得分：localStorage 永久优先，Firebase 增量合并 ==========
+        // ========== 历史得分：localStorage（当前设备）+ Firebase（跨设备只读展示） ==========
         
-        // 合并两条记录（用于判断是否重复）
-        function recordsEqual(a, b) {
-            return a.timestamp === b.timestamp &&
-                   a.score === b.score &&
-                   a.user === b.user &&
-                   a.grade === b.grade;
+        // Firebase Timestamp 统一转为 ISO 字符串
+        function fbTsToIso(ts) {
+            try {
+                if (ts && typeof ts.toDate === 'function') return ts.toDate().toISOString();
+                if (ts) return new Date(ts).toISOString();
+            } catch(e) {}
+            return "";
         }
         
         function loadHistoryQuest() {
-            // Step 1: 立即从 localStorage 读取并显示（永远优先）
+            // Step 1: 立即从 localStorage 读取并显示（当前设备记录，永远优先）
             var local = localStorage.getItem("quest_history_all");
             var localRecords = local ? JSON.parse(local) : [];
-            // 旧记录没有 user 字段才补（只读修改，不改变来源）
-            for(var i=0;i<localRecords.length;i++){
-                if(!localRecords[i].user){
-                    localRecords[i].user = "未知用户";
-                }
+            // 规范化：旧记录补 user 字段，时间戳统一为 ISO 字符串
+            for (var i = 0; i < localRecords.length; i++) {
+                if (!localRecords[i].user) localRecords[i].user = "未知用户";
+                localRecords[i].timestamp = fbTsToIso(localRecords[i].timestamp);
             }
             localStorage.setItem("quest_history_all", JSON.stringify(localRecords));
             renderHistoryQuest(localRecords);  // 立即渲染本地数据
             
-            // Step 2: 后台从 Firebase 增量同步（只添加本地没有的记录，不覆盖）
+            // Step 2: 后台从 Firebase 查询（跨设备记录，只读展示，不合并回 localStorage）
             db.collection("english_records")
-                .where("type","==","word-quest")
-                .orderBy("timestamp","desc")
-                .limit(50)
+                .where("type", "==", "word-quest")
+                .orderBy("timestamp", "desc")
+                .limit(200)
                 .get()
-                .then(function(snap){
-                    if(snap.empty) return;  // Firebase 空，直接用本地
+                .then(function(snap) {
+                    if (snap.empty) return;
                     
                     var fbRecords = [];
-                    snap.forEach(function(doc){ fbRecords.push(doc.data()); });
+                    snap.forEach(function(doc) { fbRecords.push(doc.data()); });
                     
-                    // 增量合并：只把本地没有的记录加进来（避免重复）
-                    var changed = false;
-                    var localIds = {};  // 用 timestamp+score 做 key 去重
-                    localRecords.forEach(function(r){
-                        var key = (r.timestamp||"") + "_" + (r.score||"");
-                        localIds[key] = true;
+                    // 构建 Firebase key 集合（用 ISO 时间戳 + score 做唯一键）
+                    var fbKeys = {};
+                    fbRecords.forEach(function(r) { fbKeys[fbTsToIso(r.timestamp) + "_" + (r.score || "")] = true; });
+                    
+                    // 构建本地 key 集合（已转换为 ISO）
+                    var localKeys = {};
+                    localRecords.forEach(function(r) { localKeys[fbTsToIso(r.timestamp) + "_" + (r.score || "")] = true; });
+                    
+                    // 筛选出本地没有的记录（真正的跨设备新记录）
+                    var newFromFb = fbRecords.filter(function(r) {
+                        var k = fbTsToIso(r.timestamp) + "_" + (r.score || "");
+                        return !localKeys[k];
                     });
                     
-                    fbRecords.forEach(function(r){
-                        // Firebase timestamp 可能是 Timestamp 对象，转为 ISO 字符串后做 key
-                        var ts = r.timestamp;
-                        var tsStr = "";
-                        try { tsStr = ts && ts.toDate ? ts.toDate().toISOString() : (ts || ""); } catch(e){ tsStr = String(ts||""); }
-                        var key = tsStr + "_" + (r.score||"");
-                        if(!localIds[key]){
-                            // 将 Firebase Timestamp 统一转为 ISO 字符串存储（保持一致）
-                            try { r.timestamp = ts && ts.toDate ? ts.toDate().toISOString() : (ts || ""); } catch(e){}
-                            localRecords.push(r);
-                            changed = true;
-                        }
-                    });
+                    // 合并：本地记录 + 跨设备新记录，统一转 ISO 时间戳
+                    var merged = localRecords.concat(newFromFb.map(function(r) {
+                        r.timestamp = fbTsToIso(r.timestamp);
+                        return r;
+                    }));
                     
-                    // 按时间倒序，保存回 localStorage，再重新渲染
-                    if(changed){
-                        // 统一时间格式：统一转为 Date 对象再排序
-                        localRecords.sort(function(a,b){
-                            var ta = a.timestamp;
-                            var tb = b.timestamp;
-                            // Firebase Timestamp 转 Date
-                            try { if(ta && ta.toDate) ta = ta.toDate(); else ta = new Date(ta||0); } catch(e){ ta = new Date(0); }
-                            try { if(tb && tb.toDate) tb = tb.toDate(); else tb = new Date(tb||0); } catch(e){ tb = new Date(0); }
-                            return tb - ta;
-                        });
-                        localRecords = localRecords.slice(0, 50);  // 最多50条
-                        localStorage.setItem("quest_history_all", JSON.stringify(localRecords));
-                        renderHistoryQuest(localRecords);
-                    }
+                    // 按时间倒序，最多 200 条
+                    merged.sort(function(a, b) {
+                        return new Date(fbTsToIso(b.timestamp) || 0) - new Date(fbTsToIso(a.timestamp) || 0);
+                    });
+                    merged = merged.slice(0, 200);
+                    
+                    // 重新渲染（包含本地 + 跨设备新记录）
+                    renderHistoryQuest(merged);
                 })
-                .catch(function(err){
+                .catch(function(err) {
                     // Firebase 查询失败 → 本地缓存已在 Step1 显示了，无影响
                     console.warn("Firebase同步失败（本地缓存已显示）:", err.message);
                 });
@@ -1166,7 +1157,7 @@
             for(var i=0;i<records.length;i++){
                 var r=records[i];
                 var d = null;
-                try{ d = r.timestamp ? (r.timestamp.toDate ? r.timestamp.toDate() : new Date(r.timestamp)) : null; }catch(e){}
+                try{ d = r.timestamp ? (r.timestamp.toDate ? r.timestamp.toDate() : new Date(r.timestamp)) : null; }catch(e){ d = new Date(r.timestamp || 0); }
                 var date = d ? (d.getMonth()+1)+"/"+d.getDate() : "--";
                 var time = d ? String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0") : "--";
                 var c=r.score>=90?"var(--success)":r.score>=70?"var(--accent)":"var(--text-muted)";
