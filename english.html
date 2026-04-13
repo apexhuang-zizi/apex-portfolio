@@ -1612,16 +1612,36 @@
                 confirmBtn.textContent = "📥 确认下载PDF";
                 confirmBtn.style.cssText = "padding: 14px 28px; font-size: 16px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 12px rgba(59,130,246,0.4);";
                 confirmBtn.onclick = function() {
+                    confirmBtn.disabled = true;
+                    confirmBtn.textContent = "⏳ 正在生成...";
+                    
+                    // 重要：需要重新设置html2canvas选项确保完整渲染
                     var opt = {
                         margin: 10,
                         filename: "成绩汇总_" + currentUserName + "_" + new Date().toISOString().slice(0,10) + ".pdf",
                         image: { type: "jpeg", quality: 0.98 },
-                        html2canvas: { scale: 2, useCORS: true, logging: false },
+                        html2canvas: { 
+                            scale: 2, 
+                            useCORS: true, 
+                            logging: false,
+                            windowWidth: 850,
+                            windowHeight: container.scrollHeight + 100
+                        },
                         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
                     };
-                    html2pdf().set(opt).from(container).save().then(function() {
-                        document.body.removeChild(container);
-                        document.body.removeChild(btnBar);
+                    
+                    // 先确保容器完全渲染，再生成PDF
+                    requestAnimationFrame(function() {
+                        html2pdf().set(opt).from(container).toPdf().get('pdf').then(function(pdf) {
+                            pdf.save(opt.filename);
+                            document.body.removeChild(container);
+                            document.body.removeChild(btnBar);
+                        }).catch(function(err) {
+                            console.error("PDF生成失败:", err);
+                            confirmBtn.disabled = false;
+                            confirmBtn.textContent = "📥 确认下载PDF";
+                            alert("PDF生成失败，请重试");
+                        });
                     });
                 };
                 
