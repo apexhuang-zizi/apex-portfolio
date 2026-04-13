@@ -153,6 +153,20 @@
             border-bottom: 1px solid var(--border);
         }
         
+        .summary-btn {
+            font-size: 11px;
+            padding: 3px 8px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            letter-spacing: 0;
+            text-transform: none;
+        }
+        .summary-btn:hover { opacity: 0.85; }
+        
         .history-item {
             padding: 12px;
             border-radius: 10px;
@@ -234,8 +248,16 @@
         
         .selector-row {
             display: flex;
-            gap: 16px;
+            gap: 12px;
             align-items: flex-start;
+        }
+        #unitSelector {
+            flex: unset !important;
+            min-width: 0;
+        }
+        #unitSelector .selector-unit-btn {
+            padding: 8px 10px;
+            font-size: 12px;
         }
         
         .selector-label {
@@ -348,19 +370,20 @@
         
         /* 按钮 */
         .btn-primary {
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            background: linear-gradient(135deg, #f97316, #ea580c);
             color: white;
             border: none;
-            padding: 16px 40px;
-            border-radius: 12px;
-            font-size: 18px;
-            font-weight: 600;
+            padding: 28px 72px;
+            border-radius: 16px;
+            font-size: 32px;
+            font-weight: 700;
             cursor: pointer;
             transition: all 0.2s;
             display: inline-block;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
         
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(249, 115, 22, 0.5); }
         
         /* 结果区 */
         .result-score {
@@ -485,7 +508,10 @@
         <!-- 左侧栏 -->
         <div class="sidebar-left">
             <div id="left-quest">
-                <div class="sidebar-label">📊 历史得分</div>
+                <div class="sidebar-label" style="display:flex;justify-content:space-between;align-items:center;">
+                    <span>📊 历史得分</span>
+                    <button class="summary-btn" onclick="generateScorePDF()" title="生成成绩汇总PDF">📄 汇总</button>
+                </div>
                 <div id="history-quest"></div>
             </div>
             <div id="left-echo" class="hidden">
@@ -669,6 +695,7 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
     <script>
         // ==================== Firebase ====================
@@ -1349,6 +1376,176 @@
             document.getElementById("history-write").innerHTML='<div style="color:var(--text-muted);font-size:13px;padding:12px;">暂无记录</div>';
         }
         
+        // ==================== 成绩汇总PDF ====================
+        function generateScorePDF() {
+            var currentUserName = sessionStorage.getItem("apex_username") || "未知用户";
+            var local = JSON.parse(localStorage.getItem("quest_history_all") || "[]");
+            // 筛选当前用户的记录
+            var myRecords = local.filter(function(r){ return r.user === currentUserName; });
+            if (myRecords.length === 0) { alert("暂无成绩记录！"); return; }
+            
+            var jsPDF = window.jspdf.jsPDF;
+            var doc = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });
+            var pageW = 210, marginL = 15, marginR = 15, contentW = pageW - marginL - marginR;
+            var y = 15;
+            
+            // 标题
+            doc.setFontSize(20);
+            doc.setFont(undefined, "bold");
+            doc.text(currentUserName + " - 成绩汇总", pageW / 2, y, { align: "center" });
+            y += 8;
+            doc.setFontSize(10);
+            doc.setFont(undefined, "normal");
+            doc.text("汇总日期：" + new Date().toLocaleDateString("zh-CN"), pageW / 2, y, { align: "center" });
+            y += 10;
+            
+            // ==== 第一部分：历史得分数据表 ====
+            doc.setFontSize(14);
+            doc.setFont(undefined, "bold");
+            doc.text("一、历史得分记录", marginL, y);
+            y += 8;
+            
+            // 表头
+            doc.setFontSize(8);
+            doc.setFont(undefined, "bold");
+            var headers = ["日期", "年级", "得分", "正确/总题", "连击", "错词数"];
+            var colW = [28, 20, 18, 28, 18, 18];
+            doc.setFillColor(66, 135, 245);
+            doc.setTextColor(255, 255, 255);
+            var cx = marginL;
+            for (var h = 0; h < headers.length; h++) {
+                doc.rect(cx, y - 4, colW[h], 6, "F");
+                doc.text(headers[h], cx + 1, y, { align: "left" });
+                cx += colW[h];
+            }
+            doc.setTextColor(0, 0, 0);
+            y += 5;
+            
+            // 数据行
+            doc.setFont(undefined, "normal");
+            doc.setFontSize(7);
+            for (var i = 0; i < myRecords.length; i++) {
+                if (y > 275) { doc.addPage(); y = 15; }
+                var r = myRecords[i];
+                var d = null;
+                try { d = r.timestamp ? new Date(r.timestamp) : null; } catch(e) {}
+                var dateStr = d ? (d.getMonth()+1)+"/"+d.getDate() + " " + String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0") : "--";
+                var gradeStr = (r.grade||"") + "年级" + (r.semester==="1"?"上":"下") + "册";
+                
+                cx = marginL;
+                var row = [dateStr, gradeStr, (r.score||0)+"分", (r.correct||0)+"/"+(r.total||0), (r.maxCombo||0)+"连击", (r.wrongCount||0)+"个"];
+                for (var c = 0; c < row.length; c++) {
+                    doc.text(row[c], cx + 1, y);
+                    cx += colW[c];
+                }
+                // 交替行背景
+                if (i % 2 === 0) {
+                    cx = marginL;
+                    doc.setFillColor(240, 245, 255);
+                    for (var c2 = 0; c2 < colW.length; c2++) {
+                        doc.rect(cx, y - 3.5, colW[c2], 5, "F");
+                        cx += colW[c2];
+                    }
+                }
+                y += 5;
+            }
+            
+            // 统计摘要
+            y += 5;
+            if (y > 270) { doc.addPage(); y = 15; }
+            var scores = myRecords.map(function(r){return r.score||0;});
+            var avg = (scores.reduce(function(a,b){return a+b;},0) / scores.length).toFixed(1);
+            var maxS = Math.max.apply(null, scores);
+            var totalGames = myRecords.length;
+            doc.setFontSize(9);
+            doc.setFont(undefined, "bold");
+            doc.text("共 "+totalGames+" 次挑战 | 平均分 "+avg+" | 最高分 "+maxS, marginL, y);
+            
+            // ==== 第二部分：错词汇总 ====
+            y += 12;
+            if (y > 260) { doc.addPage(); y = 15; }
+            doc.setFontSize(14);
+            doc.text("二、错词汇总（按错误次数排序）", marginL, y);
+            y += 8;
+            
+            // 统计错词频率
+            var wrongMap = {};
+            for (var j = 0; j < myRecords.length; j++) {
+                var ww = myRecords[j].wrongWords || [];
+                for (var k = 0; k < ww.length; k++) {
+                    var word = ww[k];
+                    wrongMap[word] = (wrongMap[word] || 0) + 1;
+                }
+            }
+            
+            // 找到中文释义
+            var allVocab = [];
+            for (var vk in LOCAL_VOCAB) { allVocab = allVocab.concat(LOCAL_VOCAB[vk]); }
+            var vocabMap = {};
+            for (var vi = 0; vi < allVocab.length; vi++) { vocabMap[allVocab[vi].en.toLowerCase()] = allVocab[vi].cn; }
+            
+            // 按次数排序
+            var wrongEntries = [];
+            for (var wm in wrongMap) { wrongEntries.push({ en: wm, count: wrongMap[wm], cn: vocabMap[wm.toLowerCase()] || "" }); }
+            wrongEntries.sort(function(a, b){ return b.count - a.count; });
+            
+            if (wrongEntries.length === 0) {
+                doc.setFontSize(10);
+                doc.setFont(undefined, "normal");
+                doc.text("恭喜！暂无错词记录 🎉", marginL, y);
+            } else {
+                // 错词表头
+                doc.setFontSize(8);
+                doc.setFont(undefined, "bold");
+                doc.setFillColor(249, 115, 22);
+                doc.setTextColor(255, 255, 255);
+                var wHeaders = ["序号", "English", "中文", "错误次数"];
+                var wColW = [15, 60, 60, 25];
+                cx = marginL;
+                for (var wh = 0; wh < wHeaders.length; wh++) {
+                    doc.rect(cx, y - 4, wColW[wh], 6, "F");
+                    doc.text(wHeaders[wh], cx + 1, y);
+                    cx += wColW[wh];
+                }
+                doc.setTextColor(0, 0, 0);
+                y += 5;
+                
+                doc.setFont(undefined, "normal");
+                doc.setFontSize(8);
+                for (var wi = 0; wi < wrongEntries.length; wi++) {
+                    if (y > 278) { doc.addPage(); y = 15; }
+                    var we = wrongEntries[wi];
+                    cx = marginL;
+                    doc.text(String(wi + 1), cx + 1, y); cx += wColW[0];
+                    doc.text(we.en, cx + 1, y); cx += wColW[1];
+                    doc.text(we.cn, cx + 1, y); cx += wColW[2];
+                    doc.text(we.count + " 次", cx + 1, y);
+                    // 高频错词标红
+                    if (we.count >= 3) {
+                        doc.setTextColor(220, 38, 38);
+                        cx = marginL;
+                        doc.text(String(wi + 1), cx + 1, y); cx += wColW[0];
+                        doc.text(we.en, cx + 1, y); cx += wColW[1];
+                        doc.text(we.cn, cx + 1, y); cx += wColW[2];
+                        doc.text(we.count + " 次", cx + 1, y);
+                        doc.setTextColor(0, 0, 0);
+                    }
+                    y += 5;
+                }
+            }
+            
+            // 页脚
+            var totalPages = doc.internal.getNumberOfPages();
+            for (var p = 1; p <= totalPages; p++) {
+                doc.setPage(p);
+                doc.setFontSize(7);
+                doc.setTextColor(150);
+                doc.text("English Planet Score Report - " + currentUserName + " - Page " + p + "/" + totalPages, pageW / 2, 290, { align: "center" });
+            }
+            
+            doc.save("成绩汇总_" + currentUserName + "_" + new Date().toISOString().slice(0,10) + ".pdf");
+        }
+
         // ==================== 输入监听 ====================
         document.getElementById("wordInput").addEventListener("keypress",function(e){
             if(e.key==="Enter")check();
