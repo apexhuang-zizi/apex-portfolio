@@ -1082,9 +1082,12 @@
             loadHistoryQuest();
             
             // 2. 同时尝试上传到 Firebase（静默后台，不影响显示）
+            // 关键：用相同的时间戳，避免本地和Firebase记录重复
+            var now = new Date();
+            var isoTs = now.toISOString();
             db.collection("english_records").add({
                 ...record,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                timestamp: isoTs  // 用ISO字符串，和本地完全一致
             }).catch(function(err){
                 console.warn("Firebase上传失败（本地已保存）:", err.message);
             });
