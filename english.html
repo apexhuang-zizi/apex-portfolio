@@ -1478,35 +1478,50 @@
             aiAnalysis += "• 保持每天练习的习惯，积少成多。\n";
             aiAnalysis += "• 尝试不同年级的挑战，拓展词汇量。";
             
+            // 儿童鼓励语
+            var encouragement = "";
+            if (avg >= 90) {
+                encouragement = "🌟 哇！" + currentUserName + "太棒啦！你是英语小天才！继续保持，未来的英语大师就是你！加油加油！💪";
+            } else if (avg >= 80) {
+                encouragement = "👏 做得好！" + currentUserName + "越来越厉害了！再努力一点点，就能成为英语小达人！相信自己！✨";
+            } else if (avg >= 70) {
+                encouragement = "💪 " + currentUserName + "很努力哦！每一点进步都值得骄傲！继续加油，你一定可以的！🌈";
+            } else if (avg >= 60) {
+                encouragement = "🌱 " + currentUserName + "正在进步中！不要放弃，每一次练习都是成长！坚持就是胜利！⭐";
+            } else {
+                encouragement = "💪 " + currentUserName + "加油！学习英语就像爬山，一步一步来，一定能到达山顶！我们都相信你！🌟";
+            }
+            encouragement += "\n\n🎯 小目标：下次挑战争取比这次多拿5分，你一定行！";
+            
             // 构建HTML内容
             var html = '<div style="font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; background: white;">';
             
             // 标题
             html += '<div style="text-align: center; margin-bottom: 30px;">';
-            html += '<h1 style="margin: 0; color: #2563eb; font-size: 28px;">🌟 ' + currentUserName + ' - 成绩汇总报告</h1>';
-            html += '<p style="color: #666; margin-top: 10px;">汇总日期：' + new Date().toLocaleDateString("zh-CN") + '</p>';
+            html += '<h1 style="margin: 0; color: #1e40af; font-size: 28px;">🌟 ' + currentUserName + ' - 成绩汇总报告</h1>';
+            html += '<p style="color: #374151; margin-top: 10px; font-size: 14px;">汇总日期：' + new Date().toLocaleDateString("zh-CN") + '</p>';
             html += '</div>';
             
             // 统计概览
             html += '<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px; margin-bottom: 25px;">';
             html += '<h2 style="margin: 0 0 15px 0; font-size: 18px;">📊 学习概览</h2>';
             html += '<div style="display: flex; flex-wrap: wrap; gap: 20px;">';
-            html += '<div style="flex: 1; min-width: 100px;"><div style="font-size: 32px; font-weight: bold;">' + totalGames + '</div><div style="font-size: 12px; opacity: 0.9;">挑战次数</div></div>';
-            html += '<div style="flex: 1; min-width: 100px;"><div style="font-size: 32px; font-weight: bold;">' + avg + '</div><div style="font-size: 12px; opacity: 0.9;">平均分</div></div>';
-            html += '<div style="flex: 1; min-width: 100px;"><div style="font-size: 32px; font-weight: bold;">' + maxS + '</div><div style="font-size: 12px; opacity: 0.9;">最高分</div></div>';
-            html += '<div style="flex: 1; min-width: 100px;"><div style="font-size: 32px; font-weight: bold;">' + accuracy + '%</div><div style="font-size: 12px; opacity: 0.9;">正确率</div></div>';
+            html += '<div style="flex: 1; min-width: 100px;"><div style="font-size: 32px; font-weight: bold;">' + totalGames + '</div><div style="font-size: 13px;">挑战次数</div></div>';
+            html += '<div style="flex: 1; min-width: 100px;"><div style="font-size: 32px; font-weight: bold;">' + avg + '</div><div style="font-size: 13px;">平均分</div></div>';
+            html += '<div style="flex: 1; min-width: 100px;"><div style="font-size: 32px; font-weight: bold;">' + maxS + '</div><div style="font-size: 13px;">最高分</div></div>';
+            html += '<div style="flex: 1; min-width: 100px;"><div style="font-size: 32px; font-weight: bold;">' + accuracy + '%</div><div style="font-size: 13px;">正确率</div></div>';
             html += '</div></div>';
             
             // 历史记录表
             html += '<div style="margin-bottom: 25px;">';
-            html += '<h2 style="color: #1f2937; font-size: 18px; margin-bottom: 12px; border-bottom: 2px solid #3b82f6; padding-bottom: 8px;">📋 历史得分记录</h2>';
-            html += '<table style="width: 100%; border-collapse: collapse; font-size: 13px;">';
-            html += '<thead><tr style="background: #3b82f6; color: white;">';
-            html += '<th style="padding: 10px 8px; text-align: left;">日期</th>';
-            html += '<th style="padding: 10px 8px; text-align: left;">年级</th>';
-            html += '<th style="padding: 10px 8px; text-align: center;">得分</th>';
-            html += '<th style="padding: 10px 8px; text-align: center;">正确率</th>';
-            html += '<th style="padding: 10px 8px; text-align: center;">连击</th>';
+            html += '<h2 style="color: #1e293b; font-size: 18px; margin-bottom: 12px; border-bottom: 2px solid #3b82f6; padding-bottom: 8px;">📋 历史得分记录</h2>';
+            html += '<table style="width: 100%; border-collapse: collapse; font-size: 14px;">';
+            html += '<thead><tr style="background: #2563eb; color: white;">';
+            html += '<th style="padding: 12px 8px; text-align: left;">日期</th>';
+            html += '<th style="padding: 12px 8px; text-align: left;">年级</th>';
+            html += '<th style="padding: 12px 8px; text-align: center;">得分</th>';
+            html += '<th style="padding: 12px 8px; text-align: center;">正确率</th>';
+            html += '<th style="padding: 12px 8px; text-align: center;">连击</th>';
             html += '</tr></thead><tbody>';
             
             for (var i = 0; i < myRecords.length; i++) {
@@ -1516,61 +1531,67 @@
                 var dateStr = d ? (d.getMonth()+1)+"/"+d.getDate() + " " + String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0") : "--";
                 var gradeStr = (r.grade||"") + "年级" + (r.semester==="1"?"上":"下") + "册";
                 var acc = r.total > 0 ? ((r.correct/r.total)*100).toFixed(0) + "%" : "--";
-                var bg = i % 2 === 0 ? "#f8fafc" : "white";
-                var scoreColor = (r.score||0) >= 80 ? "#16a34a" : (r.score||0) >= 60 ? "#ca8a04" : "#dc2626";
+                var bg = i % 2 === 0 ? "#eff6ff" : "white";
+                var scoreColor = (r.score||0) >= 80 ? "#15803d" : (r.score||0) >= 60 ? "#a16207" : "#b91c1c";
                 html += '<tr style="background: ' + bg + ';">';
-                html += '<td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">' + dateStr + '</td>';
-                html += '<td style="padding: 8px; border-bottom: 1px solid #e5e7eb;">' + gradeStr + '</td>';
-                html += '<td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: center; color: ' + scoreColor + '; font-weight: bold;">' + (r.score||0) + '</td>';
-                html += '<td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: center;">' + (r.correct||0) + '/' + (r.total||0) + '</td>';
-                html += '<td style="padding: 8px; border-bottom: 1px solid #e5e7eb; text-align: center;">🔥' + (r.maxCombo||0) + '</td>';
+                html += '<td style="padding: 10px 8px; border-bottom: 1px solid #cbd5e1; color: #1e293b;">' + dateStr + '</td>';
+                html += '<td style="padding: 10px 8px; border-bottom: 1px solid #cbd5e1; color: #1e293b;">' + gradeStr + '</td>';
+                html += '<td style="padding: 10px 8px; border-bottom: 1px solid #cbd5e1; text-align: center; color: ' + scoreColor + '; font-weight: bold;">' + (r.score||0) + '</td>';
+                html += '<td style="padding: 10px 8px; border-bottom: 1px solid #cbd5e1; text-align: center; color: #334155;">' + (r.correct||0) + '/' + (r.total||0) + '</td>';
+                html += '<td style="padding: 10px 8px; border-bottom: 1px solid #cbd5e1; text-align: center; color: #334155;">🔥' + (r.maxCombo||0) + '</td>';
                 html += '</tr>';
             }
             html += '</tbody></table></div>';
             
             // 错词汇总
             html += '<div style="margin-bottom: 25px;">';
-            html += '<h2 style="color: #1f2937; font-size: 18px; margin-bottom: 12px; border-bottom: 2px solid #f97316; padding-bottom: 8px;">❌ 错词汇总（按错误次数排序）</h2>';
+            html += '<h2 style="color: #1e293b; font-size: 18px; margin-bottom: 12px; border-bottom: 2px solid #ea580c; padding-bottom: 8px;">❌ 错词汇总（按错误次数排序）</h2>';
             
             if (wrongEntries.length === 0) {
-                html += '<div style="background: #dcfce7; color: #166534; padding: 20px; border-radius: 8px; text-align: center; font-size: 16px;">🎉 恭喜！暂无错词记录，表现完美！</div>';
+                html += '<div style="background: #dcfce7; color: #166534; padding: 20px; border-radius: 8px; text-align: center; font-size: 16px; font-weight: 600;">🎉 恭喜！暂无错词记录，表现完美！</div>';
             } else {
-                html += '<table style="width: 100%; border-collapse: collapse; font-size: 13px;">';
-                html += '<thead><tr style="background: #f97316; color: white;">';
-                html += '<th style="padding: 10px 8px; text-align: center; width: 50px;">#</th>';
-                html += '<th style="padding: 10px 8px; text-align: left;">English</th>';
-                html += '<th style="padding: 10px 8px; text-align: left;">中文</th>';
-                html += '<th style="padding: 10px 8px; text-align: center; width: 80px;">错误次数</th>';
+                html += '<table style="width: 100%; border-collapse: collapse; font-size: 14px;">';
+                html += '<thead><tr style="background: #ea580c; color: white;">';
+                html += '<th style="padding: 12px 8px; text-align: center; width: 50px;">#</th>';
+                html += '<th style="padding: 12px 8px; text-align: left;">English</th>';
+                html += '<th style="padding: 12px 8px; text-align: left;">中文</th>';
+                html += '<th style="padding: 12px 8px; text-align: center; width: 80px;">错误次数</th>';
                 html += '</tr></thead><tbody>';
                 
                 for (var wi = 0; wi < Math.min(wrongEntries.length, 30); wi++) {
                     var we = wrongEntries[wi];
                     var bg = wi % 2 === 0 ? "#fff7ed" : "white";
-                    var countColor = we.count >= 3 ? "#dc2626" : "#78716c";
+                    var countColor = we.count >= 3 ? "#b91c1c" : "#57534e";
                     var countBg = we.count >= 3 ? "#fef2f2" : "transparent";
                     html += '<tr style="background: ' + bg + ';">';
-                    html += '<td style="padding: 8px; border-bottom: 1px solid #fed7aa; text-align: center;">' + (wi+1) + '</td>';
-                    html += '<td style="padding: 8px; border-bottom: 1px solid #fed7aa; font-weight: 600;">' + we.en + '</td>';
-                    html += '<td style="padding: 8px; border-bottom: 1px solid #fed7aa;">' + we.cn + '</td>';
-                    html += '<td style="padding: 8px; border-bottom: 1px solid #fed7aa; text-align: center; color: ' + countColor + '; font-weight: bold; background: ' + countBg + ';">' + we.count + '次</td>';
+                    html += '<td style="padding: 10px 8px; border-bottom: 1px solid #fed7aa; text-align: center; color: #1e293b;">' + (wi+1) + '</td>';
+                    html += '<td style="padding: 10px 8px; border-bottom: 1px solid #fed7aa; font-weight: 600; color: #1e293b;">' + we.en + '</td>';
+                    html += '<td style="padding: 10px 8px; border-bottom: 1px solid #fed7aa; color: #334155;">' + we.cn + '</td>';
+                    html += '<td style="padding: 10px 8px; border-bottom: 1px solid #fed7aa; text-align: center; color: ' + countColor + '; font-weight: bold; background: ' + countBg + ';">' + we.count + '次</td>';
                     html += '</tr>';
                 }
                 if (wrongEntries.length > 30) {
-                    html += '<tr><td colspan="4" style="padding: 10px; text-align: center; color: #666;">... 还有 ' + (wrongEntries.length - 30) + ' 个错词未显示</td></tr>';
+                    html += '<tr><td colspan="4" style="padding: 10px; text-align: center; color: #475569;">... 还有 ' + (wrongEntries.length - 30) + ' 个错词未显示</td></tr>';
                 }
                 html += '</tbody></table>';
-                html += '<p style="color: #666; font-size: 12px; margin-top: 10px;">共 ' + totalWrongWords + ' 个错词，其中 ' + highFreqWrong.length + ' 个高频错词（错误≥3次）</p>';
+                html += '<p style="color: #475569; font-size: 13px; margin-top: 10px;">共 ' + totalWrongWords + ' 个错词，其中 ' + highFreqWrong.length + ' 个高频错词（错误≥3次）</p>';
             }
             html += '</div>';
             
             // AI分析
-            html += '<div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-left: 4px solid #f59e0b; padding: 20px; border-radius: 0 12px 12px 0; margin-bottom: 25px;">';
-            html += '<h2 style="color: #92400e; font-size: 18px; margin: 0 0 15px 0;">🤖 AI 学习分析</h2>';
-            html += '<div style="color: #78350f; font-size: 14px; line-height: 1.8; white-space: pre-wrap;">' + aiAnalysis + '</div>';
+            html += '<div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-left: 4px solid #d97706; padding: 20px; border-radius: 0 12px 12px 0; margin-bottom: 25px;">';
+            html += '<h2 style="color: #78350f; font-size: 18px; margin: 0 0 15px 0;">🤖 AI 学习分析</h2>';
+            html += '<div style="color: #713f12; font-size: 14px; line-height: 1.8; white-space: pre-wrap;">' + aiAnalysis + '</div>';
+            html += '</div>';
+            
+            // 儿童鼓励语
+            html += '<div style="background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%); border-left: 4px solid #db2777; padding: 20px; border-radius: 0 12px 12px 0; margin-bottom: 25px;">';
+            html += '<h2 style="color: #9d174d; font-size: 18px; margin: 0 0 15px 0;">💪 给' + currentUserName + '的鼓励</h2>';
+            html += '<div style="color: #831843; font-size: 15px; line-height: 1.8; white-space: pre-wrap; font-weight: 500;">' + encouragement + '</div>';
             html += '</div>';
             
             // 页脚
-            html += '<div style="text-align: center; color: #9ca3af; font-size: 11px; margin-top: 30px; padding-top: 15px; border-top: 1px solid #e5e7eb;">';
+            html += '<div style="text-align: center; color: #64748b; font-size: 12px; margin-top: 30px; padding-top: 15px; border-top: 1px solid #cbd5e1;">';
             html += 'English Planet 学习报告 | 生成时间：' + new Date().toLocaleString("zh-CN");
             html += '</div></div>';
             
