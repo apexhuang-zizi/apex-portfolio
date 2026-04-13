@@ -1648,36 +1648,36 @@
             else if (avg >= 70) encouragement = "💪 " + currentUserName + "很努力哦！每一点进步都值得骄傲！🌈";
             else encouragement = "🌱 " + currentUserName + "正在进步中！坚持就是胜利！⭐";
             
-            // 构建HTML内容
+            // 构建HTML内容 - 所有文字颜色加深确保可读
             var html = '<div style="font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; background: white;">';
             html += '<div style="text-align: center; margin-bottom: 30px;">';
-            html += '<h1 style="margin: 0; color: #1e40af; font-size: 28px;">🌟 ' + currentUserName + ' - 成绩汇总报告</h1>';
-            html += '<p style="color: #374151; margin-top: 10px; font-size: 14px;">汇总日期：' + new Date().toLocaleDateString("zh-CN") + '</p>';
+            html += '<h1 style="margin: 0; color: #1e3a8a; font-size: 28px; font-weight: bold;">🌟 ' + currentUserName + ' - 成绩汇总报告</h1>';
+            html += '<p style="color: #1f2937; margin-top: 10px; font-size: 14px; font-weight: 500;">汇总日期：' + new Date().toLocaleDateString("zh-CN") + '</p>';
             html += '</div>';
             
             // 统计概览
-            html += '<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px; margin-bottom: 25px;">';
-            html += '<h2 style="margin: 0 0 15px 0; font-size: 18px;">📊 学习概览</h2>';
+            html += '<div style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 20px; border-radius: 12px; margin-bottom: 25px;">';
+            html += '<h2 style="margin: 0 0 15px 0; font-size: 18px; font-weight: bold;">📊 学习概览</h2>';
             html += '<div style="display: flex; flex-wrap: wrap; gap: 20px;">';
-            html += '<div style="flex: 1; min-width: 100px;"><div style="font-size: 32px; font-weight: bold;">' + totalGames + '</div><div style="font-size: 13px;">挑战次数</div></div>';
-            html += '<div style="flex: 1; min-width: 100px;"><div style="font-size: 32px; font-weight: bold;">' + avg + '</div><div style="font-size: 13px;">平均分</div></div>';
-            html += '<div style="flex: 1; min-width: 100px;"><div style="font-size: 32px; font-weight: bold;">' + maxS + '</div><div style="font-size: 13px;">最高分</div></div>';
-            html += '<div style="flex: 1; min-width: 100px;"><div style="font-size: 32px; font-weight: bold;">' + accuracy + '%</div><div style="font-size: 13px;">正确率</div></div>';
+            html += '<div style="flex: 1; min-width: 100px;"><div style="font-size: 32px; font-weight: bold;">' + totalGames + '</div><div style="font-size: 14px; font-weight: 500;">挑战次数</div></div>';
+            html += '<div style="flex: 1; min-width: 100px;"><div style="font-size: 32px; font-weight: bold;">' + avg + '</div><div style="font-size: 14px; font-weight: 500;">平均分</div></div>';
+            html += '<div style="flex: 1; min-width: 100px;"><div style="font-size: 32px; font-weight: bold;">' + maxS + '</div><div style="font-size: 14px; font-weight: 500;">最高分</div></div>';
+            html += '<div style="flex: 1; min-width: 100px;"><div style="font-size: 32px; font-weight: bold;">' + accuracy + '%</div><div style="font-size: 14px; font-weight: 500;">正确率</div></div>';
             html += '</div></div>';
             
             // 历史记录表（最多20条）
             html += '<div style="margin-bottom: 25px;">';
-            html += '<h2 style="color: #1e293b; font-size: 18px; margin-bottom: 12px; border-bottom: 2px solid #3b82f6; padding-bottom: 8px;">📋 历史得分记录</h2>';
+            html += '<h2 style="color: #111827; font-size: 18px; margin-bottom: 12px; border-bottom: 3px solid #2563eb; padding-bottom: 8px; font-weight: bold;">📋 历史得分记录</h2>';
             html += '<table style="width: 100%; border-collapse: collapse; font-size: 14px;">';
-            html += '<thead><tr style="background: #2563eb; color: white;">';
-            html += '<th style="padding: 12px 8px; text-align: left;">日期</th>';
-            html += '<th style="padding: 12px 8px; text-align: left;">年级</th>';
-            html += '<th style="padding: 12px 8px; text-align: center;">得分</th>';
-            html += '<th style="padding: 12px 8px; text-align: center;">正确率</th>';
-            html += '<th style="padding: 12px 8px; text-align: center;">连击</th>';
+            html += '<thead><tr style="background: #1d4ed8; color: white;">';
+            html += '<th style="padding: 12px 8px; text-align: left; font-weight: bold;">日期</th>';
+            html += '<th style="padding: 12px 8px; text-align: left; font-weight: bold;">年级</th>';
+            html += '<th style="padding: 12px 8px; text-align: center; font-weight: bold;">得分</th>';
+            html += '<th style="padding: 12px 8px; text-align: center; font-weight: bold;">正确率</th>';
+            html += '<th style="padding: 12px 8px; text-align: center; font-weight: bold;">连击</th>';
             html += '</tr></thead><tbody>';
             
-            var displayRecords = myRecords.slice(0, 20);  // 只显示最近20条
+            var displayRecords = myRecords.slice(0, 20);
             for (var i = 0; i < displayRecords.length; i++) {
                 var r = displayRecords[i];
                 var d = null;
@@ -1685,64 +1685,64 @@
                 var dateStr = d ? (d.getMonth()+1)+"/"+d.getDate() + " " + String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0") : "--";
                 var gradeStr = (r.grade||"") + "年级" + (r.semester==="1"?"上":"下") + "册";
                 var acc = r.total > 0 ? ((r.correct/r.total)*100).toFixed(0) + "%" : "--";
-                var bg = i % 2 === 0 ? "#eff6ff" : "white";
-                var scoreColor = (r.score||0) >= 80 ? "#15803d" : (r.score||0) >= 60 ? "#a16207" : "#b91c1c";
+                var bg = i % 2 === 0 ? "#eff6ff" : "#ffffff";
+                var scoreColor = (r.score||0) >= 80 ? "#166534" : (r.score||0) >= 60 ? "#92400e" : "#b91c1c";
                 html += '<tr style="background: ' + bg + ';">';
-                html += '<td style="padding: 10px 8px; border-bottom: 1px solid #cbd5e1; color: #1e293b;">' + dateStr + '</td>';
-                html += '<td style="padding: 10px 8px; border-bottom: 1px solid #cbd5e1; color: #1e293b;">' + gradeStr + '</td>';
-                html += '<td style="padding: 10px 8px; border-bottom: 1px solid #cbd5e1; text-align: center; color: ' + scoreColor + '; font-weight: bold;">' + (r.score||0) + '</td>';
-                html += '<td style="padding: 10px 8px; border-bottom: 1px solid #cbd5e1; text-align: center; color: #334155;">' + (r.correct||0) + '/' + (r.total||0) + '</td>';
-                html += '<td style="padding: 10px 8px; border-bottom: 1px solid #cbd5e1; text-align: center; color: #334155;">🔥' + (r.maxCombo||0) + '</td>';
+                html += '<td style="padding: 10px 8px; border-bottom: 1px solid #d1d5db; color: #1f2937; font-weight: 500;">' + dateStr + '</td>';
+                html += '<td style="padding: 10px 8px; border-bottom: 1px solid #d1d5db; color: #1f2937; font-weight: 500;">' + gradeStr + '</td>';
+                html += '<td style="padding: 10px 8px; border-bottom: 1px solid #d1d5db; text-align: center; color: ' + scoreColor + '; font-weight: bold; font-size: 16px;">' + (r.score||0) + '</td>';
+                html += '<td style="padding: 10px 8px; border-bottom: 1px solid #d1d5db; text-align: center; color: #1f2937; font-weight: 500;">' + (r.correct||0) + '/' + (r.total||0) + '</td>';
+                html += '<td style="padding: 10px 8px; border-bottom: 1px solid #d1d5db; text-align: center; color: #1f2937; font-weight: 500;">🔥' + (r.maxCombo||0) + '</td>';
                 html += '</tr>';
             }
             if (myRecords.length > 20) {
-                html += '<tr><td colspan="5" style="padding: 10px; text-align: center; color: #475569;">... 还有 ' + (myRecords.length - 20) + ' 条记录</td></tr>';
+                html += '<tr><td colspan="5" style="padding: 10px; text-align: center; color: #374151; font-weight: 500;">... 还有 ' + (myRecords.length - 20) + ' 条记录</td></tr>';
             }
             html += '</tbody></table></div>';
             
             // 错词汇总（最多15条）
             html += '<div style="margin-bottom: 25px;">';
-            html += '<h2 style="color: #1e293b; font-size: 18px; margin-bottom: 12px; border-bottom: 2px solid #ea580c; padding-bottom: 8px;">❌ 错词汇总</h2>';
+            html += '<h2 style="color: #111827; font-size: 18px; margin-bottom: 12px; border-bottom: 3px solid #dc2626; padding-bottom: 8px; font-weight: bold;">❌ 错词汇总</h2>';
             if (wrongEntries.length === 0) {
-                html += '<div style="background: #dcfce7; color: #166534; padding: 20px; border-radius: 8px; text-align: center; font-size: 16px;">🎉 暂无错词记录！</div>';
+                html += '<div style="background: #d1fae5; color: #065f46; padding: 20px; border-radius: 8px; text-align: center; font-size: 16px; font-weight: bold;">🎉 暂无错词记录！</div>';
             } else {
                 html += '<table style="width: 100%; border-collapse: collapse; font-size: 14px;">';
-                html += '<thead><tr style="background: #ea580c; color: white;">';
-                html += '<th style="padding: 12px 8px; text-align: center; width: 50px;">#</th>';
-                html += '<th style="padding: 12px 8px; text-align: left;">English</th>';
-                html += '<th style="padding: 12px 8px; text-align: left;">中文</th>';
-                html += '<th style="padding: 12px 8px; text-align: center; width: 80px;">错误次数</th>';
+                html += '<thead><tr style="background: #dc2626; color: white;">';
+                html += '<th style="padding: 12px 8px; text-align: center; width: 50px; font-weight: bold;">#</th>';
+                html += '<th style="padding: 12px 8px; text-align: left; font-weight: bold;">English</th>';
+                html += '<th style="padding: 12px 8px; text-align: left; font-weight: bold;">中文</th>';
+                html += '<th style="padding: 12px 8px; text-align: center; width: 80px; font-weight: bold;">错误次数</th>';
                 html += '</tr></thead><tbody>';
                 for (var wi = 0; wi < Math.min(wrongEntries.length, 15); wi++) {
                     var we = wrongEntries[wi];
-                    var bg = wi % 2 === 0 ? "#fff7ed" : "white";
-                    var countColor = we.count >= 3 ? "#b91c1c" : "#57534e";
+                    var bg = wi % 2 === 0 ? "#fef2f2" : "#ffffff";
+                    var countColor = we.count >= 3 ? "#b91c1c" : "#374151";
                     html += '<tr style="background: ' + bg + ';">';
-                    html += '<td style="padding: 10px 8px; border-bottom: 1px solid #fed7aa; text-align: center;">' + (wi+1) + '</td>';
-                    html += '<td style="padding: 10px 8px; border-bottom: 1px solid #fed7aa; font-weight: 600;">' + we.en + '</td>';
-                    html += '<td style="padding: 10px 8px; border-bottom: 1px solid #fed7aa;">' + we.cn + '</td>';
-                    html += '<td style="padding: 10px 8px; border-bottom: 1px solid #fed7aa; text-align: center; color: ' + countColor + ';">' + we.count + '次</td>';
+                    html += '<td style="padding: 10px 8px; border-bottom: 1px solid #fca5a5; text-align: center; color: #1f2937; font-weight: 500;">' + (wi+1) + '</td>';
+                    html += '<td style="padding: 10px 8px; border-bottom: 1px solid #fca5a5; font-weight: bold; color: #111827;">' + we.en + '</td>';
+                    html += '<td style="padding: 10px 8px; border-bottom: 1px solid #fca5a5; color: #1f2937; font-weight: 500;">' + we.cn + '</td>';
+                    html += '<td style="padding: 10px 8px; border-bottom: 1px solid #fca5a5; text-align: center; color: ' + countColor + '; font-weight: bold;">' + we.count + '次</td>';
                     html += '</tr>';
                 }
                 html += '</tbody></table>';
-                html += '<p style="color: #475569; font-size: 13px; margin-top: 10px;">共 ' + totalWrongWords + ' 个错词</p>';
+                html += '<p style="color: #374151; font-size: 13px; margin-top: 10px; font-weight: 500;">共 ' + totalWrongWords + ' 个错词</p>';
             }
             html += '</div>';
             
-            // AI分析
-            html += '<div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-left: 4px solid #d97706; padding: 20px; border-radius: 0 12px 12px 0; margin-bottom: 25px;">';
-            html += '<h2 style="color: #78350f; font-size: 18px; margin: 0 0 15px 0;">🤖 AI 学习分析</h2>';
-            html += '<div style="color: #713f12; font-size: 14px; line-height: 1.8; white-space: pre-wrap;">' + aiAnalysis + '</div>';
+            // AI分析 - 深色背景确保可读
+            html += '<div style="background: #fef3c7; border-left: 5px solid #d97706; padding: 20px; border-radius: 0 12px 12px 0; margin-bottom: 25px;">';
+            html += '<h2 style="color: #78350f; font-size: 18px; margin: 0 0 15px 0; font-weight: bold;">🤖 AI 学习分析</h2>';
+            html += '<div style="color: #713f12; font-size: 14px; line-height: 1.8; white-space: pre-wrap; font-weight: 500;">' + aiAnalysis + '</div>';
             html += '</div>';
             
             // 儿童鼓励语
-            html += '<div style="background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%); border-left: 4px solid #db2777; padding: 20px; border-radius: 0 12px 12px 0; margin-bottom: 25px;">';
-            html += '<h2 style="color: #9d174d; font-size: 18px; margin: 0 0 15px 0;">💪 给' + currentUserName + '的鼓励</h2>';
-            html += '<div style="color: #831843; font-size: 15px; line-height: 1.8; font-weight: 500;">' + encouragement + '</div>';
+            html += '<div style="background: #fce7f3; border-left: 5px solid #db2777; padding: 20px; border-radius: 0 12px 12px 0; margin-bottom: 25px;">';
+            html += '<h2 style="color: #9d174d; font-size: 18px; margin: 0 0 15px 0; font-weight: bold;">💪 给' + currentUserName + '的鼓励</h2>';
+            html += '<div style="color: #831843; font-size: 16px; line-height: 1.8; font-weight: 600;">' + encouragement + '</div>';
             html += '</div>';
             
             // 页脚
-            html += '<div style="text-align: center; color: #64748b; font-size: 12px; margin-top: 30px; padding-top: 15px; border-top: 1px solid #cbd5e1;">';
+            html += '<div style="text-align: center; color: #374151; font-size: 12px; margin-top: 30px; padding-top: 15px; border-top: 1px solid #d1d5db; font-weight: 500;">';
             html += 'English Planet 学习报告 | 生成时间：' + new Date().toLocaleString("zh-CN");
             html += '</div></div>';
             
@@ -1793,67 +1793,33 @@
                 if (e.target === modal) document.body.removeChild(modal);
             };
             
-            // 下载PDF
+            // 下载PDF - 使用 html2pdf.js 直接生成
             confirmBtn.onclick = function() {
                 confirmBtn.disabled = true;
                 confirmBtn.textContent = "⏳ 生成中...";
                 
-                // 使用 html2canvas
-                html2canvas(scrollArea.firstChild, {
-                    scale: 2,
-                    useCORS: true,
-                    backgroundColor: '#ffffff',
-                    width: 800,
-                    windowWidth: 850
-                }).then(function(canvas) {
-                    console.log("Canvas生成成功:", canvas.width, "x", canvas.height);
-                    
-                    var imgData = canvas.toDataURL('image/jpeg', 0.92);
-                    var imgWidth = 190;
-                    var imgHeight = (canvas.height * imgWidth) / canvas.width;
-                    
-                    // 加载 jsPDF
-                    if (window.jspdf) {
-                        generatePDF();
-                    } else {
-                        var script = document.createElement('script');
-                        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-                        script.onload = generatePDF;
-                        document.head.appendChild(script);
-                    }
-                    
-                    function generatePDF() {
-                        try {
-                            var { jsPDF } = window.jspdf;
-                            var pdf = new jsPDF('p', 'mm', 'a4');
-                            
-                            var pageHeight = 280;
-                            var heightLeft = imgHeight;
-                            var position = 10;
-                            
-                            pdf.addImage(imgData, 'JPEG', 10, position, imgWidth, imgHeight);
-                            heightLeft -= pageHeight;
-                            
-                            while (heightLeft > 0) {
-                                position = heightLeft - imgHeight + 10;
-                                pdf.addPage();
-                                pdf.addImage(imgData, 'JPEG', 10, position, imgWidth, imgHeight);
-                                heightLeft -= pageHeight;
-                            }
-                            
-                            pdf.save("成绩汇总_" + currentUserName + "_" + new Date().toISOString().slice(0,10) + ".pdf");
-                            console.log("PDF下载成功");
-                            document.body.removeChild(modal);
-                        } catch (err) {
-                            console.error("PDF生成失败:", err);
-                            alert("PDF生成失败: " + err.message);
-                            confirmBtn.disabled = false;
-                            confirmBtn.textContent = "📥 下载PDF";
-                        }
-                    }
+                // 获取要导出的元素
+                var element = scrollArea.firstChild;
+                
+                var opt = {
+                    margin: 10,
+                    filename: "成绩汇总_" + currentUserName + "_" + new Date().toISOString().slice(0,10) + ".pdf",
+                    image: { type: 'jpeg', quality: 0.95 },
+                    html2canvas: { 
+                        scale: 2,
+                        useCORS: true,
+                        backgroundColor: '#ffffff',
+                        logging: false
+                    },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
+                
+                html2pdf().set(opt).from(element).save().then(function() {
+                    console.log("PDF下载成功");
+                    document.body.removeChild(modal);
                 }).catch(function(err) {
-                    console.error("Canvas生成失败:", err);
-                    alert("生成失败: " + err.message);
+                    console.error("PDF生成失败:", err);
+                    alert("PDF生成失败，请重试");
                     confirmBtn.disabled = false;
                     confirmBtn.textContent = "📥 下载PDF";
                 });
