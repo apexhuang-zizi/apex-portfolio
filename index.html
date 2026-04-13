@@ -626,7 +626,9 @@ function addLog(action, detail) {
 function showLogsPanel() {
     hideAllPanels();
     document.getElementById("logsPanel").classList.remove("hidden");
+    // 先显示本地日志，再从云端同步
     renderLogs();
+    loadLogsFromCloud();  // 云端同步
     window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -880,6 +882,100 @@ document.querySelectorAll(".modal").forEach(function(modal) {
 
 initData();
 checkAuth();
+</script>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script>
+// ==================== Firebase 配置 ====================
+var firebaseConfig = {
+    apiKey: "AIzaSyDvS4vtZ9r3nvZ6cPQ3Yf9lMX6qMhfp-DQ",
+    authDomain: "apex-portfolio-d7731.firebaseapp.com",
+    projectId: "apex-portfolio-d7731",
+    storageBucket: "apex-portfolio-d7731.appspot.com",
+    messagingSenderId: "1069820751896",
+    appId: "1:1069820751896:web:b7ef4e26971486c1f2410c"
+};
+firebase.initializeApp(firebaseConfig);
+var db = firebase.firestore();
+
+// ==================== 云端日志同步 ====================
+function addLog(action, detail) {
+    var username = sessionStorage.getItem("apex_username") || "未知";
+    var timestamp = new Date().toISOString();
+    var logEntry = {
+        user: username,
+        action: action,
+        detail: detail || "",
+        time: new Date().toLocaleString("zh-CN", { timeZone: "Asia/Saigon" }),
+        timestamp: timestamp
+    };
+    
+    // 1. 保存到本地
+    var logs = getLogs();
+    logs.unshift(logEntry);
+    if (logs.length > 100) logs = logs.slice(0, 100);
+    saveLogs(logs);
+    
+    // 2. 同步到 Firebase（登录/登出日志）
+    db.collection("system_logs").add(logEntry).catch(function(err) {
+        console.warn("日志云端同步失败:", err.message);
+    });
+}
+
+// 从云端加载日志（用于日志面板显示）
+function loadLogsFromCloud() {
+    db.collection("system_logs")
+        .orderBy("timestamp", "desc")
+        .limit(100)
+        .get()
+        .then(function(querySnapshot) {
+            var cloudLogs = [];
+            querySnapshot.forEach(function(doc) {
+                cloudLogs.push(doc.data());
+            });
+            // 合并云端日志到本地（去重）
+            var localLogs = getLogs();
+            var merged = mergeLogs(localLogs, cloudLogs);
+            saveLogs(merged);
+            renderLogs();
+        })
+        .catch(function(err) {
+            console.warn("加载云端日志失败:", err.message);
+        });
+}
+
+// 日志去重合并（按 timestamp + user + action）
+function mergeLogs(local, cloud) {
+    var keySet = {};
+    var result = [];
+    
+    // 先加入云端日志
+    cloud.forEach(function(log) {
+        var key = (log.timestamp || "") + "_" + (log.user || "") + "_" + (log.action || "");
+        if (!keySet[key]) {
+            keySet[key] = true;
+            result.push(log);
+        }
+    });
+    
+    // 再加入本地日志（云端没有的）
+    local.forEach(function(log) {
+        var key = (log.timestamp || "") + "_" + (log.user || "") + "_" + (log.action || "");
+        if (!keySet[key]) {
+            keySet[key] = true;
+            result.push(log);
+        }
+    });
+    
+    // 按时间排序
+    result.sort(function(a, b) {
+        return new Date(b.timestamp || b.time) - new Date(a.timestamp || a.time);
+    });
+    
+    return result.slice(0, 100);
+}
 </script>
 </body>
 
