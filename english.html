@@ -482,6 +482,197 @@
         
         .hidden { display: none !important; }
         
+        /* ========== 手机端响应式样式 ========== */
+        @media screen and (max-width: 768px) {
+            /* 顶部栏 */
+            .topbar {
+                padding: 10px 12px;
+            }
+            .topbar h1 {
+                font-size: 16px;
+            }
+            .user-info {
+                font-size: 12px;
+            }
+            .user-avatar {
+                width: 28px;
+                height: 28px;
+                font-size: 12px;
+            }
+            
+            /* 隐藏左右侧栏 */
+            .sidebar-left,
+            .sidebar-right {
+                display: none !important;
+            }
+            
+            /* 内容区全宽 */
+            .content-area {
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+                padding: 80px 12px 24px !important;
+                width: 100% !important;
+            }
+            
+            /* Tab导航 */
+            .tab-nav-wrapper {
+                left: 0 !important;
+                right: 0 !important;
+                padding: 0 8px;
+            }
+            .tab-nav {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                gap: 6px;
+                padding: 8px 0;
+            }
+            .tab-btn {
+                padding: 8px 12px;
+                font-size: 12px;
+                white-space: nowrap;
+                flex-shrink: 0;
+            }
+            
+            /* 选择器 - 垂直布局 */
+            .selector-group {
+                flex-direction: column;
+                gap: 6px;
+                width: 100%;
+            }
+            .selector-row {
+                flex-direction: column;
+                gap: 12px;
+                width: 100%;
+            }
+            .selector-row .selector-group {
+                width: 100%;
+            }
+            .selector-label {
+                font-size: 13px;
+                margin-bottom: 6px;
+            }
+            .selector-btn {
+                padding: 10px 14px;
+                font-size: 13px;
+                flex: 1;
+            }
+            /* 年级按钮横向排列 */
+            .selector-group:not(.selector-row .selector-group) {
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+            .selector-group:not(.selector-row .selector-group) .selector-btn {
+                flex: 1 1 calc(50% - 6px);
+                max-width: calc(50% - 6px);
+            }
+            
+            /* 单元选择器优化 */
+            #unitSelector {
+                display: flex !important;
+                flex-wrap: wrap;
+                gap: 6px;
+                width: 100% !important;
+            }
+            #unitSelector .selector-label {
+                width: 100%;
+            }
+            .selector-unit-btn {
+                padding: 6px 10px;
+                font-size: 12px;
+                flex: 1 1 auto;
+                min-width: 50px;
+            }
+            
+            /* 游戏卡片 */
+            .game-card {
+                padding: 20px 16px;
+                margin: 0 -4px;
+                border-radius: 16px;
+            }
+            .stats-bar {
+                gap: 20px;
+                margin-bottom: 20px;
+            }
+            .stat-value {
+                font-size: 28px;
+            }
+            .stat-label {
+                font-size: 11px;
+            }
+            .word-cn {
+                font-size: 32px;
+            }
+            .word-hint {
+                font-size: 13px;
+            }
+            .word-input {
+                font-size: 24px;
+                padding: 14px 16px;
+            }
+            
+            /* 结果卡片 */
+            .result-score {
+                font-size: 48px;
+            }
+            .result-breakdown {
+                gap: 10px;
+            }
+            .breakdown-value {
+                font-size: 20px;
+            }
+            .breakdown-label {
+                font-size: 10px;
+            }
+            
+            /* 开始按钮 */
+            .btn-primary {
+                padding: 14px 28px;
+                font-size: 16px;
+            }
+            
+            /* 历史项 */
+            .history-item {
+                padding: 10px;
+            }
+            .history-score {
+                font-size: 18px;
+            }
+            .history-meta {
+                font-size: 10px;
+            }
+            
+            /* 汇总按钮 */
+            .summary-btn {
+                padding: 4px 8px;
+                font-size: 11px;
+            }
+        }
+        
+        /* 超小屏幕 */
+        @media screen and (max-width: 480px) {
+            .topbar h1 {
+                font-size: 14px;
+            }
+            .back-btn {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+            .word-cn {
+                font-size: 26px;
+            }
+            .word-input {
+                font-size: 20px;
+                padding: 12px 14px;
+            }
+            .stat-value {
+                font-size: 24px;
+            }
+            .selector-group:not(.selector-row .selector-group) .selector-btn {
+                flex: 1 1 100%;
+                max-width: 100%;
+            }
+        }
+        
         /* 响应式 */
         @media (max-width: 1000px) {
             .sidebar-left, .sidebar-right, .tab-nav-wrapper { display: none; }
