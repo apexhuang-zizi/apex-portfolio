@@ -1475,9 +1475,13 @@
             renderHistoryQuest(localRecords);  // 立即渲染本地数据
             
             // Step 2: 后台从 Firebase 查询（跨设备记录，只读展示，不合并回 localStorage）
+            // 注意：不使用 orderBy 避免索引问题，直接按时间戳过滤
+            var oneWeekAgo = new Date();
+            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+            
             db.collection("english_records")
                 .where("type", "==", "word-quest")
-                .orderBy("timestamp", "desc")
+                .where("timestamp", ">=", oneWeekAgo.toISOString())
                 .limit(200)
                 .get()
                 .then(function(snap) {
@@ -1499,6 +1503,8 @@
                         var k = fbTsToIso(r.timestamp) + "_" + (r.score || "");
                         return !localKeys[k];
                     });
+                    
+                    console.log("Firebase同步: 本地" + localRecords.length + "条, 云端" + fbRecords.length + "条, 新增" + newFromFb.length + "条");
                     
                     // 合并：本地记录 + 跨设备新记录，统一转 ISO 时间戳
                     var merged = localRecords.concat(newFromFb.map(function(r) {
