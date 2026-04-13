@@ -602,7 +602,7 @@
                     <h4>📊 100分满分计算</h4>
                     <div class="rule-line">正确率得分 = (正确数÷总题数) × <strong>80</strong></div>
                     <div class="rule-line">连击奖励 = min(最高连击, <strong>10</strong>)</div>
-                    <div class="rule-line">时间奖励 = (剩余秒÷180) × <strong>10</strong></div>
+                    <div class="rule-line">时间奖励 = 答对题数 × <strong>0.2</strong>（最高<strong>10</strong>分）</div>
                     <div class="rule-line" style="color:var(--accent)">总分 = 三项相加（满分100）</div>
                 </div>
                 <div class="rule-block">
@@ -1167,8 +1167,9 @@
         
         function renderHistoryQuest(records) {
             // 获取当前用户是否为管理员
-            var currentUser = localStorage.getItem("quest_current_user");
-            var isAdmin = currentUser === "apex" || currentUser === "admin";
+            var currentUserName = sessionStorage.getItem("apex_username");
+            var currentUserRole = sessionStorage.getItem("apex_role");
+            var isAdmin = currentUserRole === "admin" || currentUserName === "apex";
             var html="";
             for(var i=0;i<records.length;i++){
                 var r=records[i];
