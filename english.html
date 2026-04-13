@@ -1070,63 +1070,84 @@
             local.unshift(record);
             if(local.length > 50) local = local.slice(0, 50);
             localStorage.setItem("quest_history_all", JSON.stringify(local));
-            // 2. 同时尝试上传到 Firebase
+            // 立即渲染（本地已够用，不需要等 Firebase）
+            loadHistoryQuest();
+            
+            // 2. 同时尝试上传到 Firebase（静默后台，不影响显示）
             db.collection("english_records").add({
                 ...record,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(function() {
-                // Firebase 成功后刷新（保持同步）
-                loadHistoryQuest();
             }).catch(function(err){
-                console.warn("Firebase上传失败（数据已保存在本地）:", err.message);
-                // Firebase 失败也刷新（显示本地缓存）
-                loadHistoryQuest();
+                console.warn("Firebase上传失败（本地已保存）:", err.message);
             });
-            // 立即刷新历史显示（本地优先）
-            loadHistoryQuest();
+        }
+        
+        // ========== 历史得分：localStorage 永久优先，Firebase 增量合并 ==========
+        
+        // 合并两条记录（用于判断是否重复）
+        function recordsEqual(a, b) {
+            return a.timestamp === b.timestamp &&
+                   a.score === b.score &&
+                   a.user === b.user &&
+                   a.grade === b.grade;
         }
         
         function loadHistoryQuest() {
+            // Step 1: 立即从 localStorage 读取并显示（永远优先）
             var local = localStorage.getItem("quest_history_all");
-            if(local){
-                var records = JSON.parse(local);
-                // 旧记录没有 user 字段，补上当前用户名（本地先修复显示）
-                for(var i=0;i<records.length;i++){
-                    if(!records[i].user && currentUser){
-                        records[i].user = currentUser.username;
-                    }
+            var localRecords = local ? JSON.parse(local) : [];
+            // 旧记录没有 user 字段才补（只读修改，不改变来源）
+            for(var i=0;i<localRecords.length;i++){
+                if(!localRecords[i].user){
+                    localRecords[i].user = "未知用户";
                 }
-                localStorage.setItem("quest_history_all", JSON.stringify(records));
-                renderHistoryQuest(records);
             }
-            // 同时尝试从 Firebase 加载（云端同步）
+            localStorage.setItem("quest_history_all", JSON.stringify(localRecords));
+            renderHistoryQuest(localRecords);  // 立即渲染本地数据
+            
+            // Step 2: 后台从 Firebase 增量同步（只添加本地没有的记录，不覆盖）
             db.collection("english_records")
                 .where("type","==","word-quest")
                 .orderBy("timestamp","desc")
                 .limit(50)
                 .get()
                 .then(function(snap){
-                    var records = [];
-                    snap.forEach(function(doc){
-                        var r=doc.data();
-                        records.push(r);
+                    if(snap.empty) return;  // Firebase 空，直接用本地
+                    
+                    var fbRecords = [];
+                    snap.forEach(function(doc){ fbRecords.push(doc.data()); });
+                    
+                    // 增量合并：只把本地没有的记录加进来（避免重复）
+                    var changed = false;
+                    var localIds = {};  // 用 timestamp+score 做 key 去重
+                    localRecords.forEach(function(r){
+                        var key = (r.timestamp||"") + "_" + (r.score||"");
+                        localIds[key] = true;
                     });
-                    // 只有 Firebase 返回数据时才更新（避免覆盖本地已有记录）
-                    if(records.length > 0){
-                        // 补上用户名
-                        for(var i=0;i<records.length;i++){
-                            if(!records[i].user && currentUser){
-                                records[i].user = currentUser.username;
-                            }
+                    
+                    fbRecords.forEach(function(r){
+                        var key = (r.timestamp||"") + "_" + (r.score||"");
+                        if(!localIds[key]){
+                            localRecords.push(r);
+                            changed = true;
                         }
-                        localStorage.setItem("quest_history_all", JSON.stringify(records));
-                        renderHistoryQuest(records);
+                    });
+                    
+                    // 按时间倒序，保存回 localStorage，再重新渲染
+                    if(changed){
+                        localRecords.sort(function(a,b){
+                            var ta = a.timestamp ? new Date(a.timestamp) : new Date(0);
+                            var tb = b.timestamp ? new Date(b.timestamp) : new Date(0);
+                            return tb - ta;
+                        });
+                        localRecords = localRecords.slice(0, 50);  // 最多50条
+                        localStorage.setItem("quest_history_all", JSON.stringify(localRecords));
+                        renderHistoryQuest(localRecords);
                     }
-                    // 如果 Firebase 为空，保留本地缓存（不重新渲染）
                 })
                 .catch(function(err){
-                    console.warn("Firebase读取失败，使用本地缓存:", err.message);
-                    // Firebase 失败时使用本地缓存（已在上面显示）
+                    // Firebase 查询失败 → 本地缓存已在 Step1 显示了，无影响
+                    console.warn("Firebase同步失败（本地缓存已显示）:", err.message);
                 });
         }
         
@@ -1182,8 +1203,8 @@
         // ==================== 页面初始化 ====================
         window.onload = function(){
             if(checkLogin()) {
-                loadHistoryQuest();
-                initVocabDatabase();
+                loadHistoryQuest();   // 同步读取 localStorage，立即渲染
+                // initVocabDatabase() 是纯后台操作，不影响页面显示，无需 await
             }
         };
     </script>
