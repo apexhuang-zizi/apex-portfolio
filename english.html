@@ -1574,25 +1574,31 @@
             html += 'English Planet 学习报告 | 生成时间：' + new Date().toLocaleString("zh-CN");
             html += '</div></div>';
             
-            // 创建临时容器
+            // 创建临时容器（需要在可视区域才能被html2canvas正确渲染）
             var container = document.createElement("div");
             container.id = "pdf-container";
-            container.style.cssText = "position: fixed; left: -9999px; top: 0; width: 800px; background: white;";
+            container.style.cssText = "position: fixed; left: 0; top: 0; width: 800px; background: white; z-index: 9999; overflow: auto; max-height: 100vh;";
             container.innerHTML = html;
             document.body.appendChild(container);
             
-            // 生成PDF
-            var opt = {
-                margin: 10,
-                filename: "成绩汇总_" + currentUserName + "_" + new Date().toISOString().slice(0,10) + ".pdf",
-                image: { type: "jpeg", quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true },
-                jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
-            };
-            
-            html2pdf().set(opt).from(container).save().then(function() {
-                document.body.removeChild(container);
-            });
+            // 等待渲染完成后生成PDF
+            setTimeout(function() {
+                var opt = {
+                    margin: 10,
+                    filename: "成绩汇总_" + currentUserName + "_" + new Date().toISOString().slice(0,10) + ".pdf",
+                    image: { type: "jpeg", quality: 0.98 },
+                    html2canvas: { scale: 2, useCORS: true, logging: false },
+                    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+                };
+                
+                html2pdf().set(opt).from(container).save().then(function() {
+                    document.body.removeChild(container);
+                }).catch(function(err) {
+                    console.error("PDF生成失败:", err);
+                    document.body.removeChild(container);
+                    alert("PDF生成失败，请重试");
+                });
+            }, 100);
         }
 
         // ==================== 输入监听 ====================
