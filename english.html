@@ -1595,16 +1595,15 @@
             html += 'English Planet 学习报告 | 生成时间：' + new Date().toLocaleString("zh-CN");
             html += '</div></div>';
             
-            // 创建临时容器（需要在可视区域才能被html2canvas正确渲染）
+            // 创建临时容器
             var container = document.createElement("div");
             container.id = "pdf-container";
-            container.style.cssText = "position: fixed; left: 0; top: 0; width: 800px; background: white; z-index: 9999; overflow: auto; max-height: 100vh;";
+            container.style.cssText = "position: fixed; left: 0; top: 0; width: 800px; background: white; z-index: 9999; padding: 20px; box-sizing: border-box;";
             container.innerHTML = html;
             document.body.appendChild(container);
             
-            // 等待渲染完成后生成PDF
+            // 等待渲染完成后显示按钮
             setTimeout(function() {
-                // 添加确认按钮
                 var btnBar = document.createElement("div");
                 btnBar.style.cssText = "position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 10000; display: flex; gap: 12px;";
                 
@@ -1613,35 +1612,56 @@
                 confirmBtn.style.cssText = "padding: 14px 28px; font-size: 16px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 12px rgba(59,130,246,0.4);";
                 confirmBtn.onclick = function() {
                     confirmBtn.disabled = true;
-                    confirmBtn.textContent = "⏳ 正在生成...";
+                    confirmBtn.textContent = "⏳ 正在生成PDF...";
                     
-                    // 重要：需要重新设置html2canvas选项确保完整渲染
-                    var opt = {
-                        margin: 10,
-                        filename: "成绩汇总_" + currentUserName + "_" + new Date().toISOString().slice(0,10) + ".pdf",
-                        image: { type: "jpeg", quality: 0.98 },
-                        html2canvas: { 
-                            scale: 2, 
-                            useCORS: true, 
-                            logging: false,
-                            windowWidth: 850,
-                            windowHeight: container.scrollHeight + 100
-                        },
-                        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
-                    };
-                    
-                    // 先确保容器完全渲染，再生成PDF
-                    requestAnimationFrame(function() {
-                        html2pdf().set(opt).from(container).toPdf().get('pdf').then(function(pdf) {
-                            pdf.save(opt.filename);
+                    // 使用 html2canvas 直接截图，然后用 jsPDF 生成
+                    html2canvas(container, {
+                        scale: 2,
+                        useCORS: true,
+                        logging: true,  // 开启日志调试
+                        backgroundColor: '#ffffff',
+                        width: 800,
+                        windowWidth: 850
+                    }).then(function(canvas) {
+                        console.log("Canvas生成成功:", canvas.width, "x", canvas.height);
+                        
+                        var imgData = canvas.toDataURL('image/jpeg', 0.95);
+                        var imgWidth = 190; // A4宽度减去边距
+                        var imgHeight = (canvas.height * imgWidth) / canvas.width;
+                        
+                        // 动态加载 jsPDF
+                        var script = document.createElement('script');
+                        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+                        script.onload = function() {
+                            var { jsPDF } = window.jspdf;
+                            var pdf = new jsPDF('p', 'mm', 'a4');
+                            
+                            // 如果内容超过一页，分页处理
+                            var pageHeight = 280;
+                            var heightLeft = imgHeight;
+                            var position = 10;
+                            
+                            pdf.addImage(imgData, 'JPEG', 10, position, imgWidth, imgHeight);
+                            heightLeft -= pageHeight;
+                            
+                            while (heightLeft > 0) {
+                                position = heightLeft - imgHeight + 10;
+                                pdf.addPage();
+                                pdf.addImage(imgData, 'JPEG', 10, position, imgWidth, imgHeight);
+                                heightLeft -= pageHeight;
+                            }
+                            
+                            pdf.save("成绩汇总_" + currentUserName + "_" + new Date().toISOString().slice(0,10) + ".pdf");
+                            
                             document.body.removeChild(container);
                             document.body.removeChild(btnBar);
-                        }).catch(function(err) {
-                            console.error("PDF生成失败:", err);
-                            confirmBtn.disabled = false;
-                            confirmBtn.textContent = "📥 确认下载PDF";
-                            alert("PDF生成失败，请重试");
-                        });
+                        };
+                        document.head.appendChild(script);
+                    }).catch(function(err) {
+                        console.error("Canvas生成失败:", err);
+                        confirmBtn.disabled = false;
+                        confirmBtn.textContent = "📥 确认下载PDF";
+                        alert("PDF生成失败: " + err.message);
                     });
                 };
                 
@@ -1656,7 +1676,7 @@
                 btnBar.appendChild(confirmBtn);
                 btnBar.appendChild(cancelBtn);
                 document.body.appendChild(btnBar);
-            }, 100);
+            }, 200);
         }
 
         // ==================== 输入监听 ====================
