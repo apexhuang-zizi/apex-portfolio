@@ -168,6 +168,8 @@
         .history-score { font-size: 22px; font-weight: 700; margin-bottom: 2px; }
         .history-meta { font-size: 11px; color: var(--text-muted); line-height: 1.5; }
         .history-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+        .history-del-btn { cursor: pointer; padding: 4px 8px; border-radius: 6px; background: rgba(239, 68, 68, 0.2); color: #ef4444; font-size: 12px; }
+        .history-del-btn:hover { background: rgba(239, 68, 68, 0.4); }
         .history-wrong { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px; }
         .wrong-word-btn { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4); color: #f87171; padding: 2px 8px; border-radius: 12px; font-size: 11px; cursor: pointer; transition: all 0.2s; }
         .wrong-word-btn:hover { background: rgba(239,68,68,0.3); transform: scale(1.05); }
@@ -1006,7 +1008,7 @@
             var acc=G.total>0 ? G.correct/G.total : 0;
             var accScore=Math.round(acc*80);
             var comboScore=Math.min(G.maxCombo,10);
-            var timeScore=Math.round(G.time/180*10);
+            var timeScore=Math.min(Math.round(G.correct*0.2),10);  // 每对一个单词0.2分，最高10分
             var score=accScore+comboScore+timeScore;
             var wrongCount = G.total - G.correct;
             
@@ -1164,6 +1166,9 @@
         }
         
         function renderHistoryQuest(records) {
+            // 获取当前用户是否为管理员
+            var currentUser = localStorage.getItem("quest_current_user");
+            var isAdmin = currentUser === "apex" || currentUser === "admin";
             var html="";
             for(var i=0;i<records.length;i++){
                 var r=records[i];
@@ -1174,16 +1179,27 @@
                 var c=r.score>=90?"var(--success)":r.score>=70?"var(--accent)":"var(--text-muted)";
                 var wrongWords = r.wrongWords || [];
                 var wrongHtml = wrongWords.map(function(w){return '<span class="wrong-word-btn" onclick="speakWord(\''+w.replace(/'/g,"\\'")+'\')">🔊 '+w+'</span>';}).join('');
-                html+='<div class="history-item" style="cursor:pointer;">';
+                var delBtn = isAdmin ? '<span class="history-del-btn" onclick="deleteHistoryRecord(\''+fbTsToIso(r.timestamp)+'_'+(r.score||0)+'\')">🗑️</span>' : '';
+                html+='<div class="history-item">';
                 html+='  <div class="history-top">';
                 html+='    <span class="history-grade">'+(r.grade||"")+'年级'+(r.semester==="1"?"上":"下")+'册</span>';
                 html+='    <span class="history-score" style="color:'+c+'">'+(r.score||0)+'分</span>';
+                html+='    '+delBtn;
                 html+='  </div>';
                 html+='  <div class="history-meta">👤 '+(r.user||"--")+' · '+(r.correct||0)+'/'+(r.total||0)+'题 · '+date+' '+time+'</div>';
                 html+='  <div class="history-wrong" id="hw'+i+'">'+(wrongWords.length>0?wrongHtml:'<span style="color:var(--text-muted);font-size:11px;">全对 👍</span>')+'</div>';
                 html+='</div>';
             }
             document.getElementById("history-quest").innerHTML=html||'<div style="color:var(--text-muted);font-size:13px;padding:12px;">暂无记录，开始挑战吧！</div>';
+        }
+        
+        // 管理员删除单条历史记录
+        function deleteHistoryRecord(key) {
+            if(!confirm("确定删除这条记录？")) return;
+            var local = JSON.parse(localStorage.getItem("quest_history_all") || "[]");
+            local = local.filter(function(r){ return fbTsToIso(r.timestamp)+"_"+(r.score||0) !== key; });
+            localStorage.setItem("quest_history_all", JSON.stringify(local));
+            loadHistoryQuest();  // 重新渲染
         }
         
         function loadHistoryEcho() {
