@@ -1452,7 +1452,7 @@
             });
         }
         
-        // ========== 历史得分：localStorage（当前设备）+ Firebase（跨设备同步） ==========
+        // ========== 历史得分：localStorage（当前设备）+ Firebase（跨设备只读展示） ==========
         
         // Firebase Timestamp 统一转为 ISO 字符串
         function fbTsToIso(ts) {
@@ -1463,30 +1463,22 @@
             return "";
         }
         
-        // 生成记录唯一 key（防重复），暴露到 window 供 onclick 共用
-        function recordKey(r) {
-            return (r.user || r.username || "") + "|" + fbTsToIso(r.timestamp) + "|" + (r.score || 0);
-        }
-        window.recordKey = recordKey;
-        
         function loadHistoryQuest() {
             // Step 1: 立即从 localStorage 读取并显示（当前设备记录，永远优先）
             var local = localStorage.getItem("quest_history_all");
             var localRecords = local ? JSON.parse(local) : [];
-            // 规范化：补字段、保证时间戳是 ISO 字符串
+            // 规范化：旧记录补 user 字段，时间戳统一为 ISO 字符串
             for (var i = 0; i < localRecords.length; i++) {
                 if (!localRecords[i].user) localRecords[i].user = "未知用户";
                 localRecords[i].timestamp = fbTsToIso(localRecords[i].timestamp);
             }
-            // ★ 重写回（规范化字段）+ 立即渲染
             localStorage.setItem("quest_history_all", JSON.stringify(localRecords));
-            renderHistoryQuest(localRecords);  // 立即渲染
+            renderHistoryQuest(localRecords);  // 立即渲染本地数据
             
-            // Step 2: 后台从 Firebase 同步（按最新时间排序，最多取500条，30天内的）
-            // ★ 关键：加了 orderBy("timestamp","desc") 保证取到最新的记录
+            // Step 2: 后台从 Firebase 查询（跨设备记录）
+            // 简单查询：只按 type 过滤，获取最近记录后本地过滤
             db.collection("english_records")
                 .where("type", "==", "word-quest")
-                .orderBy("timestamp", "desc")
                 .limit(500)
                 .get()
                 .then(function(snap) {
@@ -1498,46 +1490,54 @@
                     var fbRecords = [];
                     snap.forEach(function(doc) { fbRecords.push(doc.data()); });
                     
-                    // ★ 改为30天（移动端老数据也能看到）
-                    var thirtyDaysAgo = new Date();
-                    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-                    var cutoffIso = thirtyDaysAgo.toISOString();
+                    // 本地过滤：只保留7天内的记录
+                    var oneWeekAgo = new Date();
+                    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+                    var weekAgoIso = oneWeekAgo.toISOString();
                     
                     fbRecords = fbRecords.filter(function(r) {
                         var ts = fbTsToIso(r.timestamp);
-                        return ts >= cutoffIso;
+                        return ts >= weekAgoIso;
                     });
                     
-                    // 构建 key 集合（本地 + Firebase）
-                    var allKeys = {};
-                    localRecords.forEach(function(r) { allKeys[recordKey(r)] = true; });
+                    // 构建 Firebase key 集合（用 username + timestamp + score 去重，多用户不混淆）
+                    var fbKeys = {};
+                    fbRecords.forEach(function(r) { fbKeys[(r.username||"") + "_" + fbTsToIso(r.timestamp) + "_" + (r.score || "")] = true; });
                     
-                    // ★ 合并：只取本地没有的记录
+                    // 构建本地 key 集合
+                    var localKeys = {};
+                    localRecords.forEach(function(r) { localKeys[(r.user||"") + "_" + fbTsToIso(r.timestamp) + "_" + (r.score || "")] = true; });
+                    
+                    // 筛选出本地没有的记录
                     var newFromFb = fbRecords.filter(function(r) {
-                        return !allKeys[recordKey(r)];
+                        var k = (r.username||"") + "_" + fbTsToIso(r.timestamp) + "_" + (r.score || "");
+                        return !localKeys[k];
                     });
                     
-                    console.log("Firebase同步: 云端" + fbRecords.length + "条(30天内), 本地" + localRecords.length + "条, 新增" + newFromFb.length + "条");
+                    console.log("Firebase同步: 云端" + fbRecords.length + "条(7天内), 本地" + localRecords.length + "条, 新增" + newFromFb.length + "条");
                     
-                    // 合并并排序（按最新时间倒序，最多200条）
+                    // 合并
                     var merged = localRecords.concat(newFromFb.map(function(r) {
                         r.timestamp = fbTsToIso(r.timestamp);
-                        r.user = r.user || r.username || "未知用户";
+                        r.user = r.user || r.username || "未知用户";  // 统一user字段
                         return r;
                     }));
+                    
+                    // 按时间倒序
                     merged.sort(function(a, b) {
                         return new Date(fbTsToIso(b.timestamp) || 0) - new Date(fbTsToIso(a.timestamp) || 0);
                     });
                     merged = merged.slice(0, 200);
                     
-                    // ★ 合并结果写回 localStorage 持久化
+                    // ★ 关键：合并结果写回 localStorage 持久化，避免下次加载丢失
                     localStorage.setItem("quest_history_all", JSON.stringify(merged));
+                    
+                    // 重新渲染
                     renderHistoryQuest(merged);
                 })
                 .catch(function(err) {
                     console.warn("Firebase同步失败:", err.message);
                 });
-        }
         }
         
         function renderHistoryQuest(records) {
@@ -1555,7 +1555,7 @@
                 var c=r.score>=90?"var(--success)":r.score>=70?"var(--accent)":"var(--text-muted)";
                 var wrongWords = r.wrongWords || [];
                 var wrongHtml = wrongWords.map(function(w){return '<span class="wrong-word-btn" onclick="speakWord(\''+w.replace(/'/g,"\\'")+'\')">🔊 '+w+'</span>';}).join('');
-                var delBtn = isAdmin ? '<span class="history-del-btn" onclick="deleteHistoryRecord(\''+(r.user||"")+'|'+fbTsToIso(r.timestamp)+'|'+(r.score||0)+'\')">🗑️</span>' : '';
+                var delBtn = isAdmin ? '<span class="history-del-btn" onclick="deleteHistoryRecord(\''+(r.user||"")+'_'+fbTsToIso(r.timestamp)+'_'+(r.score||0)+'\')">🗑️</span>' : '';
                 html+='<div class="history-item">';
                 html+='  <div class="history-top">';
                 html+='    <span class="history-grade">'+(r.grade||"")+'年级'+(r.semester==="1"?"上":"下")+'册</span>';
@@ -1573,7 +1573,7 @@
         function deleteHistoryRecord(key) {
             if(!confirm("确定删除这条记录？")) return;
             var local = JSON.parse(localStorage.getItem("quest_history_all") || "[]");
-            local = local.filter(function(r){ return (r.user||"")+"|"+fbTsToIso(r.timestamp)+"|"+(r.score||0) !== key; });
+            local = local.filter(function(r){ return (r.user||"")+"_"+fbTsToIso(r.timestamp)+"_"+(r.score||0) !== key; });
             localStorage.setItem("quest_history_all", JSON.stringify(local));
             loadHistoryQuest();  // 重新渲染
         }
