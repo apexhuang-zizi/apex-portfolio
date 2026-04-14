@@ -495,14 +495,18 @@ var speechSynthesis = window.speechSynthesis;
 var currentUtterance = null;
 var isPlaying = false;
 
-// 收集并缓存越南语语音列表
+// 收集并缓存越南语语音列表（本地语音优先，本地语音支持pitch/rate调整）
 var _viVoices = null;
 function getVietnameseVoices() {
     if (_viVoices) return _viVoices;
     var all = speechSynthesis.getVoices();
-    _viVoices = all.filter(function(v) {
+    var viAll = all.filter(function(v) {
         return v.lang && (v.lang.startsWith('vi') || v.lang === 'vi');
     });
+    // 本地语音排前面（支持pitch/rate），远程语音排后面（不支持pitch/rate）
+    var local = viAll.filter(function(v) { return v.localService; });
+    var remote = viAll.filter(function(v) { return !v.localService; });
+    _viVoices = local.concat(remote);
     return _viVoices;
 }
 
@@ -559,7 +563,8 @@ window.listViVoices = function() {
     console.log('越南语语音数量:', viVoices.length);
     viVoices.forEach(function(v) {
         var gender = isFemaleVoice(v) ? '♀女' : isMaleVoice(v) ? '♂男' : '?未知';
-        console.log(gender, v.name, '|', v.lang, '|', v.voiceURI);
+        var src = v.localService ? '📱本地' : '☁️在线';
+        console.log(gender, src, v.name, '|', v.lang, '|', v.voiceURI);
     });
 };
 
