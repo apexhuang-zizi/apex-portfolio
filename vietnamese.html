@@ -71,6 +71,16 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
 .form-group textarea{min-height:200px}
 .form-group textarea:focus,.form-group input:focus{outline:none;border-color:var(--primary)}
 .form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+/* 筛选器样式 */
+.filter-bar{background:linear-gradient(135deg,#eef2ff 0%,#f0fdf4 50%,#fefce8 100%);border-radius:12px;box-shadow:var(--shadow);padding:16px 20px;margin-bottom:16px;border:1px solid #e0e7ff}
+.filter-bar .filter-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.filter-bar .filter-total{font-size:.9rem;color:var(--text-muted)}
+.filter-bar .filter-total strong{color:var(--primary);font-size:1.1rem}
+.filter-tags{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.filter-tag{padding:6px 14px;border-radius:20px;border:1px solid #c7d2fe;background:#fff;font-size:.8rem;cursor:pointer;transition:all .2s;font-family:inherit;color:var(--text)}
+.filter-tag:hover{border-color:var(--primary);color:var(--primary);background:#eff6ff}
+.filter-tag.active{background:linear-gradient(135deg,#6366f1,#2563eb);color:#fff;border-color:transparent;box-shadow:0 2px 8px rgba(99,102,241,.3)}
+.filter-tag .tag-count{margin-left:4px;font-size:.7rem;opacity:.8}
 .empty-state{text-align:center;padding:60px 20px;color:var(--text-muted)}
 .empty-state .icon{font-size:3rem;margin-bottom:12px}
 .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
@@ -105,6 +115,14 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-
 </div>
 
 <div class="container">
+<div class="filter-bar" id="filterBar" style="display:none">
+  <div class="filter-header">
+    <span class="filter-total">共 <strong id="totalCount">0</strong> 篇对话</span>
+    <span id="filterInfo" style="font-size:.8rem;color:var(--text-muted);display:none">当前筛选：<strong id="filterLabel"></strong></span>
+  </div>
+  <div class="filter-tags" id="filterTags"></div>
+</div>
+
 <div class="add-form" id="addForm">
 <h3>新增对话 / Them hoi thoai moi</h3>
 <div class="form-group"><label>日期 / Ngay</label><input type="date" id="addDate"></div>
@@ -184,6 +202,121 @@ var defaultDialogues = [
 
 var dialogues = [];
 var deleteTarget = -1;
+var currentFilter = 'all'; // 当前筛选分类
+var dialogueCategories = {}; // 每条对话的分类缓存
+
+// 分类关键词映射（越南语关键词 → 中文分类名）
+var categoryKeywords = {
+  '餐饮/购物': ['cà phê','ăn','uống','quán','mua','bán','giá','tiền','đồ ăn','thực đơn','đặt bàn','phục vụ','tính tiền','khách','đồ uống','bánh','cơm','phở','bún','nước','hóa đơn','thanh toán','trà','sữa','chua','ngọt','đắng','bánh mì','gọi món','nhà hàng','cafe','restaurant','coffee','shop','store','menu','bill','order'],
+  '出行/交通': ['sân bay','máy bay','vé','chuyến bay','xe','taxi','bus','đi','đến','ga','khách sạn','phòng','đặt phòng','nơi ở','đường','phố','bản đồ','quê','về','lại','dắt xe','bãi đậu','xe máy','ô tô',' tàu','đò','cảng','bay','hành lý','vali','chuyến','check-in','passport','hộ chiếu'],
+  '工作/职场': ['họp','công việc','làm','công ty','đồng nghiệp','sếp','lương','phòng ban','dự án','deadline','phỏng vấn','xin việc','cv','công','nhân viên','quản lý','giám đốc','tuyển','thử việc','ký hợp đồng','phúc lợi','tăng ca','nghỉ','phép','tháng','tuần','kế hoạch','báo cáo','tiến độ','kết quả','thành tích'],
+  '社交/日常': ['chào','hẹn','bạn','bè','tự nhiên','thời tiết','nói chuyện','gặp','cuối tuần','phim','nhạc','xem','chơi','thể thao','bóng đá','gia đình','anh chị','em','ông bà','con cái','mẹ cha','bác','cậu','dì','chú','cô','sinh nhật','tiệc','đám cưới','kỷ niệm','cảm ơn','xin lỗi','tạm biệt','giúp','hỏi','trả lời'],
+  '金融/银行': ['ngân hàng','tài khoản','thẻ','gửi','rút','chuyển','tiền','vay','trả góp','lãi suất','atm','pin','mật khẩu','sổ tiết kiệm','thanh toán','chuyển khoản','internet banking','phí','số dư','kim cương','bảo hiểm','đầu tư','cổ phiếu','hợp đồng','ủy quyền','khai báo'],
+  '医疗/健康': ['bệnh viện','bác sĩ','khám','bệnh','thuốc','đau','sức khỏe','tiêm','phòng khám','xét nghiệm','cảm','sốt','xương','khớp','dị ứng','toàn thân','đơn thuốc','bảo hiểm y tế','kê đơn','chỉ định','nhịp tim','huyết áp','cấp cứu','kẹt xe','tai nạn'],
+  '旅游/景点': ['du lịch','tham quan','di tích','chùa','đền','biển','đảo','núi','thác nước','cánh đồng','vườn','quốc gia','bảo tàng','photo','chụp ảnh','bưu thiếp','quà lưu niệm','hướng dẫn viên','tour','combo','vé tham quan','check-in','phong cảnh','cảnh đẹp']
+};
+
+// 空闲分类（未匹配到任何关键词的对话归入此类）
+var uncategorizedLabel = '💬 其他';
+
+// 为对话自动分类
+function categorizeDialogue(d) {
+  var topic = (d.topic || '').toLowerCase();
+  var content = (d.content || '').toLowerCase();
+  var text = topic + ' ' + content;
+  
+  var bestCat = '';
+  var bestScore = 0;
+  
+  for (var cat in categoryKeywords) {
+    var keywords = categoryKeywords[cat];
+    var score = 0;
+    for (var i = 0; i < keywords.length; i++) {
+      if (text.indexOf(keywords[i]) !== -1) score++;
+    }
+    // 主题匹配权重更高（×3）
+    for (var i = 0; i < keywords.length; i++) {
+      if (topic.indexOf(keywords[i]) !== -1) score += 2; // 额外加2分
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      bestCat = cat;
+    }
+  }
+  
+  return bestScore > 0 ? bestCat : uncategorizedLabel;
+}
+
+// 构建筛选器
+function buildFilter() {
+  if (!dialogues.length) {
+    document.getElementById('filterBar').style.display = 'none';
+    return;
+  }
+  
+  document.getElementById('filterBar').style.display = 'block';
+  document.getElementById('totalCount').textContent = dialogues.length;
+  
+  // 为所有对话分类
+  var catCount = {};
+  for (var i = 0; i < dialogues.length; i++) {
+    var cat = categorizeDialogue(dialogues[i]);
+    dialogueCategories[i] = cat;
+    catCount[cat] = (catCount[cat] || 0) + 1;
+  }
+  
+  // 生成标签
+  var html = '<span class="filter-tag active" onclick="filterBy(\'all\')">全部</span>';
+  var sortedCats = Object.keys(catCount).sort();
+  for (var j = 0; j < sortedCats.length; j++) {
+    var c = sortedCats[j];
+    html += '<span class="filter-tag" onclick="filterBy(\'' + c.replace(/'/g, "\\'") + '\')">' +
+      escHtml(c) + '<span class="tag-count">(' + catCount[c] + ')</span></span>';
+  }
+  document.getElementById('filterTags').innerHTML = html;
+  
+  // 重置筛选
+  currentFilter = 'all';
+  document.getElementById('filterInfo').style.display = 'none';
+}
+
+// 按分类筛选
+function filterBy(cat) {
+  currentFilter = cat;
+  
+  // 更新标签高亮
+  var tags = document.querySelectorAll('.filter-tag');
+  for (var t = 0; t < tags.length; t++) {
+    tags[t].classList.remove('active');
+    if ((cat === 'all' && t === 0) || tags[t].textContent.startsWith(cat)) {
+      tags[t].classList.add('active');
+    }
+  }
+  
+  // 更新筛选信息
+  var info = document.getElementById('filterInfo');
+  var visibleCount = 0;
+  for (var i = 0; i < dialogues.length; i++) {
+    if (cat === 'all' || dialogueCategories[i] === cat) visibleCount++;
+  }
+  if (cat === 'all') {
+    info.style.display = 'none';
+  } else {
+    info.style.display = 'inline';
+    document.getElementById('filterLabel').textContent = cat + '（' + visibleCount + '篇）';
+  }
+  
+  // 显示/隐藏对话
+  for (var i = 0; i < dialogues.length; i++) {
+    var item = document.getElementById('item_' + i);
+    if (!item) continue;
+    if (cat === 'all' || dialogueCategories[i] === cat) {
+      item.style.display = '';
+    } else {
+      item.style.display = 'none';
+    }
+  }
+}
 
 function getLocalDate() {
     var now = new Date();
@@ -299,12 +432,15 @@ function renderList() {
     var list = document.getElementById('dialogueList');
     if (!dialogues.length) {
         list.innerHTML = '<div class="empty-state"><div class="icon">🗣️</div><p>暂无对话记录</p><p style="font-size:.8rem;margin-top:8px">点击「新增对话」添加内容</p></div>';
+        buildFilter();
         return;
     }
     var html = '';
     for (var i = 0; i < dialogues.length; i++) {
         var d = dialogues[i];
-        html += '<div class="dialogue-item" id="item_' + i + '">' +
+        var cat = categorizeDialogue(d);
+        dialogueCategories[i] = cat;
+        html += '<div class="dialogue-item" id="item_' + i + '" data-cat="' + escHtml(cat) + '">' +
             '<div class="dialogue-header" onclick="toggleItem(' + i + ')">' +
             '<span class="dialogue-date">' + escHtml(d.date) + '</span>' +
             '<span class="dialogue-topic">' + escHtml(d.topic) + '</span>' +
@@ -317,6 +453,7 @@ function renderList() {
             '</div></div></div>';
     }
     list.innerHTML = html;
+    buildFilter();
 }
 
 function formatContent(content) {
@@ -788,13 +925,17 @@ function downloadWord() {
     content += '<div class="Section1">';
     
     // 标题
-    content += '<h1>🗣️ 越南语情景对话</h1>';
-    content += '<p class="date">导出日期: ' + new Date().toLocaleDateString('zh-CN') + '</p>';
+    var filterLabel = currentFilter === 'all' ? '全部' : currentFilter;
+    content += '<h1>🗣️ 越南语情景对话' + (currentFilter !== 'all' ? ' · ' + escHtml(filterLabel) : '') + '</h1>';
+    content += '<p class="date">导出日期: ' + new Date().toLocaleDateString('zh-CN') + ' | 分类: ' + escHtml(filterLabel) + '</p>';
     content += '<div class="divider">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>';
     
-    // 对话内容
+    // 对话内容 - 只导出当前筛选可见的对话
+    var exportedCount = 0;
     for (var i = 0; i < dialogues.length; i++) {
         var d = dialogues[i];
+        // 跳过被筛选隐藏的对话
+        if (currentFilter !== 'all' && dialogueCategories[i] !== currentFilter) continue;
         content += '<p class="date">📅 ' + escHtml(d.date) + '</p>';
         content += '<p class="topic">📌 ' + escHtml(d.topic) + '</p>';
         
@@ -827,6 +968,7 @@ function downloadWord() {
             }
         }
         content += '<div class="divider">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>';
+        exportedCount++;
     }
     
     content += '</div>'; // Section1
@@ -843,13 +985,13 @@ function downloadWord() {
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
-    a.download = '越南语情景对话_' + getLocalDate() + '.doc';
+    a.download = '越南语情景对话_' + (currentFilter === 'all' ? '全部' : filterLabel) + '_' + getLocalDate() + '.doc';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     
-    showAutoAddNotice('Word文件已下载！');
+    showAutoAddNotice('已导出 ' + exportedCount + ' 篇对话（' + filterLabel + '）');
 }
 
 function escXml(str) {
