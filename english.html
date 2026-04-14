@@ -901,25 +901,37 @@
         firebase.initializeApp(firebaseConfig);
         var db = firebase.firestore();
         
+        // ==================== Firebase 超时封装（中国大陆友好）====================
+        // Firebase 请求最多等待 3 秒，超时后直接返回 null，不卡界面
+        function fbWithTimeout(promise, timeoutMs) {
+            return Promise.race([
+                promise,
+                new Promise(function(resolve) {
+                    setTimeout(function() { resolve(null); }, timeoutMs || 3000);
+                })
+            ]);
+        }
+        
         // ==================== 词汇缓存 ====================
         var VOCAB_CACHE = {};
         var VOCAB_LOADED = {};
         
-        // 从 Firestore 加载词汇
+        // 从 Firestore 加载词汇（3秒超时，本地优先）
         async function loadVocabFromDB(grade, semester) {
             var key = grade + "-" + semester;
             if (VOCAB_LOADED[key]) return VOCAB_CACHE[key];
             
             try {
-                var doc = await db.collection("english_vocabulary").doc(key).get();
-                if (doc.exists) {
+                // 3秒超时，失败则跳过
+                var doc = await fbWithTimeout(db.collection("english_vocabulary").doc(key).get(), 3000);
+                if (doc && doc.exists) {
                     VOCAB_CACHE[key] = doc.data().words || [];
                     VOCAB_LOADED[key] = true;
                     console.log("已从数据库加载词汇: " + key + " (" + VOCAB_CACHE[key].length + "词)");
                     return VOCAB_CACHE[key];
                 }
             } catch (e) {
-                console.error("加载词汇失败:", e);
+                console.warn("加载词汇失败:", e.message);
             }
             return [];
         }
@@ -1464,8 +1476,8 @@
             console.log("本地保存:", recordKey(record), existsLocal ? "(已存在，跳过)" : "(新增)");
             renderHistoryQuest(local);  // 立即渲染本地数据
             
-            // 2. 上传到 Firebase（异步，静默失败不影响体验）
-            db.collection("english_records").add({
+            // 2. 上传到 Firebase（异步，静默失败，3秒超时）
+            fbWithTimeout(db.collection("english_records").add({
                 user: username,
                 username: username,
                 grade: G.grade,
@@ -1482,8 +1494,9 @@
                 wrongCount: G.wrong.length,
                 wrongWords: G.wrong.map(function(w){return w.en;}),
                 timestamp: isoTs
-            }).then(function(docRef) {
-                console.log("Firebase上传成功! id:", docRef.id, "key:", recordKey(record));
+            }), 3000
+            ).then(function(docRef) {
+                if (docRef) console.log("Firebase上传成功! id:", docRef.id, "key:", recordKey(record));
             }).catch(function(err){
                 console.warn("Firebase上传失败:", err.message);
             });
@@ -1531,14 +1544,16 @@
             localStorage.setItem("quest_history_all", JSON.stringify(uniqueLocal));
             renderHistoryQuest(uniqueLocal);  // 立即渲染
             
-            // Step 2: 后台从 Firebase 合并（仅补充本地没有的）
-            db.collection("english_records")
-                .where("type", "==", "word-quest")
-                .limit(500)
-                .get()
-                .then(function(snap) {
-                    if (snap.empty) {
-                        console.log("Firebase: 无云端记录");
+            // Step 2: 后台从 Firebase 合并（仅补充本地没有的，3秒超时）
+            fbWithTimeout(
+                db.collection("english_records")
+                    .where("type", "==", "word-quest")
+                    .limit(500)
+                    .get(),
+                3000
+            ).then(function(snap) {
+                    if (!snap || snap.empty) {
+                        console.log("Firebase: 无云端记录（或超时）");
                         return;
                     }
                     
