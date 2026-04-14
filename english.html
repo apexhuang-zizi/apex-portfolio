@@ -1445,7 +1445,8 @@
             var isoTs = now.toISOString();
             db.collection("english_records").add({
                 ...record,
-                timestamp: isoTs  // 用ISO字符串，和本地完全一致
+                timestamp: isoTs,  // 用ISO字符串，和本地完全一致
+                username: currentUser ? currentUser.username : "游客"  // 明确存username便于多用户去重
             }).catch(function(err){
                 console.warn("Firebase上传失败（本地已保存）:", err.message);
             });
@@ -1499,17 +1500,17 @@
                         return ts >= weekAgoIso;
                     });
                     
-                    // 构建 Firebase key 集合
+                    // 构建 Firebase key 集合（用 username + timestamp + score 去重，多用户不混淆）
                     var fbKeys = {};
-                    fbRecords.forEach(function(r) { fbKeys[fbTsToIso(r.timestamp) + "_" + (r.score || "")] = true; });
+                    fbRecords.forEach(function(r) { fbKeys[(r.username||"") + "_" + fbTsToIso(r.timestamp) + "_" + (r.score || "")] = true; });
                     
                     // 构建本地 key 集合
                     var localKeys = {};
-                    localRecords.forEach(function(r) { localKeys[fbTsToIso(r.timestamp) + "_" + (r.score || "")] = true; });
+                    localRecords.forEach(function(r) { localKeys[(r.user||"") + "_" + fbTsToIso(r.timestamp) + "_" + (r.score || "")] = true; });
                     
                     // 筛选出本地没有的记录
                     var newFromFb = fbRecords.filter(function(r) {
-                        var k = fbTsToIso(r.timestamp) + "_" + (r.score || "");
+                        var k = (r.username||"") + "_" + fbTsToIso(r.timestamp) + "_" + (r.score || "");
                         return !localKeys[k];
                     });
                     
@@ -1518,6 +1519,7 @@
                     // 合并
                     var merged = localRecords.concat(newFromFb.map(function(r) {
                         r.timestamp = fbTsToIso(r.timestamp);
+                        r.user = r.user || r.username || "未知用户";  // 统一user字段
                         return r;
                     }));
                     
@@ -1526,6 +1528,9 @@
                         return new Date(fbTsToIso(b.timestamp) || 0) - new Date(fbTsToIso(a.timestamp) || 0);
                     });
                     merged = merged.slice(0, 200);
+                    
+                    // ★ 关键：合并结果写回 localStorage 持久化，避免下次加载丢失
+                    localStorage.setItem("quest_history_all", JSON.stringify(merged));
                     
                     // 重新渲染
                     renderHistoryQuest(merged);
@@ -1550,7 +1555,7 @@
                 var c=r.score>=90?"var(--success)":r.score>=70?"var(--accent)":"var(--text-muted)";
                 var wrongWords = r.wrongWords || [];
                 var wrongHtml = wrongWords.map(function(w){return '<span class="wrong-word-btn" onclick="speakWord(\''+w.replace(/'/g,"\\'")+'\')">🔊 '+w+'</span>';}).join('');
-                var delBtn = isAdmin ? '<span class="history-del-btn" onclick="deleteHistoryRecord(\''+fbTsToIso(r.timestamp)+'_'+(r.score||0)+'\')">🗑️</span>' : '';
+                var delBtn = isAdmin ? '<span class="history-del-btn" onclick="deleteHistoryRecord(\''+(r.user||"")+'_'+fbTsToIso(r.timestamp)+'_'+(r.score||0)+'\')">🗑️</span>' : '';
                 html+='<div class="history-item">';
                 html+='  <div class="history-top">';
                 html+='    <span class="history-grade">'+(r.grade||"")+'年级'+(r.semester==="1"?"上":"下")+'册</span>';
@@ -1568,7 +1573,7 @@
         function deleteHistoryRecord(key) {
             if(!confirm("确定删除这条记录？")) return;
             var local = JSON.parse(localStorage.getItem("quest_history_all") || "[]");
-            local = local.filter(function(r){ return fbTsToIso(r.timestamp)+"_"+(r.score||0) !== key; });
+            local = local.filter(function(r){ return (r.user||"")+"_"+fbTsToIso(r.timestamp)+"_"+(r.score||0) !== key; });
             localStorage.setItem("quest_history_all", JSON.stringify(local));
             loadHistoryQuest();  // 重新渲染
         }
