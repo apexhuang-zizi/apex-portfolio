@@ -495,7 +495,9 @@ var speechSynthesis = window.speechSynthesis;
 var currentUtterance = null;
 var isPlaying = false;
 
-// 收集并缓存越南语语音列表（本地语音优先，本地语音支持pitch/rate调整）
+// 收集并缓存越南语语音列表
+// 手机→优先本地语音（支持pitch/rate，发音好）
+// 电脑→优先在线语音（发音准，本地语音数据可能不完整会乱码）
 var _viVoices = null;
 function getVietnameseVoices() {
     if (_viVoices) return _viVoices;
@@ -503,10 +505,10 @@ function getVietnameseVoices() {
     var viAll = all.filter(function(v) {
         return v.lang && (v.lang.startsWith('vi') || v.lang === 'vi');
     });
-    // 本地语音排前面（支持pitch/rate），远程语音排后面（不支持pitch/rate）
     var local = viAll.filter(function(v) { return v.localService; });
     var remote = viAll.filter(function(v) { return !v.localService; });
-    _viVoices = local.concat(remote);
+    var isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+    _viVoices = isMobile ? local.concat(remote) : remote.concat(local);
     return _viVoices;
 }
 
@@ -647,15 +649,17 @@ function playVietnameseLines(lines, index, btn, lastVoice) {
     // 选声音：优先选和上次不同的声音
     utterance.voice = getVietnameseVoice(item.speaker === 'A', lastVoice || null);
     
-    // pitch + rate 双参数区分 A/B（跨平台有效）
-    // A → 音调高、语速慢（偏柔和女声感）
-    // B → 音调低、语速快（偏有力男声感）
-    if (item.speaker === 'A') {
-        utterance.pitch = 1.3;
-        utterance.rate = 0.75;
+    // 判断是否本地语音（支持pitch），在线语音只能用rate区分
+    var isLocal = utterance.voice && utterance.voice.localService;
+    
+    if (isLocal) {
+        // 本地语音（手机）：pitch + rate 双参数区分
+        utterance.pitch = item.speaker === 'A' ? 1.3 : 0.8;
+        utterance.rate = item.speaker === 'A' ? 0.75 : 0.95;
     } else {
-        utterance.pitch = 0.8;
-        utterance.rate = 0.95;
+        // 在线语音（电脑）：仅用rate区分（pitch不生效）
+        utterance.pitch = 1.0;
+        utterance.rate = item.speaker === 'A' ? 0.8 : 1.05;
     }
     
     utterance.onend = function() {
