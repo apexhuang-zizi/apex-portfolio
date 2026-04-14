@@ -570,6 +570,20 @@ window.listViVoices = function() {
     });
 };
 
+// 清理文本中的不可见字符和编码问题（TTS引擎会被这些字符干扰导致乱码）
+function sanitizeForTTS(text) {
+    return text
+        // 去掉零宽空格、方向标记、BOM等不可见字符
+        .replace(/[\u200B-\u200F\u2028-\u202F\u2060-\u206F\uFEFF]/g, '')
+        // 不间断空格→普通空格
+        .replace(/\u00A0/g, ' ')
+        // Unicode NFC标准化（组合字符→预组合字符）
+        .normalize('NFC')
+        // 去掉其他不可打印字符
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+        .trim();
+}
+
 // 仅解析越南语对话行，跳过 A:/B: 标签，跳过中文翻译
 function parseVietnameseLines(content) {
     var lines = content.split('\n');
@@ -589,6 +603,10 @@ function parseVietnameseLines(content) {
         // 检测是否包含越南语特殊字符
         var isVi = /[ăâđêôơưàằầèềìòồờùừỳáắấéếíóốớúứýảẳẩẻểỉỏổởủửỷạặậẹệịọộợụựỵĐĂÂÊÔƠƯ]/i.test(viOnly);
         if (!isVi) continue; // 没有越南语，跳过
+        
+        // 清理不可见字符后再交给TTS
+        viOnly = sanitizeForTTS(viOnly);
+        if (!viOnly) continue;
         
         // 判断是 A 还是 B（奇数行为 A，偶数行为 B）
         // 遍历时只计入有越南文的行，所以用 result.length 判断
@@ -644,10 +662,12 @@ function playVietnameseLines(lines, index, btn, lastVoice) {
     
     var item = lines[index];
     var utterance = new SpeechSynthesisUtterance(item.text);
-    utterance.lang = 'vi-VN';
     
     // 选声音：优先选和上次不同的声音
     utterance.voice = getVietnameseVoice(item.speaker === 'A', lastVoice || null);
+    
+    // 用语音自身的lang，避免lang与voice不匹配导致乱码
+    utterance.lang = utterance.voice ? utterance.voice.lang : 'vi-VN';
     
     // 判断是否本地语音（支持pitch），在线语音只能用rate区分
     var isLocal = utterance.voice && utterance.voice.localService;
