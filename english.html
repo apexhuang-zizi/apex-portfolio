@@ -849,9 +849,9 @@
                 </div>
                 <div class="rule-block">
                     <h4>📊 100分满分计算</h4>
-                    <div class="rule-line">正确率得分 = (正确数÷总题数) × <strong>80</strong></div>
+                    <div class="rule-line">正确率得分 = (正确数÷总题数) × <strong>70</strong></div>
                     <div class="rule-line">连击奖励 = min(最高连击, <strong>10</strong>)</div>
-                    <div class="rule-line">时间奖励 = 答对题数 × <strong>0.2</strong>（最高<strong>10</strong>分）</div>
+                    <div class="rule-line">时间奖励 = 答对题数 × <strong>0.4</strong>（最高<strong>20</strong>分）</div>
                     <div class="rule-line" style="color:var(--accent)">总分 = 三项相加（满分100）</div>
                 </div>
                 <div class="rule-block">
@@ -1452,9 +1452,9 @@
             clearInterval(G.timer);
             
             var acc=G.total>0 ? G.correct/G.total : 0;
-            var accScore=Math.round(acc*80);
+            var accScore=Math.round(acc*70);  // 正确率最高70分
             var comboScore=Math.min(G.maxCombo,10);
-            var timeScore=Math.min(Math.round(G.correct*0.2),10);  // 每对一个单词0.2分，最高10分
+            var timeScore=Math.min(Math.round(G.correct*0.4),20);  // 每对一题0.4分，最高20分
             var score=accScore+comboScore+timeScore;
             var wrongCount = G.total - G.correct;
             
