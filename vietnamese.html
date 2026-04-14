@@ -261,7 +261,8 @@ function checkUrlParams() {
                 date: date, 
                 topic: decodeURIComponent(topic), 
                 content: decodedContent, 
-                created: Date.now()
+                created: Date.now(),
+                _fromUrl: true
             };
             dialogues.push(newDialogue);
             dialogues.sort(function(a, b) { return b.date.localeCompare(a.date) || b.created - a.created; });
@@ -331,6 +332,10 @@ function formatContent(content) {
 }
 
 function toggleItem(idx) {
+    var items = document.querySelectorAll('.dialogue-item');
+    for (var i = 0; i < items.length; i++) {
+        if (i !== idx) items[i].classList.remove('open');
+    }
     var item = document.getElementById('item_' + idx);
     if (item) item.classList.toggle('open');
 }
@@ -364,12 +369,24 @@ function saveNew() {
 // 保存到 Firebase
 async function saveToFirebase(dialogue) {
     try {
+        // 检查 Firebase 是否已存在相同日期+标题的对话（防止重复）
+        var dupSnapshot = await db.collection('dialogues').where('date', '==', dialogue.date).where('topic', '==', dialogue.topic).get();
+        if (!dupSnapshot.empty) {
+            // 已存在，不重复添加，但仍触发翻译
+            var existDoc = dupSnapshot.docs[0];
+            dialogue.id = existDoc.id;
+            showAutoAddNotice('该对话已存在于云端');
+            translateAndSave(dialogue.id);
+            return;
+        }
+        
         const docRef = await db.collection('dialogues').add(dialogue);
         dialogue.id = docRef.id;
         dialogues.unshift(dialogue);
         dialogues.sort(function(a, b) { return b.date.localeCompare(a.date) || b.created - a.created; });
         
-        toggleAddForm();
+        // URL 参数上传时不切换表单状态
+        if (!dialogue._fromUrl) toggleAddForm();
         renderList();
         showAutoAddNotice('对话已保存到云端，正在翻译...');
         
