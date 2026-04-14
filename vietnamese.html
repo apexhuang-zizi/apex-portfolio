@@ -495,13 +495,83 @@ var speechSynthesis = window.speechSynthesis;
 var currentUtterance = null;
 var isPlaying = false;
 
+// 获取越南语语音，优先用明确的女声
+function getVietnameseVoice(preferFemale) {
+    var voices = speechSynthesis.getVoices();
+    // 先尝试找指定的语音名（Windows: Hoai=女声, macOS: Daniel=男声越南语）
+    var femaleVoiceNames = ['Hoai', 'Chi', 'Minh', 'Nguyen', 'Linh'];
+    var maleVoiceNames   = ['An', 'Trung', 'Minh', 'Viet', 'Nam'];
+    var targetNames = preferFemale ? femaleVoiceNames : maleVoiceNames;
+    
+    // 优先按名称匹配
+    for (var ni = 0; ni < targetNames.length; ni++) {
+        for (var vi = 0; vi < voices.length; vi++) {
+            var v = voices[vi];
+            if (v.lang && v.lang.startsWith('vi') && v.name.indexOf(targetNames[ni]) !== -1) {
+                return v;
+            }
+        }
+    }
+    
+    // 其次：按系统类型优先（Windows 优先 Hoai，macOS 优先 Daniel）
+    var ua = navigator.userAgent;
+    if (ua.indexOf('Mac') !== -1) {
+        // macOS 越南语男声
+        for (var vi = 0; vi < voices.length; vi++) {
+            if (voices[vi].lang && voices[vi].lang.startsWith('vi') && voices[vi].name.indexOf('Daniel') !== -1) {
+                return voices[vi];
+            }
+        }
+    } else {
+        // Windows 越南语女声
+        for (var vi = 0; vi < voices.length; vi++) {
+            if (voices[vi].lang && voices[vi].lang.startsWith('vi') && voices[vi].name.indexOf('Hoai') !== -1) {
+                return voices[vi];
+            }
+        }
+    }
+    
+    // 最后：找任意越南语语音
+    for (var vi = 0; vi < voices.length; vi++) {
+        if (voices[vi].lang && voices[vi].lang.startsWith('vi')) return voices[vi];
+    }
+    return null;
+}
+
+// 仅解析越南语对话行，跳过 A:/B: 标签，跳过中文翻译
+function parseVietnameseLines(content) {
+    var lines = content.split('\n');
+    var result = [];
+    for (var i = 0; i < lines.length; i++) {
+        var line = lines[i].trim();
+        if (!line) continue;
+        
+        // 去掉开头的 "A:" 或 "B:" 标签
+        var clean = line.replace(/^[AB]:\s*/i, '').trim();
+        if (!clean) continue;
+        
+        // 去掉括号内的中文翻译，只保留越南文
+        var viOnly = clean.replace(/\([^)]+[\u4e00-\u9fff][^)]*\)/g, '').trim();
+        if (!viOnly) viOnly = clean; // 如果全是中文翻译就用原文
+        
+        // 检测是否包含越南语特殊字符
+        var isVi = /[ăâđêôơưàằầèềìòồờùừỳáắấéếíóốớúứýảẳẩẻểỉỏổởủửỷạặậẹệịọộợụựỵĐĂÂÊÔƠƯ]/i.test(viOnly);
+        if (!isVi) continue; // 没有越南语，跳过
+        
+        // 判断是 A 还是 B（奇数行为 A，偶数行为 B）
+        // 遍历时只计入有越南文的行，所以用 result.length 判断
+        var speaker = (result.length % 2 === 0) ? 'A' : 'B';
+        
+        result.push({ text: viOnly, speaker: speaker });
+    }
+    return result;
+}
+
 function playDialogue(idx) {
     var d = dialogues[idx];
     if (!d) return;
+    if (event && event.target) var btn = event.target.closest('.btn-play');
     
-    var btn = event.target;
-    
-    // 如果正在播放，停止
     if (isPlaying) {
         speechSynthesis.cancel();
         isPlaying = false;
@@ -512,58 +582,53 @@ function playDialogue(idx) {
         return;
     }
     
-    // 开始播放
     btn.classList.add('playing');
     btn.textContent = '⏹ 停止';
     isPlaying = true;
     
-    var lines = d.content.split('\n');
-    var textQueue = [];
+    // 解析出纯越南语对话行（去掉 A:/B: 标签和中文翻译）
+    var parsed = parseVietnameseLines(d.content);
     
-    for (var i = 0; i < lines.length; i++) {
-        var line = lines[i].trim();
-        if (!line) continue;
-        
-        // 检测是否为越南语（包含越南语特殊字符）
-        var isVietnamese = /[ăâđêôơưàằầèềìòồờùừỳáắấéếíóốớúứýảẳẩẻểỉỏổởủửỷạặậẹệịọộợụựỵĐĂÂÊÔƠƯ]/i.test(line);
-        
-        textQueue.push({
-            text: line,
-            lang: isVietnamese ? 'vi-VN' : 'zh-CN'
-        });
-    }
-    
-    playTextQueue(textQueue, 0, btn);
+    // 等待语音列表加载（Chrome 等浏览器需要延迟）
+    var tryPlay = function() {
+        var voices = speechSynthesis.getVoices();
+        if (voices.length === 0) {
+            // 语音未加载，再等一下
+            setTimeout(tryPlay, 200);
+            return;
+        }
+        playVietnameseLines(parsed, 0, btn);
+    };
+    tryPlay();
 }
 
-function playTextQueue(queue, index, btn) {
-    if (index >= queue.length || !isPlaying) {
-        // 播放完成
+function playVietnameseLines(lines, index, btn) {
+    if (index >= lines.length || !isPlaying) {
         isPlaying = false;
         btn.classList.remove('playing');
         btn.textContent = '🔊 播放';
         return;
     }
     
-    var item = queue[index];
+    var item = lines[index];
     var utterance = new SpeechSynthesisUtterance(item.text);
-    utterance.lang = item.lang;
-    utterance.rate = 0.9; // 稍慢一点更清晰
+    utterance.lang = 'vi-VN';
+    utterance.rate = 0.85;   // 稍慢，柔和
+    utterance.pitch = 1.05; // 略高，柔和亲切（部分系统支持）
     
-    // 尝试获取对应语言的语音
-    var voices = speechSynthesis.getVoices();
-    var voice = voices.find(function(v) { return v.lang.startsWith(item.lang.substring(0, 2)); });
-    if (voice) utterance.voice = voice;
+    // A → 优先越南语女声（Hoai），B → 第二个越南语声音（男声）
+    utterance.voice = getVietnameseVoice(item.speaker === 'A');
     
     utterance.onend = function() {
-        // 播放下一条
         setTimeout(function() {
-            playTextQueue(queue, index + 1, btn);
-        }, 500); // 每条之间间隔500ms
+            playVietnameseLines(lines, index + 1, btn);
+        }, 600);
     };
     
     utterance.onerror = function() {
-        playTextQueue(queue, index + 1, btn);
+        setTimeout(function() {
+            playVietnameseLines(lines, index + 1, btn);
+        }, 600);
     };
     
     currentUtterance = utterance;
@@ -573,7 +638,10 @@ function playTextQueue(queue, index, btn) {
 // 预加载语音列表
 if (speechSynthesis) {
     speechSynthesis.onvoiceschanged = function() {
-        speechSynthesis.getVoices();
+        var v = speechSynthesis.getVoices();
+        console.log('可用语音数:', v.length);
+        v.filter(function(voice) { return voice.lang && voice.lang.startsWith('vi'); })
+         .forEach(function(voice) { console.log('越南语语音:', voice.name, voice.lang); });
     };
 }
 
