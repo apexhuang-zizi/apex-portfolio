@@ -12,6 +12,10 @@
 <!-- 登录验证 -->
 <script>
 (function(){
+    // 如果有 URL 参数（自动上传模式），跳过登录检查
+    var _p = new URLSearchParams(window.location.search);
+    if (_p.get('date') && _p.get('topic') && _p.get('content')) return;
+    
     var auth = sessionStorage.getItem("apex_auth");
     var username = sessionStorage.getItem("apex_username");
     if (auth !== "true" || !username) {
@@ -253,15 +257,28 @@ function checkUrlParams() {
         });
         
         if (!exists) {
-            dialogues.push({
+            var newDialogue = {
                 date: date, 
                 topic: decodeURIComponent(topic), 
                 content: decodedContent, 
                 created: Date.now()
-            });
+            };
+            dialogues.push(newDialogue);
             dialogues.sort(function(a, b) { return b.date.localeCompare(a.date) || b.created - a.created; });
             localStorage.setItem('vnDialogues', JSON.stringify(dialogues));
-            showAutoAddNotice('已自动添加今日对话！');
+            renderList();
+            showAutoAddNotice('对话已添加，正在上传云端并翻译...');
+            
+            // 延迟等待 Firebase 初始化完成后保存到云端（含自动翻译）
+            (function trySaveToCloud(retries) {
+                if (typeof db !== 'undefined' && typeof saveToFirebase === 'function') {
+                    saveToFirebase(newDialogue);
+                } else if (retries > 0) {
+                    setTimeout(function() { trySaveToCloud(retries - 1); }, 2000);
+                } else {
+                    showAutoAddNotice('云端保存超时，已保存到本地');
+                }
+            })(15);
         } else {
             showAutoAddNotice('今日对话已存在！');
         }
