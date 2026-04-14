@@ -495,48 +495,73 @@ var speechSynthesis = window.speechSynthesis;
 var currentUtterance = null;
 var isPlaying = false;
 
-// 获取越南语语音，优先用明确的女声
-function getVietnameseVoice(preferFemale) {
-    var voices = speechSynthesis.getVoices();
-    // 先尝试找指定的语音名（Windows: Hoai=女声, macOS: Daniel=男声越南语）
-    var femaleVoiceNames = ['Hoai', 'Chi', 'Minh', 'Nguyen', 'Linh'];
-    var maleVoiceNames   = ['An', 'Trung', 'Minh', 'Viet', 'Nam'];
-    var targetNames = preferFemale ? femaleVoiceNames : maleVoiceNames;
-    
-    // 优先按名称匹配
-    for (var ni = 0; ni < targetNames.length; ni++) {
-        for (var vi = 0; vi < voices.length; vi++) {
-            var v = voices[vi];
-            if (v.lang && v.lang.startsWith('vi') && v.name.indexOf(targetNames[ni]) !== -1) {
-                return v;
-            }
-        }
-    }
-    
-    // 其次：按系统类型优先（Windows 优先 Hoai，macOS 优先 Daniel）
-    var ua = navigator.userAgent;
-    if (ua.indexOf('Mac') !== -1) {
-        // macOS 越南语男声
-        for (var vi = 0; vi < voices.length; vi++) {
-            if (voices[vi].lang && voices[vi].lang.startsWith('vi') && voices[vi].name.indexOf('Daniel') !== -1) {
-                return voices[vi];
-            }
+// 收集并缓存越南语语音列表
+var _viVoices = null;
+function getVietnameseVoices() {
+    if (_viVoices) return _viVoices;
+    var all = speechSynthesis.getVoices();
+    _viVoices = all.filter(function(v) {
+        return v.lang && (v.lang.startsWith('vi') || v.lang === 'vi');
+    });
+    return _viVoices;
+}
+
+// 从 voiceURI 和 name 中判断是否为女声/男声
+function isFemaleVoice(v) {
+    var s = (v.name + ' ' + (v.voiceURI || '')).toLowerCase();
+    // 女声关键词
+    if (/\bfemale\b/.test(s)) return true;
+    if (/chi\b|linh\b|nguyen\b|hoai\b|minh(?!\s*(vu|nam|trung))/i.test(s)) return true;
+    return false;
+}
+function isMaleVoice(v) {
+    var s = (v.name + ' ' + (v.voiceURI || '')).toLowerCase();
+    // 男声关键词
+    if (/\bmale\b/.test(s)) return true;
+    if (/\bdaniel\b|\ban\b|\bnam\b|\btrung\b|\bviet\b/i.test(s)) return true;
+    return false;
+}
+
+// 获取越南语语音
+// preferFemale=true → 优先女声；preferFemale=false → 优先男声
+// avoidVoice → 排除的声音（确保 A/B 用不同声音）
+function getVietnameseVoice(preferFemale, avoidVoice) {
+    var viVoices = getVietnameseVoices();
+    if (viVoices.length === 0) return null;
+    if (viVoices.length === 1) return viVoices[0]; // 只有1个就没法区分了
+
+    var candidates = [];
+    if (preferFemale) {
+        // A：优先女声
+        candidates = viVoices.filter(function(v) { return isFemaleVoice(v) && v !== avoidVoice; });
+        if (candidates.length === 0) {
+            // 没有女声 → 找男声（排除当前用的）
+            candidates = viVoices.filter(function(v) { return v !== avoidVoice; });
         }
     } else {
-        // Windows 越南语女声
-        for (var vi = 0; vi < voices.length; vi++) {
-            if (voices[vi].lang && voices[vi].lang.startsWith('vi') && voices[vi].name.indexOf('Hoai') !== -1) {
-                return voices[vi];
-            }
+        // B：优先男声
+        candidates = viVoices.filter(function(v) { return isMaleVoice(v) && v !== avoidVoice; });
+        if (candidates.length === 0) {
+            // 没有男声 → 找女声（排除当前用的）
+            candidates = viVoices.filter(function(v) { return v !== avoidVoice; });
         }
     }
-    
-    // 最后：找任意越南语语音
-    for (var vi = 0; vi < voices.length; vi++) {
-        if (voices[vi].lang && voices[vi].lang.startsWith('vi')) return voices[vi];
-    }
-    return null;
+    if (candidates.length > 0) return candidates[0];
+
+    // 最后防线：随便返回一个（不重复）
+    var rest = viVoices.filter(function(v) { return v !== avoidVoice; });
+    return rest.length > 0 ? rest[0] : viVoices[0];
 }
+
+// 调试：列出所有越南语语音（在浏览器控制台运行）
+window.listViVoices = function() {
+    var viVoices = getVietnameseVoices();
+    console.log('越南语语音数量:', viVoices.length);
+    viVoices.forEach(function(v) {
+        var gender = isFemaleVoice(v) ? '♀女' : isMaleVoice(v) ? '♂男' : '?未知';
+        console.log(gender, v.name, '|', v.lang, '|', v.voiceURI);
+    });
+};
 
 // 仅解析越南语对话行，跳过 A:/B: 标签，跳过中文翻译
 function parseVietnameseLines(content) {
@@ -597,12 +622,12 @@ function playDialogue(idx) {
             setTimeout(tryPlay, 200);
             return;
         }
-        playVietnameseLines(parsed, 0, btn);
+        playVietnameseLines(parsed, 0, btn, null);
     };
     tryPlay();
 }
 
-function playVietnameseLines(lines, index, btn) {
+function playVietnameseLines(lines, index, btn, lastVoice) {
     if (index >= lines.length || !isPlaying) {
         isPlaying = false;
         btn.classList.remove('playing');
@@ -614,20 +639,20 @@ function playVietnameseLines(lines, index, btn) {
     var utterance = new SpeechSynthesisUtterance(item.text);
     utterance.lang = 'vi-VN';
     utterance.rate = 0.85;   // 稍慢，柔和
-    utterance.pitch = 1.05; // 略高，柔和亲切（部分系统支持）
+    utterance.pitch = item.speaker === 'A' ? 1.1 : 0.95; // A高（女声）、B低（男声）辅助区分
     
-    // A → 优先越南语女声（Hoai），B → 第二个越南语声音（男声）
-    utterance.voice = getVietnameseVoice(item.speaker === 'A');
+    // A → 优先女声（避免重复用 lastVoice），B → 优先男声
+    utterance.voice = getVietnameseVoice(item.speaker === 'A', lastVoice || null);
     
     utterance.onend = function() {
         setTimeout(function() {
-            playVietnameseLines(lines, index + 1, btn);
+            playVietnameseLines(lines, index + 1, btn, utterance.voice);
         }, 600);
     };
     
     utterance.onerror = function() {
         setTimeout(function() {
-            playVietnameseLines(lines, index + 1, btn);
+            playVietnameseLines(lines, index + 1, btn, lastVoice);
         }, 600);
     };
     
@@ -638,10 +663,8 @@ function playVietnameseLines(lines, index, btn) {
 // 预加载语音列表
 if (speechSynthesis) {
     speechSynthesis.onvoiceschanged = function() {
-        var v = speechSynthesis.getVoices();
-        console.log('可用语音数:', v.length);
-        v.filter(function(voice) { return voice.lang && voice.lang.startsWith('vi'); })
-         .forEach(function(voice) { console.log('越南语语音:', voice.name, voice.lang); });
+        _viVoices = null; // 重置缓存，重新检测
+        window.listViVoices && window.listViVoices();
     };
 }
 
