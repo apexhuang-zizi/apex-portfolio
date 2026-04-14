@@ -638,22 +638,31 @@ function playVietnameseLines(lines, index, btn, lastVoice) {
     var item = lines[index];
     var utterance = new SpeechSynthesisUtterance(item.text);
     utterance.lang = 'vi-VN';
-    utterance.rate = 0.85;   // 稍慢，柔和
-    utterance.pitch = item.speaker === 'A' ? 1.1 : 0.95; // A高（女声）、B低（男声）辅助区分
     
-    // A → 优先女声（避免重复用 lastVoice），B → 优先男声
+    // 选声音：优先选和上次不同的声音
     utterance.voice = getVietnameseVoice(item.speaker === 'A', lastVoice || null);
+    
+    // pitch + rate 双参数区分 A/B（跨平台有效）
+    // A → 音调高、语速慢（偏柔和女声感）
+    // B → 音调低、语速快（偏有力男声感）
+    if (item.speaker === 'A') {
+        utterance.pitch = 1.3;
+        utterance.rate = 0.75;
+    } else {
+        utterance.pitch = 0.8;
+        utterance.rate = 0.95;
+    }
     
     utterance.onend = function() {
         setTimeout(function() {
             playVietnameseLines(lines, index + 1, btn, utterance.voice);
-        }, 600);
+        }, 700);
     };
     
     utterance.onerror = function() {
         setTimeout(function() {
             playVietnameseLines(lines, index + 1, btn, lastVoice);
-        }, 600);
+        }, 700);
     };
     
     currentUtterance = utterance;
