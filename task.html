@@ -4,24 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>任务清单 / Danh sách công việc</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #25c461;
-            --primary-dark: #1da34a;
-            --bg: #161618;
-            --surface: #232328;
-            --surface-2: #2e2e35;
-            --border: #3a3a42;
-            --text: #e8e8ec;
-            --text-muted: #9999a5;
-            --danger: #ff5c5c;
-            --warning: #ffb347;
-            --info: #7eb6ff;
-            --shadow: 0 4px 24px rgba(0,0,0,.35);
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --bg: #f0f4ff;
+            --surface: #ffffff;
+            --surface-2: #f8fafc;
+            --border: #e2e8f0;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --success: #10b981;
+            --info: #3b82f6;
+            --shadow: 0 4px 24px rgba(0,0,0,.08);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            font-family: 'Outfit', system-ui, -apple-system, sans-serif;
             background: var(--bg);
             color: var(--text);
             min-height: 100vh;
@@ -38,11 +40,16 @@
             flex-wrap: wrap;
             gap: 12px;
         }
-        .header h1 { font-size: 1.6rem; color: var(--primary); }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .header h1 { font-size: 1.5rem; font-weight: 700; background: linear-gradient(135deg, #2563eb, #7c3aed); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .header-right { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
         .user-info {
-            background: var(--surface);
-            padding: 8px 14px;
+            background: var(--bg);
+            padding: 6px 14px;
             border-radius: 20px;
             font-size: 0.85rem;
             color: var(--text-muted);
@@ -74,7 +81,7 @@
             background: var(--primary);
             color: #fff;
         }
-        .tab-btn:hover:not(.active) { background: var(--surface-2); color: var(--text); }
+        .tab-btn:hover:not(.active) { background: var(--surface); color: var(--text); }
 
         /* ===== MAIN CONTAINER ===== */
         .container {
@@ -89,9 +96,11 @@
             flex-wrap: wrap;
             align-items: center;
             margin-bottom: 16px;
-            background: var(--surface);
+            background: linear-gradient(135deg, #eff6ff, #f0fdf4);
             padding: 14px 16px;
             border-radius: 12px;
+            border: 1px solid #cbd5e1;
+            box-shadow: 0 2px 8px rgba(0,0,0,.04);
         }
         .filter-label {
             font-size: 0.82rem;
@@ -108,17 +117,18 @@
             color: var(--text-muted);
             transition: all 0.2s;
         }
-        .filter-tag:hover { border-color: var(--primary); color: var(--primary); }
+        .filter-tag:hover { border-color: var(--primary); color: #16a34a; }
         .filter-tag.active {
-            background: linear-gradient(135deg, #7eb6ff, #a78bfa);
-            border-color: transparent;
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #fff;
             color: #fff;
         }
         .filter-count {
             margin-left: auto;
             font-size: 0.82rem;
             color: var(--text-muted);
-            background: var(--surface-2);
+            background: var(--surface);
             padding: 4px 10px;
             border-radius: 10px;
         }
@@ -132,12 +142,12 @@
             border: 2px solid var(--border);
             transition: border-color 0.2s;
         }
-        .add-form:focus-within { border-color: var(--primary); }
+        .add-form:focus-within { border-color: var(--primary); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15); }
         .form-title {
             font-size: 0.9rem;
             font-weight: 600;
             margin-bottom: 14px;
-            color: var(--primary);
+            color: #16a34a;
         }
         .form-row {
             display: grid;
@@ -155,7 +165,7 @@
         .form-group input,
         .form-group select,
         .form-group textarea {
-            background: var(--surface-2);
+            background: var(--surface);
             border: 1.5px solid var(--border);
             border-radius: 8px;
             padding: 8px 12px;
@@ -188,8 +198,18 @@
             color: #fff;
         }
         .btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); }
+        .btn-add-task {
+            padding: 12px 28px;
+            font-size: 1rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+        .btn-add-task:hover {
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
+            transform: translateY(-2px);
+        }
         .btn-secondary {
-            background: var(--surface-2);
+            background: var(--surface);
             color: var(--text);
             border: 1.5px solid var(--border);
         }
@@ -211,10 +231,15 @@
             transition: all 0.2s;
             position: relative;
         }
-        .task-item:hover { background: var(--surface-2); }
-        .task-item.urgency-high { border-left-color: var(--danger); }
-        .task-item.urgency-medium { border-left-color: var(--warning); }
-        .task-item.urgency-low { border-left-color: var(--primary); }
+        .task-item:hover { background: var(--surface); }
+        .task-item.urgency-high {
+            border-left-color: #dc2626;
+            background: #fef2f2;
+            border: 1.5px solid #fecaca;
+        }
+        .task-item.urgency-high:hover { background: #fee2e2; }
+        .task-item.urgency-medium { border-left-color: #d97706; }
+        .task-item.urgency-low { border-left-color: #16a34a; }
         .task-item.completed { opacity: 0.55; }
         .task-item.completed .task-text { text-decoration: line-through; }
 
@@ -238,15 +263,15 @@
             font-size: 0.72rem;
             font-weight: 600;
         }
-        .badge-date { background: var(--surface-2); color: var(--text-muted); }
-        .badge-urgency-h { background: #ff5c5c22; color: var(--danger); }
-        .badge-urgency-m { background: #ffb34722; color: var(--warning); }
-        .badge-urgency-l { background: #25c46122; color: var(--primary); }
-        .badge-imp-h { background: #a78bfa22; color: #a78bfa; }
-        .badge-imp-m { background: #7eb6ff22; color: var(--info); }
-        .badge-imp-l { background: var(--surface-2); color: var(--text-muted); }
-        .badge-done { background: #25c46122; color: var(--primary); }
-        .badge-pending { background: #ffb34722; color: var(--warning); }
+        .badge-date { background: var(--surface); color: var(--text-muted); }
+        .badge-urgency-h { background: #fef2f2; color: #dc2626; }
+        .badge-urgency-m { background: #fef3c7; color: #d97706; }
+        .badge-urgency-l { background: #dcfce7; color: #16a34a; }
+        .badge-imp-h { background: #f3e8ff; color: #9333ea; }
+        .badge-imp-m { background: #eff6ff; color: #2563eb; }
+        .badge-imp-l { background: var(--surface); color: var(--text-muted); }
+        .badge-done { background: #dcfce7; color: #16a34a; }
+        .badge-pending { background: #fef3c7; color: #d97706; }
 
         .task-meta {
             display: flex;
@@ -279,7 +304,7 @@
             bottom: 24px;
             left: 50%;
             transform: translateX(-50%) translateY(80px);
-            background: var(--surface-2);
+            background: var(--surface);
             color: var(--text);
             padding: 12px 24px;
             border-radius: 10px;
@@ -292,7 +317,7 @@
         }
         .toast.show { transform: translateX(-50%) translateY(0); }
         .toast.success { border-color: var(--primary); }
-        .toast.error { border-color: var(--danger); }
+        .toast.error { border-color: #dc2626; }
 
         /* ===== MODAL ===== */
         .modal-overlay {
@@ -326,15 +351,17 @@
             margin-bottom: 16px;
         }
         .stat-card {
-            background: var(--surface);
+            background: linear-gradient(135deg, #ffffff, #f8fafc);
             border-radius: 10px;
             padding: 14px;
             text-align: center;
+            border: 1px solid #cbd5e1;
+            box-shadow: 0 2px 8px rgba(0,0,0,.04);
         }
         .stat-card .num {
             font-size: 1.6rem;
             font-weight: 700;
-            color: var(--primary);
+            color: #16a34a;
         }
         .stat-card .label { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
 
@@ -355,24 +382,139 @@
             color: var(--text-muted);
             text-decoration: none;
             font-size: 0.85rem;
-            padding: 6px 0;
-            transition: color 0.2s;
+            padding: 8px 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            transition: all 0.2s;
+            background: var(--surface);
         }
-        .back-link:hover { color: var(--primary); }
+        .back-link:hover {
+            color: var(--text);
+            background: var(--bg);
+            border-color: var(--primary);
+        }
 
+        /* ===== TABLE STYLES ===== */
+        /* ===== TASK TABLE ===== */
+        .task-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 14px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            border: 1px solid #e2e8f0;
+        }
+        .task-table th {
+            text-align: left;
+            padding: 12px 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+            font-size: 13px;
+            letter-spacing: 0.3px;
+            border: none;
+        }
+        .task-table td {
+            padding: 10px 14px;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+            background: white;
+        }
+        .task-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        .task-table tbody tr:hover td {
+            background: #f8faff;
+        }
+        .task-table tbody tr.done td {
+            background: #fafafa;
+            color: #94a3b8;
+        }
+        .task-table tbody tr.done td.col-desc {
+            text-decoration: line-through;
+        }
+        /* Status cell - clickable */
+        .col-status {
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+        .col-status:hover {
+            background: #f0f4ff;
+            border-radius: 6px;
+        }
+        .status-imp { font-size: 15px; margin-right: 2px; }
+        .status-urg { font-size: 13px; margin-left: 4px; }
+        .status-comp {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-left: 6px;
+            border: 1px solid transparent;
+        }
+        .status-comp.pending {
+            background: #f1f5f9;
+            color: #64748b;
+            border: 1px solid #cbd5e1;
+        }
+        .status-comp.in-progress {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fcd34d;
+        }
+        .status-comp.done {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #6ee7b7;
+        }
+        /* Action buttons */
+        .btn-icon {
+            padding: 5px 8px;
+            font-size: 13px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: 6px;
+            margin: 0 2px;
+            transition: all 0.15s ease;
+        }
+        .btn-icon:hover {
+            background: #e0e7ff;
+            transform: scale(1.1);
+        }
+        .btn-icon.btn-do:hover { background: #bbf7d0; }
+        .btn-icon.btn-undo:hover { background: #fef9c3; }
+        .btn-icon.btn-edit:hover { background: #dbeafe; }
+        .btn-icon.btn-del:hover { background: #fee2e2; color: #dc2626; }
+        /* Column widths */
+        .col-num { width: 45px; text-align: center; color: #94a3b8; font-weight: 500; }
+        .col-date { width: 80px; color: #64748b; font-size: 13px; }
+        .col-desc { min-width: 180px; font-size: 14px; }
+        .col-status { width: 150px; font-size: 13px; }
+        .col-creator { width: 70px; color: #64748b; font-size: 13px; }
+        .col-actions { width: 110px; text-align: center; }
+        /* No border on hover last row */
+        .task-empty { }
+        
         /* ===== LOADING ===== */
         .loading { text-align: center; padding: 40px; color: var(--text-muted); }
     </style>
 </head>
 <body>
 
-<a class="back-link" href="index.html">← 返回主页</a>
-
 <div class="header">
+    <div class="header-left">
+        <a class="back-link" href="index.html">← 返回主页</a>
+    </div>
     <h1>📋 任务清单</h1>
     <div class="header-right">
         <span class="user-info" id="userInfo">加载中...</span>
-        <button class="btn btn-secondary btn-sm" onclick="exportCSV()">📥 CSV</button>
+        <button class="btn btn-secondary btn-sm" onclick="exportFilteredCSV()">📥 导出</button>
     </div>
 </div>
 
@@ -386,24 +528,25 @@
     <!-- Filter bar -->
     <div class="filter-bar" id="filterBar">
         <span class="filter-label">筛选：</span>
-        <span class="filter-tag active" data-filter="all" onclick="setFilter(this)">全部</span>
+        <span class="filter-tag" data-filter="all" onclick="setFilter(this)">全部</span>
         <span class="filter-tag" data-filter="urgency-high" onclick="setFilter(this)">🔥紧急</span>
         <span class="filter-tag" data-filter="urgency-medium" onclick="setFilter(this)">⚠️一般</span>
-        <span class="filter-tag" data-filter="urgency-low" onclick="setFilter(this)">☁️不急</span>
         <span class="filter-tag" data-filter="importance-high" onclick="setFilter(this)">⭐重要</span>
+        <span class="filter-tag" data-filter="importance-low" onclick="setFilter(this)">☆一般</span>
         <span class="filter-count" id="filterCount">0 条任务</span>
+        <button class="btn btn-primary btn-add-task" onclick="toggleAddForm()" style="margin-left:auto;padding:8px 20px;font-size:0.95rem;">➕ 新增任务</button>
     </div>
 
     <!-- Stats -->
     <div class="stats-bar" id="statsBar">
         <div class="stat-card"><div class="num" id="statTotal">0</div><div class="label">总任务</div></div>
-        <div class="stat-card"><div class="num" id="statPending">0</div><div class="label">待完成</div></div>
-        <div class="stat-card"><div class="num" id="statDone">0</div><div class="label">已完成</div></div>
-        <div class="stat-card"><div class="num" id="statUrgent">0</div><div class="label">紧急</div></div>
+        <div class="stat-card" style="border:none;box-shadow:none;background:transparent;"><div class="num" id="statPending">0</div><div class="label">待完成</div></div>
+        <div class="stat-card" style="border:none;box-shadow:none;background:transparent;"><div class="num" id="statDone">0</div><div class="label">已完成</div></div>
+        <div class="stat-card" style="border:none;box-shadow:none;background:transparent;"><div class="num" id="statUrgent" class="urgent">0</div><div class="label">紧急</div></div>
     </div>
 
-    <!-- Add form -->
-    <div class="add-form" id="addForm">
+    <!-- Add form (hidden by default) -->
+    <div class="add-form" id="addForm" style="display:none;">
         <div class="form-title">+ 新增任务</div>
         <div class="form-row full">
             <div class="form-group">
@@ -419,7 +562,6 @@
             <div class="form-group">
                 <label>紧急程度</label>
                 <select id="fUrgency">
-                    <option value="low">☁️ 不急</option>
                     <option value="medium" selected>⚠️ 一般</option>
                     <option value="high">🔥 紧急</option>
                 </select>
@@ -429,28 +571,44 @@
             <div class="form-group">
                 <label>重要程度</label>
                 <select id="fImportance">
-                    <option value="low">○ 不重要</option>
-                    <option value="medium" selected>◐ 一般</option>
-                    <option value="high">● 重要</option>
+                    <option value="low">☆ 一般</option>
+                    <option value="high">⭐ 重要</option>
                 </select>
             </div>
             <div class="form-group">
                 <label>完成度</label>
                 <select id="fCompletion">
-                    <option value="pending">☐ 未完成</option>
-                    <option value="done">☑ 已完成</option>
+                    <option value="pending" selected>○ 未开始</option>
+                    <option value="in-progress">◐ 进行中</option>
+                    <option value="done">✓ 已完成</option>
                 </select>
             </div>
         </div>
         <div class="form-actions">
+            <button class="btn btn-secondary" onclick="hideAddForm()">收起</button>
             <button class="btn btn-secondary" onclick="clearForm()">清空</button>
             <button class="btn btn-primary" onclick="addTask()">保存任务</button>
         </div>
     </div>
 
     <!-- Task list -->
-    <div id="taskList">
-        <div class="loading">⏳ 加载任务中...</div>
+    <div class="task-list-wrap" id="taskListWrap" style="background:var(--surface);padding:16px;border-radius:12px;border:1px solid #cbd5e1;box-shadow:0 2px 8px rgba(0,0,0,.04);">
+        <table class="task-table" id="taskList">
+            <thead>
+                <tr>
+                    <th class="col-num">#</th>
+                    <th class="col-date">日期</th>
+                    <th class="col-desc">事项</th>
+                    <th class="col-status">状态</th>
+                    <th class="col-creator">创建人</th>
+                    <th class="col-actions">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="loading-row"><td colspan="6" class="loading">⏳ 加载任务中...</td></tr>
+            </tbody>
+        </table>
+        <div class="task-empty" id="taskEmpty" style="display:none;text-align:center;padding:40px;color:var(--text-muted);">暂无任务</div>
     </div>
 </div>
 
@@ -489,7 +647,8 @@
             <div class="form-group">
                 <label>完成度</label>
                 <select id="editCompletion">
-                    <option value="pending">☐ 未完成</option>
+                    <option value="pending">○ 未开始</option>
+                    <option value="in-progress">◐ 进行中</option>
                     <option value="done">☑ 已完成</option>
                 </select>
             </div>
@@ -594,9 +753,22 @@ document.getElementById('userInfo').textContent = '👤 ' + currentUser;
 function loadTasks() {
     document.getElementById('taskList').innerHTML = '<div class="loading">⏳ 加载任务中...</div>';
     db.collection('task_list').orderBy('createdAt', 'desc').get().then(function(res) {
-        allTasks = res.data || [];
+        allTasks = (res.data || []).map(function(t) {
+            // Flatten CloudBase { _id, data: {...} } structure
+            if (t.data) {
+                t.task = t.data.task || '';
+                t.date = t.data.date || '';
+                t.urgency = t.data.urgency || 'medium';
+                t.importance = t.data.importance || 'low';
+                t.completion = t.data.completion || 'pending';
+                t.creator = t.data.creator || '';
+                t.createdAt = t.data.createdAt || '';
+                delete t.data;
+            }
+            return t;
+        });
         renderTasks()
-        checkUrlParams();;
+        checkUrlParams();
     }).catch(function(err) {
         console.warn("加载失败:", err.message);
         allTasks = [];
@@ -644,53 +816,54 @@ function renderTasks() {
         var filterMatch = currentFilter === 'all' || t[currentFilter] === 'yes' ||
             (currentFilter === 'urgency-high' && t.urgency === 'high') ||
             (currentFilter === 'urgency-medium' && t.urgency === 'medium') ||
-            (currentFilter === 'urgency-low' && t.urgency === 'low') ||
-            (currentFilter === 'importance-high' && t.importance === 'high');
+            (currentFilter === 'importance-high' && t.importance === 'high') ||
+            (currentFilter === 'importance-low' && t.importance === 'low') ||
+            (currentFilter === 'completion-pending' && t.completion === 'pending') ||
+            (currentFilter === 'completion-done' && t.completion === 'done');
         return tabMatch && filterMatch;
     });
 
-    var listEl = document.getElementById('taskList');
+    var listEl = document.getElementById('taskList').querySelector('tbody') || document.getElementById('taskList');
+    var emptyEl = document.getElementById('taskEmpty');
     document.getElementById('filterCount').textContent = filtered.length + ' 条任务';
 
     if (filtered.length === 0) {
-        listEl.innerHTML = '<div class="empty-state"><div class="icon">📋</div><p>暂无任务<br><small>添加一个开始规划吧！</small></p></div>';
+        listEl.innerHTML = '<tr><td colspan="6" class="empty-state" style="text-align:center;padding:40px;color:var(--text-muted);">📋 暂无任务</td></tr>';
+        if (emptyEl) emptyEl.style.display = 'block';
         updateStats();
         return;
+    } else {
+        if (emptyEl) emptyEl.style.display = 'none';
     }
 
-    var html = '<div class="task-list">';
-    filtered.forEach(function(t) {
-        var urgencyClass = 'urgency-' + t.urgency;
-        var completedClass = t.completion === 'done' ? 'completed' : '';
-        var urgencyLabel = { high: '🔥 紧急', medium: '⚠️ 一般', low: '☁️ 不急' };
-        var impLabel = { high: '●重要', medium: '◐一般', low: '○不重要' };
-        var compLabel = t.completion === 'done' ? '☑ 已完成' : '☐ 未完成';
-        var dateStr = t.date ? t.date.replace(/^(\d{4})-(\d{2})-(\d{2})$/, '$2/$3') : '无日期';
-
-        html += '<div class="task-item ' + urgencyClass + ' ' + completedClass + '">';
-        html += '<div class="task-header">';
-        html += '<div class="task-text">' + escHtml(t.task || '') + '</div>';
-        html += '<div class="task-badges">';
-        html += '<span class="badge badge-date">' + dateStr + '</span>';
-        html += '<span class="badge badge-urgency-' + t.urgency + '">' + urgencyLabel[t.urgency] + '</span>';
-        html += '<span class="badge badge-imp-' + t.importance + '">' + impLabel[t.importance] + '</span>';
-        html += '<span class="badge ' + (t.completion === 'done' ? 'badge-done' : 'badge-pending') + '">' + compLabel + '</span>';
-        html += '</div></div>';
-        html += '<div class="task-meta">';
-        html += '<span>👤 ' + escHtml(t.creator || '未知') + '</span>';
-        html += '<span>📅 ' + (t.createdAt ? new Date(t.createdAt).toLocaleString('zh-CN', {timeZone:'Asia/Saigon'}).replace(/\//g,'-') : '') + '</span>';
-        html += '</div>';
-        html += '<div class="task-actions">';
-        if (t.completion !== 'done') {
-            html += '<button class="btn btn-sm btn-primary" onclick="toggleDone(\'' + t._id + '\')">☑ 完成</button>';
-        } else {
-            html += '<button class="btn btn-sm btn-secondary" onclick="toggleDone(\'' + t._id + '\')">↩ 恢复</button>';
-        }
-        html += '<button class="btn btn-sm btn-secondary" onclick="openEditModal(\'' + t._id + '\')">✏️ 编辑</button>';
-        html += '<button class="btn btn-sm btn-danger" onclick="deleteTask(\'' + t._id + '\')">🗑️ 删除</button>';
-        html += '</div></div>';
+    var html = '';
+    filtered.forEach(function(t, index) {
+        var urgencyClass = t.urgency === 'high' ? 'urgency-high' : 'urgency-normal';
+        var completedClass = t.completion === 'done' ? 'done' : '';
+        var impIcon = t.importance === 'high' ? '⭐' : '☆';
+        var impColor = t.importance === 'high' ? '#f59e0b' : '#94a3b8';
+        var compText = t.completion === 'done' ? '已完成' : '未开始';
+        var compClass = t.completion === 'done' ? 'done' : (t.completion === 'in-progress' ? 'in-progress' : 'pending');
+        var compSymbol = t.completion === 'done' ? '✓' : (t.completion === 'in-progress' ? '◐' : '○');
+        var compText = t.completion === 'done' ? '已完成' : (t.completion === 'in-progress' ? '进行中' : '未开始');
+        var urgIcon = t.urgency === 'high' ? '🔥' : '⚠️';
+        var rowStyle = t.completion === 'done' ? 'style="opacity:0.55;"' : '';
+        
+        html += '<tr class="task-item ' + (t.completion === 'done' ? 'done' : '') + '" data-id="' + (t._id || t.id) + '">';
+        html += '<td class="col-num">' + (index + 1) + '</td>';
+        html += '<td class="col-date">' + (t.date ? t.date.replace(/^(\d{4})-(\d{2})-(\d{2})$/, '$2/$3') : '-') + '</td>';
+        html += '<td class="col-desc"' + rowStyle + '>' + escHtml(t.task || '') + '</td>';
+        html += '<td class="col-status" onclick="toggleDone(\'' + (t._id || t.id) + '\');event.stopPropagation();" title="点击切换进度">';
+        html += '<span class="status-imp">' + impIcon + '</span>';
+        html += '<span class="status-urg">' + urgIcon + '</span>';
+        html += '<span class="status-comp status-' + compClass + '">' + compSymbol + ' ' + compText + '</span>';
+        html += '</td>';
+        html += '<td class="col-creator">' + escHtml(t.creator || '-') + '</td>';
+        html += '<td class="col-actions">';
+        html += '<button class="btn-icon btn-edit" title="编辑" onclick="openEditModal(\'' + (t._id || t.id) + '\')">✏️</button>';
+        html += '<button class="btn-icon btn-del" title="删除" onclick="deleteTask(\'' + (t._id || t.id) + '\')">🗑️</button>';
+        html += '</td></tr>';
     });
-    html += '</div>';
     listEl.innerHTML = html;
     updateStats();
 }
@@ -736,7 +909,7 @@ function clearForm() {
     document.getElementById('fTask').value = '';
     document.getElementById('fDate').valueAsDate = new Date();
     document.getElementById('fUrgency').value = 'medium';
-    document.getElementById('fImportance').value = 'medium';
+    document.getElementById('fImportance').value = 'low';
     document.getElementById('fCompletion').value = 'pending';
 }
 
@@ -744,11 +917,16 @@ function clearForm() {
 function toggleDone(id) {
     var task = allTasks.find(function(t) { return t._id === id; });
     if (!task) return;
-    var newStatus = task.completion === 'done' ? 'pending' : 'done';
-    db.collection('task_list').doc(id).update({ completion: newStatus }).then(function() {
-        task.completion = newStatus;
+    // Cycle: pending -> in-progress -> done -> pending
+    var next;
+    if (task.completion === 'pending') next = 'in-progress';
+    else if (task.completion === 'in-progress') next = 'done';
+    else next = 'pending';
+    var labels = { pending: '未开始', 'in-progress': '进行中', done: '已完成' };
+    db.collection('task_list').doc(id).update({ completion: next }).then(function() {
+        task.completion = next;
         renderTasks();
-        toast(newStatus === 'done' ? '任务已完成 ✓' : '已恢复为未完成', 'success');
+        toast(labels[next], 'success');
     }).catch(function(err) {
         toast('更新失败: ' + err.message, 'error');
     });
@@ -823,18 +1001,33 @@ function setFilter(el) {
     renderTasks();
 }
 
-// ==================== 导出CSV ====================
-function exportCSV() {
+// ==================== 导出当前显示的任务 ====================
+function exportFilteredCSV() {
     var rows = [['日期', '事项', '紧急', '重要', '完成度', '创建人', '创建时间']];
-    allTasks.forEach(function(t) {
-        var urgMap = { high: '紧急', medium: '一般', low: '不急' };
-        var impMap = { high: '重要', medium: '一般', low: '不重要' };
+    // Get filtered tasks (same logic as renderTasks)
+    var tabMatch, filterMatch, filtered = [];
+    filtered = allTasks.filter(function(t) {
+        tabMatch = currentTab === 'all' ||
+            (currentTab === 'pending' && t.completion !== 'done') ||
+            (currentTab === 'done' && t.completion === 'done');
+        filterMatch = currentFilter === 'all' || t[currentFilter] === 'yes' ||
+            (currentFilter === 'urgency-high' && t.urgency === 'high') ||
+            (currentFilter === 'urgency-medium' && t.urgency === 'medium') ||
+            (currentFilter === 'importance-high' && t.importance === 'high') ||
+            (currentFilter === 'importance-low' && t.importance === 'low') ||
+            (currentFilter === 'completion-pending' && t.completion === 'pending') ||
+            (currentFilter === 'completion-done' && t.completion === 'done');
+        return tabMatch && filterMatch;
+    });
+    filtered.forEach(function(t) {
+        var urgMap = { high: '紧急', medium: '一般' };
+        var impMap = { high: '重要', low: '一般' };
         rows.push([
             t.date || '',
             (t.task || '').replace(/"/g, '""'),
             urgMap[t.urgency] || '',
             impMap[t.importance] || '',
-            t.completion === 'done' ? '已完成' : '未完成',
+            t.completion === 'done' ? '已完成' : (t.completion === 'in-progress' ? '进行中' : '未开始'),
             t.creator || '',
             t.createdAt || ''
         ]);
@@ -847,10 +1040,15 @@ function exportCSV() {
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
-    a.download = '任务清单_' + new Date().toISOString().slice(0,10) + '.csv';
+    var tabNames = { all: '全部', pending: '待完成', done: '已完成' };
+    var filtNames = { all: '', 'urgency-high': '紧急', 'urgency-medium': '一般', 'importance-high': '重要', 'importance-low': '一般' };
+    var tabName = tabNames[currentTab] || currentTab;
+    var filtName = currentFilter !== 'all' ? '_' + (filtNames[currentFilter] || currentFilter) : '';
+    a.download = '任务清单_' + tabName + filtName + '_' + new Date().toISOString().slice(0,10) + '.csv';
     a.click();
     URL.revokeObjectURL(url);
-    toast('CSV 已下载 (' + allTasks.length + '条)', 'success');
+    var count = document.getElementById('filterCount').textContent;
+    toast('已导出 ' + count, 'success');
 }
 
 // ==================== Toast ====================
@@ -880,6 +1078,33 @@ function escHtml(str) {
         }, 500);
     }
 })();
+
+// ==================== 初始化 - 显示用户名 ====================
+(function() {
+    var username = sessionStorage.getItem("apex_username");
+    if (username) {
+        document.getElementById("userInfo").textContent = "👤 " + username;
+    } else {
+        document.getElementById("userInfo").textContent = "👤 访客";
+    }
+})();
+
+// ==================== 切换新增任务表单 ====================
+function toggleAddForm() {
+    var form = document.getElementById('addForm');
+    if (form.style.display === 'none') {
+        form.style.display = 'block';
+        document.getElementById('fTask').focus();
+        form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+        form.style.display = 'none';
+    }
+}
+
+// ==================== 关闭新增任务表单 ====================
+function hideAddForm() {
+    document.getElementById('addForm').style.display = 'none';
+}
 </script>
 </body>
 </html>
