@@ -937,6 +937,7 @@ function addLog(action, detail) {
         db.collection("system_logs").add(logEntry).catch(function(err) {
             console.warn("日志云端同步失败:", err.message);
         });
+    }
 }
 
 // 从云端加载日志（用于日志面板显示）
