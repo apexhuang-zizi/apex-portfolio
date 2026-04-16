@@ -662,59 +662,36 @@
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<!-- CloudBase SDK (async loading with multiple CDN fallbacks) -->
+<!-- CloudBase SDK (从同源加载，无需外部CDN) -->
+<script src="cloudbase.full.js"></script>
 <script>
+// ==================== CloudBase 初始化 ====================
 (function() {
-    // 按优先级尝试多个CDN
-    var cdnList = [
-        "https://cloudbase-1gd2fb7f0d9f8c-1309465890.tcloudbaseapp.com/sdk/cloudbase.full.js",
-        "https://minapp-1gd2fb7f0d9f8c-1309465890.tcloudbaseapp.com/sdk/cloudbase.full.js",
-    ];
-    var idx = 0;
-    function tryLoad() {
-        if (typeof cloudbase !== "undefined") {
-            initCloudBase();
-            return;
-        }
-        if (idx >= cdnList.length) {
-            console.warn("所有CDN加载失败，使用本地模式");
-            initLocalMode();
-            return;
-        }
-        console.log("尝试CDN: " + cdnList[idx]);
-        var s = document.createElement("script");
-        s.src = cdnList[idx++];
-        s.onload = initCloudBase;
-        s.onerror = tryLoad;
-        document.head.appendChild(s);
-    }
-    function initCloudBase() {
+    if (typeof cloudbase !== "undefined") {
+        console.log("CloudBase SDK loaded from local");
         try {
-            console.log("SDK加载成功，初始化CloudBase...");
             var app = cloudbase.init({ env: "apex-english-4ga1ck7148c9e3" });
-            window._db = app.database();
+            db = app.database();
             app.auth().anonymousAuthProvider().signIn().then(function() {
                 console.log("CloudBase 匿名登录成功");
                 loadTasks();
             }).catch(function(err) {
-                console.error("CloudBase 登录失败:", err.message);
-                initLocalMode();
+                console.warn("CloudBase 登录失败:", err.message);
+                db = makeLocalDB();
+                loadTasks();
             });
         } catch(e) {
             console.error("CloudBase init错误:", e.message);
-            initLocalMode();
+            db = makeLocalDB();
+            loadTasks();
         }
-    }
-    function initLocalMode() {
-        console.log("初始化本地模式...");
+    } else {
+        console.warn("CloudBase SDK未加载，使用本地模式");
         db = makeLocalDB();
         loadTasks();
     }
-    tryLoad();
 })();
 </script>
-
-<script>
 // ==================== 本地数据库（SDK加载失败时的回退）====================
 var db;  // 全局数据库引用，由上方初始化代码设置
 var currentUser = localStorage.getItem('taskUser') || '匿名用户';
