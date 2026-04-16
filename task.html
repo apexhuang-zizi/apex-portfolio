@@ -367,11 +367,48 @@
 
         /* ===== MOBILE ===== */
         @media (max-width: 600px) {
+            body { padding: 12px; }
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            .header h1 { font-size: 1.2rem; }
+            .header-right { gap: 6px; }
+            .btn-sm { padding: 5px 10px; font-size: 0.8rem; }
+            /* Tabs - horizontal scroll */
+            .tabs { overflow-x: auto; padding: 6px; white-space: nowrap; }
+            .tab-btn { padding: 8px 14px; font-size: 0.85rem; flex-shrink: 0; }
+            /* Filter bar - horizontal scroll */
+            .filter-bar {
+                overflow-x: auto;
+                white-space: nowrap;
+                flex-wrap: nowrap;
+                padding-bottom: 4px;
+            }
+            .filter-tag { flex-shrink: 0; font-size: 0.75rem; padding: 4px 9px; }
+            .filter-count { flex-shrink: 0; }
+            .btn-add-task { flex-shrink: 0; padding: 6px 14px; font-size: 0.85rem; }
+            /* Stats */
+            .stats-bar { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+            .stat-card { padding: 10px; }
+            .stat-card .num { font-size: 1.3rem; }
+            /* Form */
             .form-row { grid-template-columns: 1fr; }
-            .stats-bar { grid-template-columns: repeat(2, 1fr); }
-            .header { flex-direction: column; align-items: flex-start; }
-            .filter-bar { gap: 6px; }
-            .filter-tag { font-size: 0.75rem; padding: 4px 9px; }
+            .add-form { padding: 14px; }
+            /* Table - horizontal scroll */
+            .task-list-wrap {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            .task-table { font-size: 12px; min-width: 580px; }
+            .task-table th,
+            .task-table td { padding: 7px 8px; }
+            .col-creator { display: none; }
+            /* Modal */
+            .modal { margin: 10px; width: calc(100% - 20px); }
+            /* Filter bar wrapper */
+            .filter-bar { display: flex; }
         }
 
         /* ===== BACK BUTTON ===== */
