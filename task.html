@@ -374,22 +374,22 @@
             .filter-tag { font-size: 0.75rem; padding: 4px 9px; }
         }
 
-        /* ===== BACK LINK ===== */
-        .back-link {
+        /* ===== BACK BUTTON ===== */
+        .btn-back {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.85rem;
+            padding: 6px 14px;
+            border-radius: 6px;
+            text-decoration: none;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            color: var(--text-muted);
-            text-decoration: none;
-            font-size: 0.85rem;
-            padding: 8px 16px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            transition: all 0.2s;
-            background: var(--surface);
+            gap: 4px;
+            transition: background 0.2s;
         }
-        .back-link:hover {
-            color: var(--text);
+        .btn-back:hover {
             background: var(--bg);
             border-color: var(--primary);
         }
@@ -509,7 +509,7 @@
 
 <div class="header">
     <div class="header-left">
-        <a class="back-link" href="index.html">← 返回主页</a>
+        <button class="btn-back" onclick="location.href='index.html'">← 返回</button>
     </div>
     <h1>📋 任务清单</h1>
     <div class="header-right">
