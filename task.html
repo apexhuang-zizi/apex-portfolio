@@ -684,7 +684,6 @@ var currentUser = localStorage.getItem('taskUser') || '匿名用户';
     firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
     console.log("Firebase 初始化完成");
-    loadTasks();
 })();
 </script>
 
@@ -1034,6 +1033,9 @@ function escHtml(str) {
         document.getElementById("userInfo").textContent = "👤 访客";
     }
 })();
+
+// ==================== 加载任务列表（Firebase） ====================
+loadTasks();
 
 // ==================== 切换新增任务表单 ====================
 function toggleAddForm() {
