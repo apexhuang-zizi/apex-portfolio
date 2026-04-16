@@ -662,41 +662,14 @@
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<!-- CloudBase SDK (从同源加载，无需外部CDN) -->
+<!-- CloudBase SDK (从同源加载) -->
 <script src="cloudbase.full.js"></script>
+
+<!-- 本地数据库（必须在CloudBase初始化前定义） -->
 <script>
-// ==================== CloudBase 初始化 ====================
-(function() {
-    if (typeof cloudbase !== "undefined") {
-        console.log("CloudBase SDK loaded from local");
-        try {
-            var app = cloudbase.init({ env: "apex-english-4ga1ck7148c9e3" });
-            db = app.database();
-            app.auth().anonymousAuthProvider().signIn().then(function() {
-                console.log("CloudBase 匿名登录成功");
-                loadTasks();
-            }).catch(function(err) {
-                console.warn("CloudBase 登录失败:", err.message);
-                db = makeLocalDB();
-                loadTasks();
-            });
-        } catch(e) {
-            console.error("CloudBase init错误:", e.message);
-            db = makeLocalDB();
-            loadTasks();
-        }
-    } else {
-        console.warn("CloudBase SDK未加载，使用本地模式");
-        db = makeLocalDB();
-        loadTasks();
-    }
-})();
-</script>
-// ==================== 本地数据库（SDK加载失败时的回退）====================
-var db;  // 全局数据库引用，由上方初始化代码设置
+var db;
 var currentUser = localStorage.getItem('taskUser') || '匿名用户';
 
-// 供上方异步初始化代码调用
 function makeLocalDB() {
     var storageKey = 'task_list_data';
     function load() {
@@ -742,6 +715,44 @@ function makeLocalDB() {
             };
         }
     };
+}
+
+// ==================== CloudBase 初始化 ====================
+(function() {
+    if (typeof cloudbase === "undefined") {
+        console.warn("CloudBase SDK未加载，使用本地模式");
+        db = makeLocalDB();
+        loadTasks();
+        return;
+    }
+
+    try {
+        var app = cloudbase.init({ env: "apex-english-4ga1ck7148c9e3" });
+        db = app.database();
+
+        // 先设置好 loadTasks，等登录成功后再调用
+        app.auth().anonymousAuthProvider().signIn().then(function() {
+            console.log("CloudBase 匿名登录成功");
+            showToast("云端已连接", "success");
+            loadTasks();
+        }).catch(function(err) {
+            console.warn("CloudBase 登录失败:", err.message);
+            // CORS/network错误 → 本地模式
+            if (err.message.indexOf('network') !== -1 || err.message.indexOf('CORS') !== -1 ||
+                err.message.indexOf('Failed') !== -1) {
+                console.warn("网络不可用，使用本地模式（数据仅保存在本地）");
+                showToast("网络不可用，已切换本地模式", "warning");
+            }
+            db = makeLocalDB();
+            loadTasks();
+        });
+    } catch(e) {
+        console.error("CloudBase init错误:", e.message);
+        db = makeLocalDB();
+        loadTasks();
+    }
+})();
+</script>
 }
 
 // ==================== 状态管理 ====================
