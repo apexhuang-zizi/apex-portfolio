@@ -883,129 +883,107 @@
         </div>
     </div>
     
-    <!-- 腾讯云 CloudBase SDK（替代 Firebase，国内无墙） -->
-    <script src="https://cdn.jsdelivr.net/npm/@cloudbase/js-sdk@1.7.1/cloudbase.full.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js"></script>
     
     <script>
-        // ==================== 腾讯云 CloudBase ====================
+        // ==================== Firebase 数据层 ====================
         
-        // 封装：localStorage 替代 CloudBase（SDK加载失败时备用）
-        // 数据全部存 localStorage，接口格式尽量与 CloudBase 一致
+        var db;
+        var firebaseReady = false;
+        
+        var firebaseConfig = {
+            apiKey: "AIzaSyCMPFTNEBWXA_EnkF7Yk__F1gdHYfPg8kM",
+            authDomain: "vietnames-data.firebaseapp.com",
+            projectId: "vietnames-data",
+            storageBucket: "vietnames-data.firebasestorage.app",
+            messagingSenderId: "474396114838",
+            appId: "1:474396114838:web:0fc28fb08bfbd4b6bee7b7"
+        };
+        
+        (function initFirebase() {
+            try {
+                if (typeof firebase !== "undefined") {
+                    firebase.initializeApp(firebaseConfig);
+                    db = firebase.firestore();
+                    firebaseReady = true;
+                    console.log("Firebase 初始化完成");
+                } else {
+                    throw new Error("Firebase SDK 未加载");
+                }
+            } catch(e) {
+                console.warn("Firebase 初始化失败（本地模式）:", e.message);
+                db = null;
+                firebaseReady = false;
+            }
+        })();
+        
+        // Firebase 超时封装
+        function fbWithTimeout(promise, timeoutMs) {
+            return Promise.race([
+                promise,
+                new Promise(function(resolve) {
+                    setTimeout(function() { resolve(null); }, timeoutMs || 8000);
+                })
+            ]);
+        }
+        
+        // 本地存储替代 Firebase（网络失败时备用）
+        var localDbCache = {};
         function makeLocalDB() {
-            var dbInstance = {};
-            
             return {
                 collection: function(name) {
                     var storageKey = "tcb_" + name;
                     var colData = JSON.parse(localStorage.getItem(storageKey) || "{}");
-                    
-                    function save() {
-                        localStorage.setItem(storageKey, JSON.stringify(colData));
-                    }
-                    
-                    function getAll() {
-                        var list = Object.keys(colData).map(function(k) { return colData[k]; });
-                        return Promise.resolve({ data: list });
-                    }
-                    
+                    function save() { localStorage.setItem(storageKey, JSON.stringify(colData)); }
                     return {
                         doc: function(id) {
                             return {
                                 get: function() {
-                                    if (colData[id]) {
-                                        return Promise.resolve({ data: [colData[id]], exists: true });
-                                    }
-                                    return Promise.resolve({ data: [], exists: false });
+                                    var doc = colData[id];
+                                    return Promise.resolve(doc ? { exists: true, data: function() { return doc; } } : { exists: false, data: function() { return null; } });
                                 },
-                                set: function(data) {
-                                    colData[id] = data;
-                                    save();
-                                    return Promise.resolve({});
-                                }
+                                set: function(data) { colData[id] = data; save(); return Promise.resolve({}); }
                             };
                         },
                         add: function(data) {
                             var id = Date.now() + "_" + Math.random().toString(36).slice(2);
-                            colData[id] = data;
-                            save();
+                            colData[id] = data; save();
                             return Promise.resolve({ id: id });
                         },
-                        where: function() {
-                            // 本地模式：where 不实际过滤（简化处理）
-                            return this;
-                        },
-                        limit: function() {
-                            return this;
-                        },
+                        where: function() { return this; },
+                        limit: function() { return this; },
                         get: function() {
-                            // collection().where().limit().get()
-                            return getAll();
+                            var list = Object.keys(colData).map(function(k) { return colData[k]; });
+                            return Promise.resolve({ docs: list.map(function(d) { return { data: function() { return d; } }; }) });
                         }
                     };
                 }
             };
         }
-        
-        var db;
-        var cbLoginPromise;
-        
-        // 尝试初始化 CloudBase，失败则用本地模式
-        try {
-            if (typeof cloudbase !== "undefined") {
-                var cloudbaseApp = cloudbase.init({
-                    env: "apex-english-4ga1ck7148c9e3"
-                });
-                db = cloudbaseApp.database();
-                cbLoginPromise = cloudbaseApp.auth().anonymousAuthProvider().signIn().then(function() {
-                    console.log("CloudBase 匿名登录成功");
-                }).catch(function(err) {
-                    console.warn("CloudBase 登录失败（切换本地模式）:", err.message);
-                    db = makeLocalDB();
-                    cbLoginPromise = Promise.resolve();
-                });
-                console.log("CloudBase 初始化成功");
-            } else {
-                throw new Error("CloudBase SDK 未加载");
-            }
-        } catch(e) {
-            console.warn("CloudBase 初始化失败（本地模式）:", e.message);
-            db = makeLocalDB();
-            cbLoginPromise = Promise.resolve();
-        }
-        
-        // ==================== CloudBase 超时封装 ====================
-        function cbWithTimeout(promise, timeoutMs) {
-            return Promise.race([
-                promise,
-                new Promise(function(resolve) {
-                    setTimeout(function() { resolve(null); }, timeoutMs || 5000);
-                })
-            ]);
-        }
+        if (!firebaseReady) db = makeLocalDB();
         
         // ==================== 词汇缓存 ====================
         var VOCAB_CACHE = {};
         var VOCAB_LOADED = {};
         
-        // 从 CloudBase 加载词汇（5秒超时，本地优先）
+        // 从 Firebase 加载词汇
         async function loadVocabFromDB(grade, semester) {
             var key = grade + "-" + semester;
             if (VOCAB_LOADED[key]) return VOCAB_CACHE[key];
             
             try {
-                // 等待 CloudBase 登录（最多5秒，失败不阻塞）
-                await cbWithTimeout(cbLoginPromise, 5000);
-                
-                var result = await cbWithTimeout(
-                    db.collection("english_vocabulary").doc(key).get(),
-                    5000
-                );
-                if (result && result.data && result.data.length > 0) {
-                    VOCAB_CACHE[key] = result.data[0].words || [];
-                    VOCAB_LOADED[key] = true;
-                    console.log("已从CloudBase加载词汇: " + key + " (" + VOCAB_CACHE[key].length + "词)");
-                    return VOCAB_CACHE[key];
+                if (firebaseReady) {
+                    var result = await fbWithTimeout(db.collection("english_vocabulary").doc(key).get(), 8000);
+                    if (result && result.exists) {
+                        var data = result.data();
+                        VOCAB_CACHE[key] = data.words || [];
+                        VOCAB_LOADED[key] = true;
+                        console.log("已从Firebase加载词汇: " + key + " (" + VOCAB_CACHE[key].length + "词)");
+                        return VOCAB_CACHE[key];
+                    }
                 }
             } catch (e) {
                 console.warn("加载词汇失败:", e.message);
@@ -1013,15 +991,15 @@
             return [];
         }
         
-        // 保存词汇到 CloudBase（失败不阻塞）
+        // 保存词汇到 Firebase
         async function saveVocabToDB(grade, semester, words) {
             var key = grade + "-" + semester;
             try {
-                await cbWithTimeout(cbLoginPromise, 5000);
-                await cbWithTimeout(db.collection("english_vocabulary").doc(key).set({ words: words }), 5000);
-                VOCAB_CACHE[key] = words;
-                VOCAB_LOADED[key] = true;
-                console.log("已保存词汇到数据库: " + key + " (" + words.length + "词)");
+                if (firebaseReady) {
+                    await fbWithTimeout(db.collection("english_vocabulary").doc(key).set({ words: words }), 8000);
+                    VOCAB_CACHE[key] = words;
+                    VOCAB_LOADED[key] = true;
+                    console.log("已保存词汇到Firebase: " + key + " (" + words.length + "词)");
             } catch (e) {
                 console.error("保存词汇失败:", e);
             }
@@ -1554,10 +1532,10 @@
             console.log("本地保存:", recordKey(record), existsLocal ? "(已存在，跳过)" : "(新增)");
             renderHistoryQuest(local);  // 立即渲染本地数据
             
-            // 2. 上传到 CloudBase（异步，静默失败，5秒超时）
-            cbWithTimeout(
-                cbLoginPromise.then(function() {
-                    return db.collection("english_records").add({
+            // 2. 上传到 Firebase（异步，静默失败，8秒超时）
+            if (firebaseReady) {
+                fbWithTimeout(
+                    db.collection("english_records").add({
                         user: username,
                         username: username,
                         grade: G.grade,
@@ -1574,14 +1552,22 @@
                         wrongCount: G.wrong.length,
                         wrongWords: G.wrong.map(function(w){return w.en;}),
                         timestamp: isoTs
-                    });
-                }),
-                5000
-            ).then(function(res) {
-                if (res) console.log("CloudBase上传成功! id:", res.id, "key:", recordKey(record));
-            }).catch(function(err){
-                console.warn("CloudBase上传失败:", err.message);
-            });
+                    }),
+                    8000
+                ).then(function(res) {
+                    if (res && res.id) console.log("Firebase上传成功! id:", res.id, "key:", recordKey(record));
+                }).catch(function(err){
+                    console.warn("Firebase上传失败:", err.message);
+                });
+            } else {
+                // 本地模式：保存到本地记录列表
+                var lKey = "english_records_local";
+                var lData = JSON.parse(localStorage.getItem(lKey) || "[]");
+                record._local = true;
+                lData.unshift(record);
+                if (lData.length > 100) lData = lData.slice(0, 100);
+                localStorage.setItem(lKey, JSON.stringify(lData));
+            }
         }
         
         // ========== 历史得分：localStorage（当前设备）+ CloudBase（跨设备只读展示） ==========
@@ -1618,58 +1604,65 @@
             localStorage.setItem("quest_history_all", JSON.stringify(uniqueLocal));
             renderHistoryQuest(uniqueLocal);
             
-            // Step 2: 后台从 CloudBase 合并（5秒超时）
-            cbWithTimeout(
-                cbLoginPromise.then(function() {
-                    return db.collection("english_records")
-                        .where({ type: "word-quest" })
+            // Step 2: 后台从 Firebase 合并（8秒超时）
+            if (firebaseReady) {
+                fbWithTimeout(
+                    db.collection("english_records")
+                        .where("type", "==", "word-quest")
                         .limit(500)
-                        .get();
-                }),
-                5000
-            ).then(function(res) {
-                if (!res || !res.data || res.data.length === 0) {
-                    console.log("CloudBase: 无云端记录（或超时）");
-                    return;
+                        .get(),
+                    8000
+                ).then(function(res) {
+                    if (!res || res.empty) {
+                        console.log("Firebase: 无云端记录（或超时）");
+                        return;
+                    }
+                    
+                    var cbRecords = res.docs.map(function(d) { return d.data(); });
+                    console.log("Firebase同步: 获取到" + cbRecords.length + "条");
+                    
+                    var currentLocal = JSON.parse(localStorage.getItem("quest_history_all") || "[]");
+                    var localKeys = {};
+                    for (var m = 0; m < currentLocal.length; m++) {
+                        localKeys[recordKey(currentLocal[m])] = true;
+                    }
+                    
+                    var newFromCb = [];
+                    for (var n = 0; n < cbRecords.length; n++) {
+                        var cbR = cbRecords[n];
+                        cbR.timestamp = tsToIso(cbR.timestamp);
+                        cbR.user = cbR.user || cbR.username || "未知用户";
+                        cbR.scoreStr = (cbR.score !== undefined && cbR.score !== null) ? String(cbR.score) : "";
+                        var cbKey = recordKey(cbR);
+                        if (!localKeys[cbKey]) { newFromCb.push(cbR); }
+                    }
+                    
+                    console.log("Firebase同步: 云端" + cbRecords.length + "条, 新增" + newFromCb.length + "条");
+                    if (newFromCb.length === 0) return;
+                    
+                    var merged = currentLocal.concat(newFromCb);
+                    var mergedKeys = {};
+                    var uniqueMerged = [];
+                    for (var p = 0; p < merged.length; p++) {
+                        var mk = recordKey(merged[p]);
+                        if (!mergedKeys[mk]) { mergedKeys[mk] = true; uniqueMerged.push(merged[p]); }
+                    }
+                    
+                    uniqueMerged.sort(function(a, b){ return new Date(tsToIso(b.timestamp)||0) - new Date(tsToIso(a.timestamp)||0); });
+                    uniqueMerged = uniqueMerged.slice(0, 200);
+                    localStorage.setItem("quest_history_all", JSON.stringify(uniqueMerged));
+                    renderHistoryQuest(uniqueMerged);
+                }).catch(function(err) {
+                    console.warn("Firebase同步失败:", err.message);
+                });
+            } else {
+                // 本地模式：从 english_records_local 加载
+                var lData = JSON.parse(localStorage.getItem("english_records_local") || "[]");
+                if (lData.length > 0) {
+                    console.log("本地模式: 读取到" + lData.length + "条本地记录");
+                    renderHistoryQuest(lData);
                 }
-                
-                var cbRecords = res.data;
-                console.log("CloudBase同步: 获取到" + cbRecords.length + "条");
-                
-                var currentLocal = JSON.parse(localStorage.getItem("quest_history_all") || "[]");
-                var localKeys = {};
-                for (var m = 0; m < currentLocal.length; m++) {
-                    localKeys[recordKey(currentLocal[m])] = true;
-                }
-                
-                var newFromCb = [];
-                for (var n = 0; n < cbRecords.length; n++) {
-                    var cbR = cbRecords[n];
-                    cbR.timestamp = tsToIso(cbR.timestamp);
-                    cbR.user = cbR.user || cbR.username || "未知用户";
-                    cbR.scoreStr = (cbR.score !== undefined && cbR.score !== null) ? String(cbR.score) : "";
-                    var cbKey = recordKey(cbR);
-                    if (!localKeys[cbKey]) { newFromCb.push(cbR); }
-                }
-                
-                console.log("CloudBase同步: 云端" + cbRecords.length + "条, 新增" + newFromCb.length + "条");
-                if (newFromCb.length === 0) return;
-                
-                var merged = currentLocal.concat(newFromCb);
-                var mergedKeys = {};
-                var uniqueMerged = [];
-                for (var p = 0; p < merged.length; p++) {
-                    var mk = recordKey(merged[p]);
-                    if (!mergedKeys[mk]) { mergedKeys[mk] = true; uniqueMerged.push(merged[p]); }
-                }
-                
-                uniqueMerged.sort(function(a, b){ return new Date(tsToIso(b.timestamp)||0) - new Date(tsToIso(a.timestamp)||0); });
-                uniqueMerged = uniqueMerged.slice(0, 200);
-                localStorage.setItem("quest_history_all", JSON.stringify(uniqueMerged));
-                renderHistoryQuest(uniqueMerged);
-            }).catch(function(err) {
-                console.warn("CloudBase同步失败:", err.message);
-            });
+            }
         }
         
         function renderHistoryQuest(records) {
