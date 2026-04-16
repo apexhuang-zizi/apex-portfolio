@@ -662,42 +662,61 @@
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<!-- CloudBase SDK -->
-<script src="https://cdn.jsdelivr.net/npm/@cloudbase/js-sdk@1.7.1/cloudbase.full.js"></script>
-<!-- 备用 CDN -->
+<!-- CloudBase SDK (async loading with fallback) -->
 <script>
-if (typeof cloudbase === "undefined") {
-    document.write('<script src="https://unpkg.com/@cloudbase/js-sdk@1.7.1/dist/cloudbase.full.js"><\/script>');
-}
+(function() {
+    var cdnList = [
+        "https://cdn.jsdelivr.net/npm/@cloudbase/js-sdk@1.7.1/cloudbase.full.js",
+        "https://unpkg.com/@cloudbase/js-sdk@1.7.1/dist/cloudbase.full.js",
+        "https://regtbcdn.gtimg.com/tcb_js/cloudbase.full.js"
+    ];
+    var idx = 0;
+    function tryLoad() {
+        if (typeof cloudbase !== "undefined") {
+            initCloudBase();
+            return;
+        }
+        if (idx >= cdnList.length) {
+            console.warn("所有CDN加载失败，使用本地模式");
+            initLocalMode();
+            return;
+        }
+        var s = document.createElement("script");
+        s.src = cdnList[idx++];
+        s.onload = initCloudBase;
+        s.onerror = tryLoad;
+        document.head.appendChild(s);
+    }
+    function initCloudBase() {
+        try {
+            var app = cloudbase.init({ env: "apex-english-4ga1ck7148c9e3" });
+            window._db = app.database();
+            app.auth().anonymousAuthProvider().signIn().then(function() {
+                console.log("CloudBase 匿名登录成功");
+                loadTasks();
+            }).catch(function(err) {
+                console.warn("CloudBase 登录失败:", err.message);
+                initLocalMode();
+            });
+        } catch(e) {
+            console.error("CloudBase init错误:", e.message);
+            initLocalMode();
+        }
+    }
+    function initLocalMode() {
+        db = makeLocalDB();  // 设置全局db变量
+        loadTasks();
+    }
+    tryLoad();
+})();
 </script>
 
 <script>
-// ==================== CloudBase 初始化 ====================
-var db;
+// ==================== 本地数据库（SDK加载失败时的回退）====================
+var db;  // 全局数据库引用，由上方初始化代码设置
 var currentUser = localStorage.getItem('taskUser') || '匿名用户';
 
-try {
-    if (typeof cloudbase !== "undefined") {
-        var app = cloudbase.init({ env: "apex-english-4ga1ck7148c9e3" });
-        db = app.database();
-        app.auth().anonymousAuthProvider().signIn().then(function() {
-            console.log("CloudBase 匿名登录成功");
-            loadTasks();
-        }).catch(function(err) {
-            console.warn("CloudBase 登录失败，使用本地模式:", err.message);
-            db = makeLocalDB();
-            loadTasks();
-        });
-    } else {
-        throw new Error("SDK未加载");
-    }
-} catch(e) {
-    console.warn("CloudBase 初始化失败，使用本地模式:", e.message);
-    console.error("详细错误:", e);
-    db = makeLocalDB();
-    loadTasks();
-}
-
+// 供上方异步初始化代码调用
 function makeLocalDB() {
     var storageKey = 'task_list_data';
     function load() {
