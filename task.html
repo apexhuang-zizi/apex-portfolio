@@ -102,6 +102,10 @@
             border: 1px solid #cbd5e1;
             box-shadow: 0 2px 8px rgba(0,0,0,.04);
         }
+        .mobile-add-bar {
+            display: none;
+            margin-bottom: 10px;
+        }
         .filter-label {
             font-size: 0.82rem;
             color: var(--text-muted);
@@ -132,6 +136,8 @@
             padding: 4px 10px;
             border-radius: 10px;
         }
+        .filter-my, .filter-all { display: none; }
+        .btn-desktop-only { }
 
         /* ===== ADD FORM ===== */
         .add-form {
@@ -409,6 +415,12 @@
             .modal { margin: 10px; width: calc(100% - 20px); }
             /* Filter bar wrapper */
             .filter-bar { display: flex; }
+            /* Mobile: hide desktop button, show mobile bar */
+            .mobile-add-bar { display: flex; }
+            .btn-desktop-only { display: none; }
+            /* Mobile: show my/all filter tags */
+            .filter-my { display: inline-flex !important; }
+            .filter-all { display: none !important; }
         }
 
         /* ===== BACK BUTTON ===== */
@@ -562,6 +574,11 @@
 </div>
 
 <div class="container">
+    <!-- Mobile: Add button row (only visible on mobile) -->
+    <div class="mobile-add-bar" id="mobileAddBar">
+        <button class="btn btn-primary" onclick="toggleAddForm()" style="width:100%;padding:10px;font-size:1rem;">➕ 新增任务</button>
+    </div>
+
     <!-- Filter bar -->
     <div class="filter-bar" id="filterBar">
         <span class="filter-label">筛选：</span>
@@ -570,7 +587,10 @@
         <span class="filter-tag" data-filter="importance-high" onclick="setFilter(this)">⭐重要</span>
         <span class="filter-tag" data-filter="importance-low" onclick="setFilter(this)">☆一般</span>
         <span class="filter-count" id="filterCount">0 条任务</span>
-        <button class="btn btn-primary btn-add-task" onclick="toggleAddForm()" style="margin-left:auto;padding:8px 20px;font-size:0.95rem;">➕ 新增任务</button>
+        <span class="filter-tag filter-my" data-filter="mine" onclick="setFilter(this)">👤 我的</span>
+        <span class="filter-tag filter-all" data-filter="all" onclick="setFilter(this)">📋 全部</span>
+        <!-- Desktop only: Add button inside bar -->
+        <button class="btn btn-primary btn-add-task btn-desktop-only" onclick="toggleAddForm()" style="margin-left:auto;padding:8px 20px;font-size:0.95rem;">➕ 新增任务</button>
     </div>
 
     <!-- Stats -->
@@ -733,7 +753,18 @@ var localTasks = [];
 var allTasks = [];
 var currentTab = 'all';
 var currentFilter = 'all';
+var mineOnly = false;  // true = 只显示自己的任务
 var editingId = null;
+var isAdminUser = false;
+
+// 检测管理员身份（从 sessionStorage 的 role 字段，index.html 设置）
+(function() {
+    try {
+        var role = sessionStorage.getItem('apex_role');
+        isAdminUser = (role === 'admin');
+        console.log('任务模块 - 管理员:', isAdminUser, '| 用户:', currentUser);
+    } catch(e) { isAdminUser = false; }
+})();
 
 // ==================== 初始化 ====================
 document.getElementById('fDate').valueAsDate = new Date();
@@ -795,6 +826,8 @@ function renderTasks() {
         var tabMatch = currentTab === 'all' ||
             (currentTab === 'pending' && t.completion !== 'done') ||
             (currentTab === 'done' && t.completion === 'done');
+        // 我的筛选：非管理员只看自己的任务
+        var mineMatch = mineOnly ? (t.creator === currentUser) : true;
         var filterMatch = currentFilter === 'all' || t[currentFilter] === 'yes' ||
             (currentFilter === 'urgency-high' && t.urgency === 'high') ||
             (currentFilter === 'urgency-medium' && t.urgency === 'medium') ||
@@ -802,7 +835,7 @@ function renderTasks() {
             (currentFilter === 'importance-low' && t.importance === 'low') ||
             (currentFilter === 'completion-pending' && t.completion === 'pending') ||
             (currentFilter === 'completion-done' && t.completion === 'done');
-        return tabMatch && filterMatch;
+        return tabMatch && filterMatch && mineMatch;
     });
 
     var listEl = document.getElementById('taskList').querySelector('tbody') || document.getElementById('taskList');
@@ -977,9 +1010,26 @@ function switchTab(tab) {
 }
 
 function setFilter(el) {
-    document.querySelectorAll('.filter-tag').forEach(function(t) { t.classList.remove('active'); });
-    el.classList.add('active');
-    currentFilter = el.dataset.filter;
+    var filter = el.dataset.filter;
+    // 处理我的/全部切换
+    if (filter === 'mine') {
+        mineOnly = true;
+        // 清除所有筛选标签 active，只激活"我的"
+        document.querySelectorAll('.filter-tag').forEach(function(t) { t.classList.remove('active'); });
+        document.querySelectorAll('.filter-my').forEach(function(t) { t.classList.add('active'); });
+    } else if (filter === 'all') {
+        mineOnly = false;
+        currentFilter = 'all';
+        document.querySelectorAll('.filter-tag').forEach(function(t) { t.classList.remove('active'); });
+        document.querySelectorAll('.filter-all').forEach(function(t) { t.classList.add('active'); });
+        // 常规"全部"标签也激活
+        document.querySelectorAll('.filter-tag[data-filter="all"]').forEach(function(t) { t.classList.add('active'); });
+    } else {
+        // 常规筛选标签
+        document.querySelectorAll('.filter-tag').forEach(function(t) { t.classList.remove('active'); });
+        el.classList.add('active');
+        currentFilter = filter;
+    }
     renderTasks();
 }
 
@@ -999,7 +1049,8 @@ function exportFilteredCSV() {
             (currentFilter === 'importance-low' && t.importance === 'low') ||
             (currentFilter === 'completion-pending' && t.completion === 'pending') ||
             (currentFilter === 'completion-done' && t.completion === 'done');
-        return tabMatch && filterMatch;
+        var mineMatch = mineOnly ? (t.creator === currentUser) : true;
+        return tabMatch && filterMatch && mineMatch;
     });
     filtered.forEach(function(t) {
         var urgMap = { high: '紧急', medium: '一般' };
@@ -1026,7 +1077,8 @@ function exportFilteredCSV() {
     var filtNames = { all: '', 'urgency-high': '紧急', 'urgency-medium': '一般', 'importance-high': '重要', 'importance-low': '一般' };
     var tabName = tabNames[currentTab] || currentTab;
     var filtName = currentFilter !== 'all' ? '_' + (filtNames[currentFilter] || currentFilter) : '';
-    a.download = '任务清单_' + tabName + filtName + '_' + new Date().toISOString().slice(0,10) + '.csv';
+    var mineLabel = mineOnly ? '_我的任务' : '';
+    a.download = '任务清单_' + tabName + filtName + mineLabel + '_' + new Date().toISOString().slice(0,10) + '.csv';
     a.click();
     URL.revokeObjectURL(url);
     var count = document.getElementById('filterCount').textContent;
@@ -1061,13 +1113,20 @@ function escHtml(str) {
     }
 })();
 
-// ==================== 初始化 - 显示用户名 ====================
+// ==================== 初始化 - 显示用户名 & 筛选状态 ====================
 (function() {
     var username = sessionStorage.getItem("apex_username");
     if (username) {
         document.getElementById("userInfo").textContent = "👤 " + username;
+    }
+    // 根据身份设置默认筛选状态
+    if (!isAdminUser) {
+        mineOnly = true;
+        document.querySelectorAll('.filter-my').forEach(function(t) { t.classList.add('active'); });
+        document.querySelectorAll('.filter-all').forEach(function(t) { t.classList.remove('active'); });
     } else {
-        document.getElementById("userInfo").textContent = "👤 访客";
+        document.querySelectorAll('.filter-all').forEach(function(t) { t.classList.add('active'); });
+        document.querySelectorAll('.filter-my').forEach(function(t) { t.classList.remove('active'); });
     }
 })();
 
