@@ -662,98 +662,36 @@
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<!-- CloudBase SDK (从同源加载) -->
-<script src="cloudbase.full.js"></script>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
 
-<!-- 本地数据库（必须在CloudBase初始化前定义） -->
+<!-- 数据层 -->
 <script>
 var db;
 var currentUser = localStorage.getItem('taskUser') || '匿名用户';
 
-function makeLocalDB() {
-    var storageKey = 'task_list_data';
-    function load() {
-        var d = localStorage.getItem(storageKey);
-        return d ? JSON.parse(d) : [];
-    }
-    function save(data) {
-        localStorage.setItem(storageKey, JSON.stringify(data));
-    }
-    return {
-        collection: function() {
-            return {
-                where: function() { return this; },
-                orderBy: function() { return this; },
-                get: function() {
-                    return Promise.resolve({ data: load() });
-                },
-                add: function(doc) {
-                    var list = load();
-                    var item = Object.assign({ _id: Date.now().toString() }, doc.data || doc);
-                    list.unshift(item);
-                    save(list);
-                    return Promise.resolve({ id: item._id });
-                },
-                doc: function(id) {
-                    return {
-                        update: function(doc) {
-                            var list = load();
-                            var idx = list.findIndex(function(i) { return i._id === id; });
-                            if (idx !== -1) Object.assign(list[idx], doc);
-                            save(list);
-                            return Promise.resolve({ updated: 1 });
-                        },
-                        remove: function() {
-                            var list = load();
-                            var idx = list.findIndex(function(i) { return i._id === id; });
-                            if (idx !== -1) list.splice(idx, 1);
-                            save(list);
-                            return Promise.resolve({ deleted: 1 });
-                        }
-                    };
-                }
-            };
-        }
-    };
-}
-
-// ==================== CloudBase 初始化 ====================
+// Firebase 初始化
 (function() {
-    if (typeof cloudbase === "undefined") {
-        console.warn("CloudBase SDK未加载，使用本地模式");
-        db = makeLocalDB();
-        loadTasks();
-        return;
-    }
-
-    try {
-        var app = cloudbase.init({ env: "apex-english-4ga1ck7148c9e3" });
-        db = app.database();
-
-        // 先设置好 loadTasks，等登录成功后再调用
-        app.auth().anonymousAuthProvider().signIn().then(function() {
-            console.log("CloudBase 匿名登录成功");
-            showToast("云端已连接", "success");
-            loadTasks();
-        }).catch(function(err) {
-            console.warn("CloudBase 登录失败:", err.message);
-            // CORS/network错误 → 本地模式
-            if (err.message.indexOf('network') !== -1 || err.message.indexOf('CORS') !== -1 ||
-                err.message.indexOf('Failed') !== -1) {
-                console.warn("网络不可用，使用本地模式（数据仅保存在本地）");
-                showToast("网络不可用，已切换本地模式", "warning");
-            }
-            db = makeLocalDB();
-            loadTasks();
-        });
-    } catch(e) {
-        console.error("CloudBase init错误:", e.message);
-        db = makeLocalDB();
-        loadTasks();
-    }
+    var firebaseConfig = {
+        apiKey: "AIzaSyCMPFTNEBWXA_EnkF7Yk__F1gdHYfPg8kM",
+        authDomain: "vietnames-data.firebaseapp.com",
+        projectId: "vietnames-data",
+        storageBucket: "vietnames-data.firebasestorage.app",
+        messagingSenderId: "474396114838",
+        appId: "1:474396114838:web:0fc28fb08bfbd4b6bee7b7"
+    };
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    console.log("Firebase 初始化完成");
+    loadTasks();
 })();
 </script>
-}
+
+<!-- 本地数据库（网络失败时的回退） -->
+<script>
+var localMode = false;
+var localTasks = [];
 
 // ==================== 状态管理 ====================
 var allTasks = [];
@@ -768,25 +706,17 @@ document.getElementById('userInfo').textContent = '👤 ' + currentUser;
 // ==================== 加载任务 ====================
 function loadTasks() {
     document.getElementById('taskList').innerHTML = '<div class="loading">⏳ 加载任务中...</div>';
-    db.collection('task_list').orderBy('createdAt', 'desc').get().then(function(res) {
-        allTasks = (res.data || []).map(function(t) {
-            // Flatten CloudBase { _id, data: {...} } structure
-            if (t.data) {
-                t.task = t.data.task || '';
-                t.date = t.data.date || '';
-                t.urgency = t.data.urgency || 'medium';
-                t.importance = t.data.importance || 'low';
-                t.completion = t.data.completion || 'pending';
-                t.creator = t.data.creator || '';
-                t.createdAt = t.data.createdAt || '';
-                delete t.data;
-            }
+    db.collection('task_list').orderBy('createdAt', 'desc').get().then(function(snapshot) {
+        allTasks = snapshot.docs.map(function(doc) {
+            var t = doc.data();
+            t._id = doc.id;
             return t;
         });
-        renderTasks()
+        console.log("Firebase 加载了 " + allTasks.length + " 条任务");
+        renderTasks();
         checkUrlParams();
     }).catch(function(err) {
-        console.warn("加载失败:", err.message);
+        console.error("加载失败:", err.message);
         allTasks = [];
         renderTasks();
     });
@@ -910,8 +840,8 @@ function addTask() {
         createdAt: new Date().toISOString()
     };
 
-    db.collection('task_list').add({ data: doc }).then(function(res) {
-        doc._id = res.id;
+    db.collection('task_list').add(doc).then(function(ref) {
+        doc._id = ref.id;
         allTasks.unshift(doc);
         renderTasks();
         clearForm();
@@ -992,7 +922,7 @@ function saveEdit() {
 // ==================== 删除 ====================
 function deleteTask(id) {
     if (!confirm('确定删除这条任务吗？')) return;
-    db.collection('task_list').doc(id).remove().then(function() {
+    db.collection('task_list').doc(id).delete().then(function() {
         allTasks = allTasks.filter(function(t) { return t._id !== id; });
         renderTasks();
         toast('已删除', 'success');
