@@ -669,7 +669,7 @@
 <!-- 数据层 -->
 <script>
 var db;
-var currentUser = localStorage.getItem('taskUser') || '匿名用户';
+var currentUser = sessionStorage.getItem('apex_username') || localStorage.getItem('taskUser') || '匿名用户';
 
 // Firebase 初始化
 (function() {
