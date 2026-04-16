@@ -1000,6 +1000,7 @@
                     VOCAB_CACHE[key] = words;
                     VOCAB_LOADED[key] = true;
                     console.log("已保存词汇到Firebase: " + key + " (" + words.length + "词)");
+                }
             } catch (e) {
                 console.error("保存词汇失败:", e);
             }
