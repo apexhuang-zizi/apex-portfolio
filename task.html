@@ -662,13 +662,13 @@
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<!-- CloudBase SDK (async loading with fallback) -->
+<!-- CloudBase SDK (async loading with multiple CDN fallbacks) -->
 <script>
 (function() {
+    // 按优先级尝试多个CDN
     var cdnList = [
-        "https://cdn.jsdelivr.net/npm/@cloudbase/js-sdk@1.7.1/cloudbase.full.js",
-        "https://unpkg.com/@cloudbase/js-sdk@1.7.1/dist/cloudbase.full.js",
-        "https://regtbcdn.gtimg.com/tcb_js/cloudbase.full.js"
+        "https://cloudbase-1gd2fb7f0d9f8c-1309465890.tcloudbaseapp.com/sdk/cloudbase.full.js",
+        "https://minapp-1gd2fb7f0d9f8c-1309465890.tcloudbaseapp.com/sdk/cloudbase.full.js",
     ];
     var idx = 0;
     function tryLoad() {
@@ -681,6 +681,7 @@
             initLocalMode();
             return;
         }
+        console.log("尝试CDN: " + cdnList[idx]);
         var s = document.createElement("script");
         s.src = cdnList[idx++];
         s.onload = initCloudBase;
@@ -689,13 +690,14 @@
     }
     function initCloudBase() {
         try {
+            console.log("SDK加载成功，初始化CloudBase...");
             var app = cloudbase.init({ env: "apex-english-4ga1ck7148c9e3" });
             window._db = app.database();
             app.auth().anonymousAuthProvider().signIn().then(function() {
                 console.log("CloudBase 匿名登录成功");
                 loadTasks();
             }).catch(function(err) {
-                console.warn("CloudBase 登录失败:", err.message);
+                console.error("CloudBase 登录失败:", err.message);
                 initLocalMode();
             });
         } catch(e) {
@@ -704,7 +706,8 @@
         }
     }
     function initLocalMode() {
-        db = makeLocalDB();  // 设置全局db变量
+        console.log("初始化本地模式...");
+        db = makeLocalDB();
         loadTasks();
     }
     tryLoad();
