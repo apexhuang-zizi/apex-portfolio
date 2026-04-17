@@ -6,7 +6,7 @@
     <title>英语星球 | English Planet</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+
         :root {
             --primary: #6366f1;
             --primary-dark: #4f46e5;
@@ -24,14 +24,14 @@
             --text-muted: #94a3b8;
             --border: #334155;
         }
-        
+
         body {
             font-family: 'Segoe UI', -apple-system, sans-serif;
             background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
             color: var(--text);
             min-height: 100vh;
         }
-        
+
         /* 顶部导航 */
         .topbar {
             background: linear-gradient(90deg, var(--bg-light), #312e81);
@@ -47,9 +47,9 @@
             z-index: 1000;
             box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
         }
-        
+
         .topbar-left { display: flex; align-items: center; gap: 16px; }
-        
+
         .back-btn {
             background: linear-gradient(135deg, var(--primary), var(--primary-dark));
             border: none;
@@ -61,19 +61,19 @@
             font-weight: 600;
             transition: all 0.2s;
         }
-        
+
         .back-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4); }
-        
-        .topbar h1 { 
-            font-size: 22px; 
+
+        .topbar h1 {
+            font-size: 22px;
             font-weight: 700;
             background: linear-gradient(90deg, #fff, #a5b4fc);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        
+
         .user-info { display: flex; align-items: center; gap: 10px; color: var(--text-muted); font-size: 14px; }
-        
+
         .user-avatar {
             width: 36px;
             height: 36px;
@@ -85,14 +85,14 @@
             font-weight: 700;
             color: white;
         }
-        
+
         /* 主体布局 */
         .main-layout {
             display: flex;
             min-height: calc(100vh - 62px);
             margin-top: 62px;
         }
-        
+
         /* Tab 导航（固定） */
         .tab-nav-wrapper {
             position: fixed;
@@ -104,13 +104,13 @@
             backdrop-filter: blur(10px);
             border-bottom: 1px solid var(--border);
         }
-        
+
         .tab-nav {
             display: flex;
             max-width: 800px;
             margin: 0 auto;
         }
-        
+
         .tab-btn {
             flex: 1;
             padding: 14px 12px;
@@ -123,10 +123,10 @@
             border-bottom: 3px solid transparent;
             transition: all 0.2s;
         }
-        
+
         .tab-btn:hover { color: var(--text); background: rgba(99, 102, 241, 0.1); }
         .tab-btn.active { color: var(--primary-light); border-bottom-color: var(--primary); background: rgba(99, 102, 241, 0.15); }
-        
+
         /* 左侧栏 */
         .sidebar-left {
             width: 220px;
@@ -141,7 +141,7 @@
             left: 0;
             bottom: 0;
         }
-        
+
         .sidebar-label {
             font-size: 12px;
             font-weight: 700;
@@ -152,7 +152,7 @@
             padding-bottom: 8px;
             border-bottom: 1px solid var(--border);
         }
-        
+
         .summary-btn {
             font-size: 11px;
             padding: 3px 8px;
@@ -166,7 +166,7 @@
             text-transform: none;
         }
         .summary-btn:hover { opacity: 0.85; }
-        
+
         .history-item {
             padding: 12px;
             border-radius: 10px;
@@ -175,9 +175,9 @@
             border-left: 3px solid var(--primary);
             transition: all 0.2s;
         }
-        
+
         .history-item:hover { transform: translateX(4px); background: rgba(51, 65, 85, 0.8); }
-        
+
         .history-grade { font-size: 11px; color: var(--primary-light); margin-bottom: 4px; }
         .history-score { font-size: 22px; font-weight: 700; margin-bottom: 2px; }
         .history-meta { font-size: 11px; color: var(--text-muted); line-height: 1.5; }
@@ -187,7 +187,7 @@
         .history-wrong { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px; }
         .wrong-word-btn { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4); color: #f87171; padding: 2px 8px; border-radius: 12px; font-size: 11px; cursor: pointer; transition: all 0.2s; }
         .wrong-word-btn:hover { background: rgba(239,68,68,0.3); transform: scale(1.05); }
-        
+
         /* 中央内容区 */
         .content-area {
             flex: 1;
@@ -196,7 +196,7 @@
             margin-left: 220px;
             margin-right: 230px;
         }
-        
+
         /* 右侧栏 */
         .sidebar-right {
             width: 230px;
@@ -211,16 +211,16 @@
             right: 0;
             bottom: 0;
         }
-        
+
         .rule-block { margin-bottom: 20px; }
-        
+
         .rule-block h4 {
             font-size: 13px;
             color: var(--accent);
             margin-bottom: 10px;
             font-weight: 600;
         }
-        
+
         .rule-line {
             font-size: 12px;
             color: var(--text-muted);
@@ -228,14 +228,14 @@
             border-bottom: 1px dashed var(--border);
             line-height: 1.6;
         }
-        
+
         .rule-line:last-child { border-bottom: none; }
         .rule-line strong { color: var(--text); }
-        
+
         /* Tab 内容 */
         .tab-content { display: none; max-width: 700px; margin: 0 auto; }
         .tab-content.active { display: block; }
-        
+
         /* 选择器 */
         .selector-group {
             display: flex;
@@ -245,7 +245,7 @@
             flex: 1;
             min-width: 0;
         }
-        
+
         .selector-row {
             display: flex;
             gap: 12px;
@@ -259,7 +259,7 @@
             padding: 8px 10px;
             font-size: 12px;
         }
-        
+
         .selector-label {
             width: 100%;
             font-size: 14px;
@@ -267,7 +267,7 @@
             margin-bottom: 8px;
             font-weight: 500;
         }
-        
+
         .selector-btn {
             padding: 12px 20px;
             background: rgba(30, 41, 59, 0.8);
@@ -279,14 +279,14 @@
             font-weight: 600;
             transition: all 0.2s;
         }
-        
+
         .selector-btn:hover { border-color: var(--primary); }
-        .selector-btn.selected { 
-            border-color: var(--primary); 
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark)); 
+        .selector-btn.selected {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
             color: white;
         }
-        
+
         .selector-unit-btn {
             padding: 8px 14px;
             background: rgba(30, 41, 59, 0.8);
@@ -304,7 +304,7 @@
             background: linear-gradient(135deg, var(--primary), var(--primary-dark));
             color: white;
         }
-        
+
         /* 游戏卡片 */
         .game-card {
             background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(49, 46, 129, 0.5));
@@ -315,7 +315,7 @@
             border: 1px solid var(--border);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
-        
+
         /* 状态栏 */
         .stats-bar {
             display: flex;
@@ -323,28 +323,28 @@
             gap: 40px;
             margin-bottom: 28px;
         }
-        
+
         .stat-item { text-align: center; }
-        
-        .stat-value { 
-            font-size: 40px; 
-            font-weight: 700; 
+
+        .stat-value {
+            font-size: 40px;
+            font-weight: 700;
             background: linear-gradient(135deg, var(--accent), #fcd34d);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
         .stat-label { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
-        
+
         /* 单词区 */
-        .word-cn { 
-            font-size: 48px; 
-            font-weight: 700; 
+        .word-cn {
+            font-size: 48px;
+            font-weight: 700;
             margin-bottom: 8px;
             color: var(--primary-light);
         }
-        
+
         .word-hint { font-size: 15px; color: var(--text-muted); margin-bottom: 20px; }
-        
+
         .word-input {
             width: 100%;
             max-width: 500px;
@@ -359,15 +359,15 @@
             outline: none;
             transition: all 0.2s;
         }
-        
+
         .word-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); }
         .word-input.correct { border-color: var(--success); background: rgba(16, 185, 129, 0.1); }
         .word-input.wrong { border-color: var(--danger); background: rgba(239, 68, 68, 0.1); }
-        
+
         .feedback { margin-top: 16px; font-size: 24px; font-weight: 600; min-height: 32px; }
         .feedback.correct { color: var(--success); }
         .feedback.wrong { color: var(--danger); }
-        
+
         /* 按钮 */
         .btn-primary {
             background: linear-gradient(135deg, #f97316, #ea580c);
@@ -382,9 +382,9 @@
             display: inline-block;
             text-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
-        
+
         .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(249, 115, 22, 0.5); }
-        
+
         /* 结果区 */
         .result-score {
             font-size: 72px;
@@ -394,9 +394,9 @@
             -webkit-text-fill-color: transparent;
             margin-bottom: 4px;
         }
-        
+
         .result-sub { color: var(--text-muted); margin-bottom: 20px; font-size: 15px; }
-        
+
         .result-breakdown {
             display: flex;
             justify-content: center;
@@ -404,17 +404,17 @@
             margin: 20px 0;
             flex-wrap: wrap;
         }
-        
+
         .breakdown-item {
             background: rgba(15, 23, 42, 0.6);
             padding: 16px 20px;
             border-radius: 12px;
             min-width: 85px;
         }
-        
+
         .breakdown-value { font-size: 26px; font-weight: 700; }
         .breakdown-label { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
-        
+
         /* 错题本 */
         .wrong-box {
             background: rgba(239, 68, 68, 0.1);
@@ -424,9 +424,9 @@
             text-align: left;
             border: 1px solid rgba(239, 68, 68, 0.3);
         }
-        
+
         .wrong-title { font-size: 15px; font-weight: 600; color: var(--danger); margin-bottom: 12px; }
-        
+
         .wrong-item {
             display: flex;
             align-items: center;
@@ -436,10 +436,10 @@
             background: rgba(30, 41, 59, 0.8);
             border-radius: 8px;
         }
-        
+
         .wrong-en { font-size: 17px; font-weight: 600; }
         .wrong-cn { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-        
+
         .speak-btn {
             background: linear-gradient(135deg, var(--primary), var(--primary-dark));
             border: none;
@@ -451,9 +451,9 @@
             font-size: 15px;
             transition: all 0.2s;
         }
-        
+
         .speak-btn:hover { transform: scale(1.1); }
-        
+
         /* 占位卡片 */
         .placeholder {
             background: rgba(30, 41, 59, 0.8);
@@ -463,25 +463,25 @@
             color: var(--text-muted);
             border: 1px solid var(--border);
         }
-        
+
         .placeholder h3 { margin-bottom: 12px; font-size: 24px; color: var(--text); }
-        
+
         /* 动画 */
-        @keyframes shake { 
-            0%,100%{transform:translateX(0)} 
-            25%{transform:translateX(-8px)} 
-            75%{transform:translateX(8px)} 
+        @keyframes shake {
+            0%,100%{transform:translateX(0)}
+            25%{transform:translateX(-8px)}
+            75%{transform:translateX(8px)}
         }
-        @keyframes bounce { 
-            0%{transform:scale(1)} 
-            50%{transform:scale(1.05)} 
-            100%{transform:scale(1)} 
+        @keyframes bounce {
+            0%{transform:scale(1)}
+            50%{transform:scale(1.05)}
+            100%{transform:scale(1)}
         }
         .shake { animation: shake 0.4s ease; }
         .bounce { animation: bounce 0.3s ease; }
-        
+
         .hidden { display: none !important; }
-        
+
         /* ========== 手机端响应式样式 ========== */
         @media screen and (max-width: 768px) {
             /* 顶部栏 */
@@ -499,13 +499,13 @@
                 height: 28px;
                 font-size: 12px;
             }
-            
+
             /* 隐藏左右侧栏 */
             .sidebar-left,
             .sidebar-right {
                 display: none !important;
             }
-            
+
             /* 内容区全宽 */
             .content-area {
                 margin-left: 0 !important;
@@ -513,7 +513,7 @@
                 padding: 80px 12px 24px !important;
                 width: 100% !important;
             }
-            
+
             /* Tab导航 */
             .tab-nav-wrapper {
                 left: 0 !important;
@@ -532,7 +532,7 @@
                 white-space: nowrap;
                 flex-shrink: 0;
             }
-            
+
             /* 选择器 - 垂直布局 */
             .selector-group {
                 flex-direction: column;
@@ -565,7 +565,7 @@
                 flex: 1 1 calc(50% - 6px);
                 max-width: calc(50% - 6px);
             }
-            
+
             /* 单元选择器优化 */
             #unitSelector {
                 display: flex !important;
@@ -582,7 +582,7 @@
                 flex: 1 1 auto;
                 min-width: 50px;
             }
-            
+
             /* 游戏卡片 */
             .game-card {
                 padding: 20px 16px;
@@ -609,7 +609,7 @@
                 font-size: 24px;
                 padding: 14px 16px;
             }
-            
+
             /* 结果卡片 */
             .result-score {
                 font-size: 48px;
@@ -623,13 +623,13 @@
             .breakdown-label {
                 font-size: 10px;
             }
-            
+
             /* 开始按钮 */
             .btn-primary {
                 padding: 14px 28px;
                 font-size: 16px;
             }
-            
+
             /* 历史项 */
             .history-item {
                 padding: 10px;
@@ -640,14 +640,14 @@
             .history-meta {
                 font-size: 10px;
             }
-            
+
             /* 汇总按钮 */
             .summary-btn {
                 padding: 4px 8px;
                 font-size: 11px;
             }
         }
-        
+
         /* 超小屏幕 */
         @media screen and (max-width: 480px) {
             .topbar h1 {
@@ -672,13 +672,13 @@
                 max-width: 100%;
             }
         }
-        
+
         /* 响应式 */
         @media (max-width: 1000px) {
             .sidebar-left, .sidebar-right, .tab-nav-wrapper { display: none; }
             .content-area { margin-left: 0; margin-right: 0; }
         }
-    
+
 /* 音标样式 */
 .phonetic-text {
     color: #999;
@@ -700,10 +700,10 @@
             <div class="user-avatar" id="userAvatar">?</div>
         </div>
     </div>
-    
+
     <!-- 主体布局 -->
     <div class="main-layout">
-        
+
         <!-- 左侧栏 -->
         <div class="sidebar-left">
             <div id="left-quest">
@@ -722,10 +722,10 @@
                 <div id="history-write"></div>
             </div>
         </div>
-        
+
         <!-- 中央内容区 -->
         <div class="content-area">
-            
+
             <!-- Tab 导航 -->
             <div class="tab-nav-wrapper">
                 <div class="tab-nav">
@@ -734,7 +734,7 @@
                     <button class="tab-btn" data-tab="tab-write">✍️ 小小写作家</button>
                 </div>
             </div>
-            
+
             <!-- Tab1: 单词大冒险 -->
             <div class="tab-content active" id="tab-quest">
                 <div class="selector-group">
@@ -755,11 +755,11 @@
                         <button class="selector-unit-btn selected" data-unit="all" onclick="selectUnit(this)">全部</button>
                     </div>
                 </div>
-                
+
                 <div id="startBtn" style="text-align:center; margin:24px 0;">
                     <button class="btn-primary" onclick="startGame()">🚀 开始挑战</button>
                 </div>
-                
+
                 <!-- 游戏区 -->
                 <div class="game-card hidden" id="gameCard">
                     <div class="stats-bar">
@@ -781,14 +781,14 @@
                     <input type="text" class="word-input" id="wordInput" placeholder="输入英文单词..." autocomplete="off">
                     <div class="feedback" id="feedback"></div>
                 </div>
-                
+
                 <!-- 结果区 -->
                 <div class="game-card hidden" id="resultCard">
                     <div id="resultTitle" style="font-size:26px;font-weight:700;margin-bottom:4px;">🎉 完成！</div>
                     <div id="resultSub" style="color:var(--text-muted);margin-bottom:16px;">--</div>
                     <div class="result-score" id="resultScore">0</div>
                     <div style="font-size:14px;color:var(--text-muted);margin-bottom:20px;">百分制得分 / 满分100</div>
-                    
+
                     <!-- 答题统计 -->
                     <div class="result-breakdown" style="border-bottom:1px solid var(--border);padding-bottom:20px;margin-bottom:20px;">
                         <div class="breakdown-item">
@@ -804,7 +804,7 @@
                             <div class="breakdown-label">错误</div>
                         </div>
                     </div>
-                    
+
                     <!-- 得分详情 -->
                     <div class="result-breakdown">
                         <div class="breakdown-item">
@@ -827,7 +827,7 @@
                     <button class="btn-primary" onclick="restartGame()">🔄 再来一次</button>
                 </div>
             </div>
-            
+
             <!-- Tab2 & Tab3 -->
             <div class="tab-content" id="tab-echo">
                 <div class="placeholder">
@@ -844,7 +844,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- 右侧栏 -->
         <div class="sidebar-right">
             <div id="right-quest">
@@ -890,18 +890,18 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js"></script>
-    
+
     <script>
         // ==================== Firebase 数据层 ====================
-        
+
         var db;
         var firebaseReady = false;
-        
+
         var firebaseConfig = {
             apiKey: "AIzaSyCMPFTNEBWXA_EnkF7Yk__F1gdHYfPg8kM",
             authDomain: "vietnames-data.firebaseapp.com",
@@ -910,7 +910,7 @@
             messagingSenderId: "474396114838",
             appId: "1:474396114838:web:0fc28fb08bfbd4b6bee7b7"
         };
-        
+
         (function initFirebase() {
             try {
                 if (typeof firebase !== "undefined") {
@@ -927,7 +927,7 @@
                 firebaseReady = false;
             }
         })();
-        
+
         // Firebase 超时封装
         function fbWithTimeout(promise, timeoutMs) {
             return Promise.race([
@@ -937,7 +937,7 @@
                 })
             ]);
         }
-        
+
         // 本地存储替代 Firebase（网络失败时备用）
         var localDbCache = {};
         function makeLocalDB() {
@@ -972,11 +972,11 @@
             };
         }
         if (!firebaseReady) db = makeLocalDB();
-        
+
         // ==================== 词汇缓存 ====================
         var VOCAB_CACHE = {};
         var VOCAB_LOADED = {};
-        
+
         // 从 Firebase 加载词汇
         async function loadVocabFromDB(grade, semester) {
             var key = grade + "-" + semester;
@@ -1008,13 +1008,10 @@
             if (localWords.length > 0) {
                 VOCAB_CACHE[key] = localWords;
                 VOCAB_LOADED[key] = true;
-                // 异步同步到 Firebase
-                saveVocabToDB(grade, semester, localWords);
-                console.log("使用本地词库并同步到Firebase: " + key + " (" + localWords.length + "词)");
             }
             return localWords;
         }
-        
+
         // 保存词汇到 Firebase
         async function saveVocabToDB(grade, semester, words) {
             var key = grade + "-" + semester;
@@ -1029,7 +1026,7 @@
                 console.error("保存词汇失败:", e);
             }
         }
-        
+
         // 默认词汇（本地备份）- 人教版PEP小学英语3-6年级完整词汇库
         var LOCAL_VOCAB = {
     "3-1": [
@@ -1557,7 +1554,7 @@ var UNIT_COUNTS = {
 
 
 
-        
+
         // 获取指定学期指定单元范围的词汇
         // 获取指定学期指定单元范围的词汇（按 unit 字段过滤）
         function getVocabByUnits(allVocab, grade, semester, maxUnit) {
@@ -1572,27 +1569,27 @@ var UNIT_COUNTS = {
             }
             return result;
         }
-        
+
         // 根据选中单元范围获取词汇（按 unit 字段，含最少3单元规则）
         function getVocabForGame(allVocab, grade, semester, maxUnit) {
             if (maxUnit === 0) return allVocab.slice();
-            
+
             var padded = getVocabByUnits(allVocab, grade, semester, maxUnit);
             var unitCount = maxUnit;
-            
+
             // 已达3单元，无需 padding
             if (unitCount >= 3) return padded;
-            
+
             // 需要 padding 到至少 3 个单元
             var need = 3 - unitCount;
             var prevKey = getPrevSemesterKey(grade, semester);
-            
+
             if (prevKey && LOCAL_VOCAB[prevKey]) {
                 // 从上一学期取最后 need 个单元
                 var prevVocab = LOCAL_VOCAB[prevKey];
                 var prevCounts = UNIT_COUNTS[prevKey] || [];
                 var prevUnitCount = prevCounts.length - 1; // 去掉总数
-                
+
                 if (prevUnitCount > 0) {
                     var startUnit = Math.max(1, prevUnitCount - need + 1);
                     var extra = [];
@@ -1605,11 +1602,11 @@ var UNIT_COUNTS = {
                     return padded.concat(extra);
                 }
             }
-            
+
             // 如果上一学期也无法补全，直接返回已有的
             return padded;
         }
-        
+
         // 获取上一个学期的 key
         function getPrevSemesterKey(grade, semester) {
             if (semester === "2") return grade + "-1";
@@ -1617,12 +1614,12 @@ var UNIT_COUNTS = {
             if (g < 3) return null;
             return g + "-2";
         }
-        
+
         // ==================== 音效 ====================
         function initAudio() {
             if (!window._ac) window._ac = new (window.AudioContext || window.webkitAudioContext)();
         }
-        
+
         function playCorrect() {
             initAudio();
             var ctx = window._ac;
@@ -1637,7 +1634,7 @@ var UNIT_COUNTS = {
                 }, i * 80);
             });
         }
-        
+
         function playWrong() {
             initAudio();
             var ctx = window._ac;
@@ -1648,7 +1645,7 @@ var UNIT_COUNTS = {
             g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
             o.start(ctx.currentTime); o.stop(ctx.currentTime + 0.18);
         }
-        
+
         function speakWord(w) {
             if ('speechSynthesis' in window) {
                 var u = new SpeechSynthesisUtterance(w);
@@ -1656,10 +1653,10 @@ var UNIT_COUNTS = {
                 speechSynthesis.speak(u);
             }
         }
-        
+
         // ==================== 用户系统 ====================
         var currentUser = null;
-        
+
         function checkLogin() {
             var username = sessionStorage.getItem("apex_username");
             var role = sessionStorage.getItem("apex_role");
@@ -1669,29 +1666,29 @@ var UNIT_COUNTS = {
             document.getElementById("userAvatar").textContent = username.charAt(0).toUpperCase();
             return true;
         }
-        
+
         function goBack() { window.location.href = "index.html"; }
-        
+
         // ==================== Tab 切换 ====================
         document.querySelectorAll('.tab-btn').forEach(function(btn) {
             btn.addEventListener('click', function() {
                 var tab = this.dataset.tab;
-                
+
                 document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
                 document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
                 this.classList.add('active');
                 document.getElementById(tab).classList.add('active');
-                
+
                 document.querySelectorAll('[id^=left-]').forEach(function(el) { el.classList.add('hidden'); });
                 document.getElementById('left-' + tab.replace('tab-', '')).classList.remove('hidden');
-                
+
                 document.querySelectorAll('[id^=right-]').forEach(function(el) { el.classList.add('hidden'); });
                 document.getElementById('right-' + tab.replace('tab-', '')).classList.remove('hidden');
-                
+
                 if (tab === 'tab-quest') loadHistoryQuest();
             });
         });
-        
+
         // ==================== 游戏状态 ====================
         var G = {
             grade:"4", semester:"1", unit:0,
@@ -1702,34 +1699,34 @@ var UNIT_COUNTS = {
             playing:false, wrong:[],
             attempts:0
         };
-        
+
         function selectGrade(el) {
             document.querySelectorAll('[data-grade]').forEach(function(b){b.classList.remove('selected');});
             el.classList.add('selected');
             G.grade = el.dataset.grade;
             updateUnitButtons();
         }
-        
+
         function selectSemester(el) {
             document.querySelectorAll('[data-semester]').forEach(function(b){b.classList.remove('selected');});
             el.classList.add('selected');
             G.semester = el.dataset.semester;
             updateUnitButtons();
         }
-        
+
         function selectUnit(el) {
             document.querySelectorAll('.selector-unit-btn').forEach(function(b){b.classList.remove('selected');});
             el.classList.add('selected');
             G.unit = el.dataset.unit === "all" ? 0 : parseInt(el.dataset.unit);
         }
-        
+
         // 更新单元选择按钮
         function updateUnitButtons() {
             var container = document.getElementById("unitSelector");
             var key = G.grade + "-" + G.semester;
             var counts = UNIT_COUNTS[key];
             if (!counts) { container.style.display = "none"; return; }
-            
+
             container.style.display = "flex";
             var html = '<div class="selector-label">📝 选择单元</div>';
             html += '<button class="selector-unit-btn selected" data-unit="all" onclick="selectUnit(this)">全部</button>';
@@ -1739,7 +1736,7 @@ var UNIT_COUNTS = {
             container.innerHTML = html;
             G.unit = 0; // 默认全部
         }
-        
+
         function shuffle(a) {
             for(var i=a.length-1;i>0;i--){
                 var j=Math.floor(Math.random()*(i+1));
@@ -1747,14 +1744,14 @@ var UNIT_COUNTS = {
             }
             return a;
         }
-        
+
         // ==================== 游戏流程 ====================
         async function startGame() {
             var key = G.grade+"-"+G.semester;
-            
+
             // 先尝试从数据库加载
             var allVocab = await loadVocabFromDB(G.grade, G.semester);
-            
+
             // 如果数据库没有，使用本地备份
             if (!allVocab || allVocab.length === 0) {
                 allVocab = LOCAL_VOCAB[key] || [];
@@ -1763,27 +1760,27 @@ var UNIT_COUNTS = {
                     saveVocabToDB(G.grade, G.semester, allVocab);
                 }
             }
-            
+
             if(allVocab.length===0){alert("该年级词汇库整理中！");return;}
-            
+
             // 根据单元选择筛选词汇
             var vocab = getVocabForGame(allVocab, G.grade, G.semester, G.unit || 0);
-            
+
             G.words=shuffle(vocab.slice());
             G.idx=0; G.combo=0; G.maxCombo=0;
             G.correct=0; G.total=0; G.time=180;
             G.playing=true; G.wrong=[];
-            
+
             initAudio();
-            
+
             document.getElementById("startBtn").classList.add("hidden");
             document.getElementById("gameCard").classList.remove("hidden");
             document.getElementById("resultCard").classList.add("hidden");
-            
+
             showWord();
             startTimer();
         }
-        
+
         function showWord() {
             if(G.idx>=G.words.length){G.words=shuffle(G.words);G.idx=0;}
             var w=G.words[G.idx];
@@ -1795,24 +1792,24 @@ var UNIT_COUNTS = {
             document.getElementById("feedback").textContent="";
             G.attempts=0;
         }
-        
+
         function check() {
             if(!G.playing)return;
             var inp=document.getElementById("wordInput");
             var ans=inp.value.trim().toLowerCase();
             var w=G.words[G.idx];
             var ok=w.en.toLowerCase();
-            
+
             if(ans===ok){
                 if(G.attempts===0) G.total++;
                 G.combo++; G.correct++;
                 if(G.combo>G.maxCombo) G.maxCombo=G.combo;
-                
+
                 inp.className="word-input correct bounce";
                 document.getElementById("feedback").className="feedback correct";
                 document.getElementById("feedback").textContent="✓ 正确！";
                 playCorrect(); speakWord(w.en);
-                
+
                 setTimeout(function(){G.idx++; showWord();},800);
             } else {
                 if(G.attempts===0) G.total++;
@@ -1820,7 +1817,7 @@ var UNIT_COUNTS = {
                 playWrong();
                 inp.className="word-input wrong shake";
                 document.getElementById("feedback").className="feedback wrong";
-                
+
                 if(G.attempts>=3){
                     if(!G.wrong.find(function(x){return x.en===w.en;})) G.wrong.push(w);
                     document.getElementById("feedback").textContent="✗ "+w.en;
@@ -1831,11 +1828,11 @@ var UNIT_COUNTS = {
                     setTimeout(function(){inp.value=""; inp.className="word-input"; inp.focus();},500);
                 }
             }
-            
+
             document.getElementById("progVal").textContent=G.correct;
             document.getElementById("comboVal").textContent=G.combo;
         }
-        
+
         function startTimer() {
             if(G.timer)clearInterval(G.timer);
             G.timer=setInterval(function(){
@@ -1844,32 +1841,32 @@ var UNIT_COUNTS = {
                 if(G.time<=0){clearInterval(G.timer); endGame();}
             },1000);
         }
-        
+
         function endGame() {
             G.playing=false;
             clearInterval(G.timer);
-            
+
             var acc=G.total>0 ? G.correct/G.total : 0;
             var accScore=Math.round(acc*70);  // 正确率最高70分
             var comboScore=Math.min(G.maxCombo,10);
             var timeScore=Math.min(Math.round(G.correct*0.4),20);  // 每对一题0.4分，最高20分
             var score=accScore+comboScore+timeScore;
             var wrongCount = G.total - G.correct;
-            
+
             saveRecord(score, accScore, comboScore, timeScore);
-            
+
             document.getElementById("gameCard").classList.add("hidden");
             document.getElementById("resultCard").classList.remove("hidden");
-            
+
             document.getElementById("totalVal").textContent=G.total;
             document.getElementById("correctVal").textContent=G.correct;
             document.getElementById("wrongVal").textContent=wrongCount;
-            
+
             document.getElementById("resultScore").textContent=score;
             document.getElementById("accVal").textContent=accScore;
             document.getElementById("comboVal2").textContent=comboScore;
             document.getElementById("timeVal2").textContent=timeScore;
-            
+
             if(score>=90){
                 document.getElementById("resultTitle").textContent="🎉 太棒了！";
                 document.getElementById("resultSub").textContent="正确"+G.correct+"/"+G.total+"题，连击最高"+G.maxCombo+"！";
@@ -1880,7 +1877,7 @@ var UNIT_COUNTS = {
                 document.getElementById("resultTitle").textContent="💪 加油！";
                 document.getElementById("resultSub").textContent="正确"+G.correct+"/"+G.total+"题，多练几次！";
             }
-            
+
             if(G.wrong.length>0){
                 document.getElementById("wrongBox").classList.remove("hidden");
                 var html="";
@@ -1895,14 +1892,14 @@ var UNIT_COUNTS = {
                 document.getElementById("wrongBox").classList.add("hidden");
             }
         }
-        
+
         function restartGame() {
             document.getElementById("resultCard").classList.add("hidden");
             document.getElementById("startBtn").classList.remove("hidden");
         }
-        
+
         // ==================== 记录 ====================
-        
+
         // ★ 统一记录 key：用于去重、删除、比对
         // 格式：username|timestamp|score(统一字符串)
         function recordKey(r) {
@@ -1911,12 +1908,12 @@ var UNIT_COUNTS = {
             var score = (r.score !== undefined && r.score !== null) ? String(r.score) : "";
             return user + "|" + ts + "|" + score;
         }
-        
+
         function saveRecord(score, accScore, comboScore, timeScore) {
             var now = new Date();
             var isoTs = now.toISOString();
             var username = currentUser ? currentUser.username : "游客";
-            
+
             var record = {
                 user: username,           // 统一用 user
                 username: username,       // 也存一份 username（兼容旧逻辑）
@@ -1935,23 +1932,23 @@ var UNIT_COUNTS = {
                 wrongWords: G.wrong.map(function(w){return w.en;}),
                 timestamp: isoTs
             };
-            
+
             // 1. 读取现有本地记录
             var local = JSON.parse(localStorage.getItem("quest_history_all") || "[]");
-            
+
             // ★ 去重：确保本地没有相同 key 的记录再添加
             var myKey = recordKey(record);
             var existsLocal = local.some(function(r){ return recordKey(r) === myKey; });
-            
+
             if (!existsLocal) {
                 local.unshift(record);
                 if (local.length > 50) local = local.slice(0, 50);
             }
-            
+
             localStorage.setItem("quest_history_all", JSON.stringify(local));
             console.log("本地保存:", recordKey(record), existsLocal ? "(已存在，跳过)" : "(新增)");
             renderHistoryQuest(local);  // 立即渲染本地数据
-            
+
             // 2. 上传到 Firebase（异步，静默失败，8秒超时）
             if (firebaseReady) {
                 fbWithTimeout(
@@ -1989,9 +1986,9 @@ var UNIT_COUNTS = {
                 localStorage.setItem(lKey, JSON.stringify(lData));
             }
         }
-        
+
         // ========== 历史得分：localStorage（当前设备）+ CloudBase（跨设备只读展示） ==========
-        
+
         // 时间戳统一转为 ISO 字符串
         function tsToIso(ts) {
             try {
@@ -2000,30 +1997,30 @@ var UNIT_COUNTS = {
             } catch(e) {}
             return "";
         }
-        
+
         function loadHistoryQuest() {
             // Step 1: 立即从 localStorage 读取并显示
             var localRaw = localStorage.getItem("quest_history_all");
             var localRecords = localRaw ? JSON.parse(localRaw) : [];
-            
+
             for (var i = 0; i < localRecords.length; i++) {
                 var r = localRecords[i];
                 if (!r.user) r.user = r.username || "未知用户";
                 r.scoreStr = (r.score !== undefined && r.score !== null) ? String(r.score) : "";
                 r.timestamp = tsToIso(r.timestamp);
             }
-            
+
             var seenKeys = {};
             var uniqueLocal = [];
             for (var j = 0; j < localRecords.length; j++) {
                 var k = recordKey(localRecords[j]);
                 if (!seenKeys[k]) { seenKeys[k] = true; uniqueLocal.push(localRecords[j]); }
             }
-            
+
             uniqueLocal.sort(function(a, b){ return new Date(tsToIso(b.timestamp)||0) - new Date(tsToIso(a.timestamp)||0); });
             localStorage.setItem("quest_history_all", JSON.stringify(uniqueLocal));
             renderHistoryQuest(uniqueLocal);
-            
+
             // Step 2: 后台从 Firebase 合并（8秒超时）
             if (firebaseReady) {
                 fbWithTimeout(
@@ -2037,16 +2034,16 @@ var UNIT_COUNTS = {
                         console.log("Firebase: 无云端记录（或超时）");
                         return;
                     }
-                    
+
                     var cbRecords = res.docs.map(function(d) { return d.data(); });
                     console.log("Firebase同步: 获取到" + cbRecords.length + "条");
-                    
+
                     var currentLocal = JSON.parse(localStorage.getItem("quest_history_all") || "[]");
                     var localKeys = {};
                     for (var m = 0; m < currentLocal.length; m++) {
                         localKeys[recordKey(currentLocal[m])] = true;
                     }
-                    
+
                     var newFromCb = [];
                     for (var n = 0; n < cbRecords.length; n++) {
                         var cbR = cbRecords[n];
@@ -2056,10 +2053,10 @@ var UNIT_COUNTS = {
                         var cbKey = recordKey(cbR);
                         if (!localKeys[cbKey]) { newFromCb.push(cbR); }
                     }
-                    
+
                     console.log("Firebase同步: 云端" + cbRecords.length + "条, 新增" + newFromCb.length + "条");
                     if (newFromCb.length === 0) return;
-                    
+
                     var merged = currentLocal.concat(newFromCb);
                     var mergedKeys = {};
                     var uniqueMerged = [];
@@ -2067,7 +2064,7 @@ var UNIT_COUNTS = {
                         var mk = recordKey(merged[p]);
                         if (!mergedKeys[mk]) { mergedKeys[mk] = true; uniqueMerged.push(merged[p]); }
                     }
-                    
+
                     uniqueMerged.sort(function(a, b){ return new Date(tsToIso(b.timestamp)||0) - new Date(tsToIso(a.timestamp)||0); });
                     uniqueMerged = uniqueMerged.slice(0, 200);
                     localStorage.setItem("quest_history_all", JSON.stringify(uniqueMerged));
@@ -2084,7 +2081,7 @@ var UNIT_COUNTS = {
                 }
             }
         }
-        
+
         function renderHistoryQuest(records) {
             // 获取当前用户是否为管理员
             var currentUserName = sessionStorage.getItem("apex_username");
@@ -2113,7 +2110,7 @@ var UNIT_COUNTS = {
             }
             document.getElementById("history-quest").innerHTML=html||'<div style="color:var(--text-muted);font-size:13px;padding:12px;">暂无记录，开始挑战吧！</div>';
         }
-        
+
         // 管理员删除单条历史记录
         function deleteHistoryRecord(key) {
             if(!confirm("确定删除这条记录？")) return;
@@ -2125,22 +2122,22 @@ var UNIT_COUNTS = {
             localStorage.setItem("quest_history_all", JSON.stringify(local));
             renderHistoryQuest(local);
         }
-        
+
         function loadHistoryEcho() {
             document.getElementById("history-echo").innerHTML='<div style="color:var(--text-muted);font-size:13px;padding:12px;">暂无记录</div>';
         }
-        
+
         function loadHistoryWrite() {
             document.getElementById("history-write").innerHTML='<div style="color:var(--text-muted);font-size:13px;padding:12px;">暂无记录</div>';
         }
-        
+
         // ==================== 成绩汇总PDF ====================
         function generateScorePDF() {
             var currentUserName = sessionStorage.getItem("apex_username") || "未知用户";
             var local = JSON.parse(localStorage.getItem("quest_history_all") || "[]");
             var myRecords = local.filter(function(r){ return r.user === currentUserName; });
             if (myRecords.length === 0) { alert("暂无成绩记录！"); return; }
-            
+
             // 统计数据
             var scores = myRecords.map(function(r){return r.score||0;});
             var avg = (scores.reduce(function(a,b){return a+b;},0) / scores.length).toFixed(1);
@@ -2151,7 +2148,7 @@ var UNIT_COUNTS = {
             var totalQuestions = myRecords.reduce(function(a,r){return a+(r.total||0);},0);
             var accuracy = totalQuestions > 0 ? ((totalCorrect/totalQuestions)*100).toFixed(1) : 0;
             var maxCombo = Math.max.apply(null, myRecords.map(function(r){return r.maxCombo||0;}));
-            
+
             // 统计错词
             var wrongMap = {};
             for (var j = 0; j < myRecords.length; j++) {
@@ -2170,7 +2167,7 @@ var UNIT_COUNTS = {
             wrongEntries.sort(function(a, b){ return b.count - a.count; });
             var totalWrongWords = wrongEntries.length;
             var highFreqWrong = wrongEntries.filter(function(w){ return w.count >= 3; });
-            
+
             // AI分析文本
             var aiAnalysis = "";
             if (scores.length >= 3) {
@@ -2193,21 +2190,21 @@ var UNIT_COUNTS = {
                 aiAnalysis += "⚠️ 高频错词：" + highFreqWrong.length + "个词错误3次以上。\n";
             }
             aiAnalysis += "\n📝 学习建议：保持每天练习的习惯，积少成多。";
-            
+
             // 儿童鼓励语
             var encouragement = "";
             if (avg >= 90) encouragement = "🌟 " + currentUserName + "太棒啦！你是英语小天才！💪";
             else if (avg >= 80) encouragement = "👏 " + currentUserName + "越来越厉害了！继续加油！✨";
             else if (avg >= 70) encouragement = "💪 " + currentUserName + "很努力哦！每一点进步都值得骄傲！🌈";
             else encouragement = "🌱 " + currentUserName + "正在进步中！坚持就是胜利！⭐";
-            
+
             // 构建HTML内容 - 所有文字颜色加深确保可读
             var html = '<div style="font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; background: white;">';
             html += '<div style="text-align: center; margin-bottom: 30px;">';
             html += '<h1 style="margin: 0; color: #1e3a8a; font-size: 28px; font-weight: bold;">🌟 ' + currentUserName + ' - 成绩汇总报告</h1>';
             html += '<p style="color: #1f2937; margin-top: 10px; font-size: 14px; font-weight: 500;">汇总日期：' + new Date().toLocaleDateString("zh-CN") + '</p>';
             html += '</div>';
-            
+
             // 统计概览
             html += '<div style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 20px; border-radius: 12px; margin-bottom: 25px;">';
             html += '<h2 style="margin: 0 0 15px 0; font-size: 18px; font-weight: bold;">📊 学习概览</h2>';
@@ -2217,7 +2214,7 @@ var UNIT_COUNTS = {
             html += '<div style="flex: 1; min-width: 100px;"><div style="font-size: 32px; font-weight: bold;">' + maxS + '</div><div style="font-size: 14px; font-weight: 500;">最高分</div></div>';
             html += '<div style="flex: 1; min-width: 100px;"><div style="font-size: 32px; font-weight: bold;">' + accuracy + '%</div><div style="font-size: 14px; font-weight: 500;">正确率</div></div>';
             html += '</div></div>';
-            
+
             // 历史记录表（最多20条）
             html += '<div style="margin-bottom: 25px;">';
             html += '<h2 style="color: #111827; font-size: 18px; margin-bottom: 12px; border-bottom: 3px solid #2563eb; padding-bottom: 8px; font-weight: bold;">📋 历史得分记录</h2>';
@@ -2229,7 +2226,7 @@ var UNIT_COUNTS = {
             html += '<th style="padding: 12px 8px; text-align: center; font-weight: bold;">正确率</th>';
             html += '<th style="padding: 12px 8px; text-align: center; font-weight: bold;">连击</th>';
             html += '</tr></thead><tbody>';
-            
+
             var displayRecords = myRecords.slice(0, 20);
             for (var i = 0; i < displayRecords.length; i++) {
                 var r = displayRecords[i];
@@ -2252,7 +2249,7 @@ var UNIT_COUNTS = {
                 html += '<tr><td colspan="5" style="padding: 10px; text-align: center; color: #374151; font-weight: 500;">... 还有 ' + (myRecords.length - 20) + ' 条记录</td></tr>';
             }
             html += '</tbody></table></div>';
-            
+
             // 错词汇总（最多15条）
             html += '<div style="margin-bottom: 25px;">';
             html += '<h2 style="color: #111827; font-size: 18px; margin-bottom: 12px; border-bottom: 3px solid #dc2626; padding-bottom: 8px; font-weight: bold;">❌ 错词汇总</h2>';
@@ -2281,63 +2278,63 @@ var UNIT_COUNTS = {
                 html += '<p style="color: #374151; font-size: 13px; margin-top: 10px; font-weight: 500;">共 ' + totalWrongWords + ' 个错词</p>';
             }
             html += '</div>';
-            
+
             // AI分析 - 深色背景确保可读
             html += '<div style="background: #fef3c7; border-left: 5px solid #d97706; padding: 20px; border-radius: 0 12px 12px 0; margin-bottom: 25px;">';
             html += '<h2 style="color: #78350f; font-size: 18px; margin: 0 0 15px 0; font-weight: bold;">🤖 AI 学习分析</h2>';
             html += '<div style="color: #713f12; font-size: 14px; line-height: 1.8; white-space: pre-wrap; font-weight: 500;">' + aiAnalysis + '</div>';
             html += '</div>';
-            
+
             // 儿童鼓励语
             html += '<div style="background: #fce7f3; border-left: 5px solid #db2777; padding: 20px; border-radius: 0 12px 12px 0; margin-bottom: 25px;">';
             html += '<h2 style="color: #9d174d; font-size: 18px; margin: 0 0 15px 0; font-weight: bold;">💪 给' + currentUserName + '的鼓励</h2>';
             html += '<div style="color: #831843; font-size: 16px; line-height: 1.8; font-weight: 600;">' + encouragement + '</div>';
             html += '</div>';
-            
+
             // 页脚
             html += '<div style="text-align: center; color: #374151; font-size: 12px; margin-top: 30px; padding-top: 15px; border-top: 1px solid #d1d5db; font-weight: 500;">';
             html += 'English Planet 学习报告 | 生成时间：' + new Date().toLocaleString("zh-CN");
             html += '</div></div>';
-            
+
             // 创建预览弹窗（带滚动条）
             var modal = document.createElement("div");
             modal.id = "pdf-modal";
             modal.style.cssText = "position: fixed; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9998; display: flex; align-items: center; justify-content: center;";
-            
+
             var modalContent = document.createElement("div");
             modalContent.style.cssText = "width: 90%; max-width: 850px; height: 85%; background: white; border-radius: 12px; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.3);";
-            
+
             // 标题栏
             var header = document.createElement("div");
             header.style.cssText = "padding: 16px 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;";
             header.innerHTML = '<h3 style="margin: 0; font-size: 18px; color: #1e40af;">📄 成绩汇总预览</h3>';
-            
+
             // 滚动内容区
             var scrollArea = document.createElement("div");
             scrollArea.style.cssText = "flex: 1; overflow-y: auto; padding: 20px;";
             scrollArea.innerHTML = html;
-            
+
             // 按钮栏
             var btnBar = document.createElement("div");
             btnBar.style.cssText = "padding: 16px 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: center; gap: 12px; flex-shrink: 0;";
-            
+
             var confirmBtn = document.createElement("button");
             confirmBtn.textContent = "📥 下载PDF";
             confirmBtn.style.cssText = "padding: 12px 32px; font-size: 16px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;";
-            
+
             var cancelBtn = document.createElement("button");
             cancelBtn.textContent = "✖ 关闭";
             cancelBtn.style.cssText = "padding: 12px 32px; font-size: 16px; background: #6b7280; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;";
-            
+
             btnBar.appendChild(confirmBtn);
             btnBar.appendChild(cancelBtn);
-            
+
             modalContent.appendChild(header);
             modalContent.appendChild(scrollArea);
             modalContent.appendChild(btnBar);
             modal.appendChild(modalContent);
             document.body.appendChild(modal);
-            
+
             // 关闭按钮
             cancelBtn.onclick = function() {
                 document.body.removeChild(modal);
@@ -2345,20 +2342,20 @@ var UNIT_COUNTS = {
             modal.onclick = function(e) {
                 if (e.target === modal) document.body.removeChild(modal);
             };
-            
+
             // 下载PDF - 使用 html2pdf.js 直接生成
             confirmBtn.onclick = function() {
                 confirmBtn.disabled = true;
                 confirmBtn.textContent = "⏳ 生成中...";
-                
+
                 // 获取要导出的元素
                 var element = scrollArea.firstChild;
-                
+
                 var opt = {
                     margin: 10,
                     filename: "成绩汇总_" + currentUserName + "_" + new Date().toISOString().slice(0,10) + ".pdf",
                     image: { type: 'jpeg', quality: 0.95 },
-                    html2canvas: { 
+                    html2canvas: {
                         scale: 2,
                         useCORS: true,
                         backgroundColor: '#ffffff',
@@ -2366,7 +2363,7 @@ var UNIT_COUNTS = {
                     },
                     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
                 };
-                
+
                 html2pdf().set(opt).from(element).save().then(function() {
                     console.log("PDF下载成功");
                     document.body.removeChild(modal);
@@ -2383,22 +2380,8 @@ var UNIT_COUNTS = {
         document.getElementById("wordInput").addEventListener("keypress",function(e){
             if(e.key==="Enter")check();
         });
-        
-        // ==================== 初始化：上传词汇到数据库 ====================
-        async function initVocabDatabase() {
-            // 确保 LOCAL_VOCAB（含 ph + unit）写入 Firebase
-            for (var key in LOCAL_VOCAB) {
-                var parts = key.split("-");
-                var grade = parts[0], semester = parts[1];
-                var localWords = LOCAL_VOCAB[key];
-                if (!localWords || localWords.length === 0) continue;
-                // 强制同步：每次页面加载都用 LOCAL_VOCAB 覆盖 Firebase
-                saveVocabToDB(grade, semester, localWords);
-                console.log("词库同步: " + key + " (" + localWords.length + "词，含ph+unit)");
-            }
-        }
-        
-        // ==================== 页面初始化 ====================
+
+                // ==================== 页面初始化 ====================
         window.onload = function(){
             if(checkLogin()) {
                 updateUnitButtons();  // 初始化单元选择按钮
