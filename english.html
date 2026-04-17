@@ -776,7 +776,7 @@
                             <div class="stat-label">剩余秒</div>
                         </div>
                     </div>
-                    <div class="word-cn" id="wordPh" class="phonetic-text"></div><div id="wordCn">--</div>
+                    <div id="wordPh" style="display:none"></div><div id="wordCn">--</div>
                     <div class="word-hint" id="wordHint">--</div>
                     <input type="text" class="word-input" id="wordInput" placeholder="输入英文单词..." autocomplete="off">
                     <div class="feedback" id="feedback"></div>
@@ -1788,8 +1788,7 @@ var UNIT_COUNTS = {
             if(G.idx>=G.words.length){G.words=shuffle(G.words);G.idx=0;}
             var w=G.words[G.idx];
             document.getElementById("wordCn").textContent=w.cn || "";
-            var phEl = document.getElementById("wordPh");
-            if (phEl) phEl.textContent = (w.ph && w.ph !== w.en) ? w.ph : "";
+            // 音标不显示（已隐藏）
             document.getElementById("wordHint").textContent="提示：首字母 "+w.en.charAt(0).toUpperCase();
             var inp=document.getElementById("wordInput");
             inp.value=""; inp.className="word-input"; inp.disabled=false; inp.focus();
