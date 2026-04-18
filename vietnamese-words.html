@@ -185,7 +185,7 @@
             <div class="sel-row">
                 <span class="sel-label">选择词库:</span>
                 <div class="sel-btns" id="vocabBtns">
-                    <button class="sel-btn" data-lv="starter" onclick="selVocab('starter',this)">
+                    <button class="sel-btn" data-lv="starter" onclick="console.log('[Button] Starter clicked')||selVocab('starter',this)">
                         🌱 Starter <span class="badge" id="badge-starter">500</span>
                     </button>
                                         <button class="sel-btn" data-lv="basic" onclick="selVocab('basic',this)">
@@ -442,6 +442,7 @@
     /* ========== 选择词库 ========== */
     var fullPool=[]; // 当前词库的完整词集
     function selVocab(lv,el){
+        console.log('[selVocab] lv:', lv, 'VOCAB[lv]:', VOCAB[lv] ? VOCAB[lv].length : 'empty/undefined');
         if(!VOCAB[lv]||!VOCAB[lv].length){
             alert('词库未加载，请稍后重试');return;
         }
@@ -476,6 +477,7 @@
     function startGame(type){
         // fullPool should be pre-populated by selVocab on init
         if(type==='dictation'){
+            console.log('[startGame dictation] fullPool length:', fullPool.length);
             var pool=fullPool.slice();
             var n=Math.min(120,pool.length);
             G.words=pool.sort(function(){return Math.random()-.5}).slice(0,n);
@@ -548,13 +550,16 @@
     };
 
     function showWord(){
+        console.log('[showWord] called. G.index:', G.index, 'G.words.length:', G.words.length);
         if(G.index>=G.words.length){
             G.words.sort(function(){return Math.random()-.5});G.index=0;
         }
         G.currentWord=G.words[G.index];
+        console.log('[showWord] G.currentWord:', JSON.stringify(G.currentWord));
         G.attempts=0;G.done=false;
 
         var w=G.currentWord.word;
+        console.log('[showWord] w:', w, 'length:', w ? w.length : 'N/A');
         var hint=w.charAt(0).toUpperCase();
         for(var i=1;i<w.length;i++)hint+=' _';
 
