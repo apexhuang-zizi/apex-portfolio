@@ -362,19 +362,29 @@
     /* 加载词库：优先本地VN_VOCAB，不从Firebase读词库（省配额） */
     function loadVocabLocal(){
         console.log("[loadVocabLocal] Called, VocabLoaded:", VocabLoaded);
+        console.log("[loadVocabLocal] VN_VOCAB type:", typeof VN_VOCAB, "keys:", VN_VOCAB ? Object.keys(VN_VOCAB) : 'null');
         if(VocabLoaded)return;
         if(typeof VN_VOCAB!=='undefined'){
             for(var lv in VN_VOCAB){
-                // 加载所有词库（starter/basic/hanviet等）
+                if(!VN_VOCAB[lv]){console.warn('[loadVocabLocal] VN_VOCAB.'+lv+' is null/undefined');continue;}
+                if(!Array.isArray(VN_VOCAB[lv])){console.warn('[loadVocabLocal] VN_VOCAB.'+lv+' is not array');continue;}
                 VOCAB[lv]=VN_VOCAB[lv].map(function(w){
+                    // 调试：打印每个词条的原始值
+                    if(!Array.isArray(w)){console.warn('[loadVocabLocal] bad entry:', w);return null;}
                     return{word:w[0],translation:w[1],translation_en:w[2],is_sino:!!w[3]};
-                });
+                }).filter(function(x){return x!==null;});
             }
             VocabLoaded=true;
             var counts=Object.keys(VOCAB).map(function(lv){return lv+'='+VOCAB[lv].length}).join(', ');
-            console.log('词库从本地加载: '+counts);
+            console.log('[loadVocabLocal] 词库从本地加载成功:', counts);
+            // 打印starter词库前3个词，验证数据
+            if(VOCAB.starter && VOCAB.starter.length>0){
+                console.log('[loadVocabLocal] starter[0]:', JSON.stringify(VOCAB.starter[0]));
+                console.log('[loadVocabLocal] starter[1]:', JSON.stringify(VOCAB.starter[1]));
+                console.log('[loadVocabLocal] starter[2]:', JSON.stringify(VOCAB.starter[2]));
+            }
         }else{
-            console.error('本地词库VN_VOCAB未定义');
+            console.error('本地词库VN_VOCAB未定义！');
         }
     }
     (function(){
@@ -477,7 +487,10 @@
     function startGame(type){
         // fullPool should be pre-populated by selVocab on init
         if(type==='dictation'){
-            console.log('[startGame dictation] fullPool length:', fullPool.length);
+            console.log('[startGame dictation] fullPool length:', fullPool.length, 'currentVocab:', currentVocab);
+            if(fullPool.length>0){
+                console.log('[startGame dictation] fullPool[0]:', JSON.stringify(fullPool[0]));
+            }
             var pool=fullPool.slice();
             var n=Math.min(120,pool.length);
             G.words=pool.sort(function(){return Math.random()-.5}).slice(0,n);
@@ -508,11 +521,12 @@
             document.getElementById('pa').style.display='block';
 
             showRules('pron');
-            // 预请求麦克风权限
+            // 预请求麦克风权限（手机端可能失败，没关系，用户点麦克风时会再试）
             requestMicPermission().then(function(granted){
                 if(!granted){
-                    document.getElementById('pf').className='pf bad';
-                    document.getElementById('pf').textContent='❌ 需要麦克风权限才能进行跟读练习';
+                    // 手机端预请求失败是正常的（非用户手势触发），给温和提示
+                    document.getElementById('pf').className='pf wait';
+                    document.getElementById('pf').textContent='点击 🎙 开始录音跟读';
                 }
                 showPWord();
             });
@@ -550,7 +564,11 @@
     };
 
     function showWord(){
-        console.log('[showWord] called. G.index:', G.index, 'G.words.length:', G.words.length);
+        console.log('[showWord] called. G.index:', G.index, 'G.words.length:', G.words.length, 'currentVocab:', currentVocab);
+        // 验证G.words[0]的数据完整性
+        if(G.words && G.words.length>0){
+            console.log('[showWord] G.words[0]:', JSON.stringify(G.words[0]));
+        }
         if(G.index>=G.words.length){
             G.words.sort(function(){return Math.random()-.5});G.index=0;
         }
@@ -790,6 +808,8 @@
     var SpeechRec=window.SpeechRecognition||window.webkitSpeechRecognition;
 
     /* 预请求麦克风权限，进入跟读模式时调用一次 */
+    /* 手机端注意：预请求可能因非用户手势触发而失败，这没关系，
+       真正的权限获取会在用户点击麦克风按钮时通过手势直接触发 */
     function requestMicPermission(){
         return new Promise(function(resolve){
             if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
@@ -800,7 +820,8 @@
                 stream.getTracks().forEach(function(t){t.stop()});
                 P.micAllowed=true;resolve(true);
             }).catch(function(err){
-                console.error('麦克风权限被拒绝:',err);
+                console.warn('预请求麦克风权限失败(手机端正常):',err&&err.name||err);
+                // 不设为false，让用户点击麦克风时再试（手势触发）
                 P.micAllowed=false;resolve(false);
             });
         });
@@ -830,14 +851,31 @@
     }
 
     function startRec(){
-        // 如果之前没有获取过权限，尝试获取
+        /* 手机端关键修复：必须在用户手势(tap)的同步调用栈中直接调用 getUserMedia，
+           不能放在 Promise.then 回调里，否则浏览器会静默拒绝 */
         if(!P.micAllowed){
-            requestMicPermission().then(function(granted){
-                if(granted)doStartRec();
-                else{
-                    document.getElementById('pf').className='pf bad';
-                    document.getElementById('pf').textContent='❌ 请允许麦克风权限后重试';
+            if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+                document.getElementById('pf').className='pf bad';
+                document.getElementById('pf').textContent='❌ 浏览器不支持录音，请使用Chrome';
+                return;
+            }
+            // 直接在用户手势中请求权限（同步调用栈），不走 Promise 链
+            navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+                stream.getTracks().forEach(function(t){t.stop()});
+                P.micAllowed=true;
+                doStartRec();
+            }).catch(function(err){
+                console.error('麦克风权限被拒绝:',err);
+                var msg='❌ 请允许麦克风权限后重试';
+                if(err.name==='NotAllowedError'){
+                    msg='❌ 麦克风权限被拒绝，请在浏览器设置中允许麦克风访问后刷新页面';
+                }else if(err.name==='NotFoundError'){
+                    msg='❌ 未检测到麦克风设备';
+                }else if(err.name==='NotReadableError'){
+                    msg='❌ 麦克风被其他应用占用，请关闭后重试';
                 }
+                document.getElementById('pf').className='pf bad';
+                document.getElementById('pf').textContent=msg;
             });
             return;
         }
@@ -865,8 +903,9 @@
         rec.onerror=function(err){
             br.classList.remove('rec');P.activeRec=null;
             if(err.error==='not-allowed'){
+                P.micAllowed=false; // 标记权限丢失，下次点麦克风重新请求
                 document.getElementById('pf').className='pf bad';
-                document.getElementById('pf').textContent='❌ 请允许麦克风权限后重试';
+                document.getElementById('pf').textContent='❌ 麦克风权限被拒绝，请允许后重试';
             }else if(err.error==='no-speech'){
                 document.getElementById('pf').className='pf bad';
                 document.getElementById('pf').textContent='❌ 未检测到声音，请再点一次麦克风';
@@ -947,8 +986,16 @@
             mr.start();
             setTimeout(function(){if(mr.state==='recording')mr.stop();document.getElementById('br').classList.remove('rec')},3000);
         }).catch(function(e){
+            console.error('fallback录音失败:',e);
+            P.micAllowed=false;
+            var msg='❌ 请允许麦克风权限后重试';
+            if(e.name==='NotAllowedError'){
+                msg='❌ 麦克风权限被拒绝，请在浏览器设置中允许麦克风访问后刷新页面';
+            }else if(e.name==='NotFoundError'){
+                msg='❌ 未检测到麦克风设备';
+            }
             document.getElementById('pf').className='pf bad';
-            document.getElementById('pf').textContent='❌ 请允许麦克风权限后重试';
+            document.getElementById('pf').textContent=msg;
         });
     }
 
