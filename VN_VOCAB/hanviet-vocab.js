@@ -3,7 +3,7 @@
     if(typeof VN_VOCAB==='undefined'){VN_VOCAB={};}
     if(!VN_VOCAB.hanviet){VN_VOCAB.hanviet=[];}
     if(VN_VOCAB.hanviet.length===0){var _h=[
-["an ninh", "安全", "security", 1],
+    ["an ninh", "安宁", "security", 1],
     ["an toàn", "安全", "safe, security", 1],
     ["an toàn lao động", "安全劳动", "occupational safety", 1],
     ["an tĩnh", "安静", "quiet, peaceful", 1],
