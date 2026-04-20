@@ -1183,19 +1183,28 @@
     function doStartRec(){
         if (P.activeRec){try{P.activeRec.abort();}catch(e){}}
         if (!SpeechRec){startRecFallback(); return;}
+
+        // 根据 TTS 播放时长动态计算录音超时
+        var dur = P.lastTTSDuration || 0.5;
+        var isShort = dur < 1.0; // 短音节（单音节通常 < 0.8s）
+        // 超时 = 播放时长 × 5（给人反应+朗读时间），最短 3s，最长 8s
+        var timeout = Math.max(3000, Math.min(8000, Math.round(dur * 5000)));
+        // 短音节给更多等待，因为浏览器需要更久才能检测到语音起点
+        if (isShort) timeout = Math.max(timeout, 5000);
+
         var rec = new SpeechRec();
         rec.lang = 'vi-VN';
-        rec.interimResults = true;
-        rec.maxAlternatives = 3;
+        rec.interimResults = isShort; // 短音节开启 interim 提高敏感度
+        rec.maxAlternatives = 5;       // 增加候选数提高匹配概率
         rec.continuous = false;
-        try { rec.speechDetectionTimeout = 1500; } catch(e){}
+        try { rec.speechDetectionTimeout = isShort ? 3000 : 1500; } catch(e){}
         P.activeRec = rec;
         var br = document.getElementById('br'); br.classList.add('rec');
         document.getElementById('pf').className = 'pf wait';
         document.getElementById('pf').textContent = '🔴 录音中...请朗读';
 
+        var scored = false;
         rec.onresult = function(e){
-            // interimResults=true 让浏览器更敏感检测语音，但只对 final result 评分
             var rs = [];
             for (var i = e.results.length - 1; i >= 0; i--){
                 if (e.results[i].isFinal){
@@ -1205,33 +1214,48 @@
             }
             if (!rs.length) return; // 忽略 interim，等 final
             br.classList.remove('rec'); P.activeRec = null;
+            scored = true;
+            P.shortRetry = 0;
             scorePron(rs);
         };
         rec.onerror = function(err){
             br.classList.remove('rec'); P.activeRec = null;
             if (err.error === 'not-allowed' || err.error === 'service-not-allowed'){
-                // SpeechRecognition 不可用（手机常见），但不代表麦克风没权限
-                // 不要设置 P.micAllowed = false，直接走 fallback
                 console.warn('SpeechRecognition 不可用，切换到录音模式:', err.error);
+                P.shortRetry = 0;
                 startRecFallback();
             } else if (err.error === 'no-speech'){
-                // no-speech 对单音节词很常见，不显示为错误
-                document.getElementById('pf').className = 'pf wait';
-                document.getElementById('pf').textContent = '🔇 没听清，请靠近麦克风再试一次';
+                // 短音节 no-speech 很常见，自动重试一次
+                if (isShort && P.shortRetry < 1){
+                    P.shortRetry++;
+                    console.log('短音节 no-speech，自动重试第' + P.shortRetry + '次');
+                    document.getElementById('pf').className = 'pf wait';
+                    document.getElementById('pf').textContent = '🔇 再试一次...请大声朗读';
+                    setTimeout(doStartRec, 800);
+                } else {
+                    P.shortRetry = 0;
+                    document.getElementById('pf').className = 'pf wait';
+                    document.getElementById('pf').textContent = '🔇 没听清，请靠近麦克风再试一次';
+                }
             } else if (err.error === 'aborted'){
-                // 正常手动停止，忽略
+                // 如果没评分也不是用户主动取消，可能是超时
+                if (!scored){
+                    document.getElementById('pf').className = 'pf wait';
+                    document.getElementById('pf').textContent = '⏱ 超时，请再点一次麦克风';
+                }
             } else {
-                // 其他未知错误也走 fallback，而不是报错
-                console.warn('SpeechRecognition 错误，切换到录音模式:', err.error);
-                startRecFallback();
+                console.warn('SpeechRecognition 错误:', err.error);
+                P.shortRetry = 0;
+                document.getElementById('pf').className = 'pf bad';
+                document.getElementById('pf').textContent = '⚠️ 识别失败，请重试';
             }
         };
-        rec.onend = function(){br.classList.remove('rec'); P.activeRec = null;};
+        rec.onend = function(){
+            br.classList.remove('rec');
+            if (P.activeRec === rec) P.activeRec = null;
+        };
         try{rec.start();}catch(e){br.classList.remove('rec'); P.activeRec = null;}
-        // 超时自动停止：单音节词 3 秒足够
-        var word = P.words[P.index] ? P.words[P.index].word : '';
-        var timeout = word.length <= 3 ? 4000 : 6000;
-        setTimeout(function(){if (P.activeRec === rec){try{rec.stop();}catch(e){}}}, timeout);
+        setTimeout(function(){if (P.activeRec === rec && !scored){try{rec.stop();}catch(e){}}}, timeout);
     }
 
     function stripVietTones(s){
