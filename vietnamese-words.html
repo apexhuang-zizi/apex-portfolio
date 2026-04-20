@@ -1182,7 +1182,7 @@
         if (!SpeechRec){startRecFallback(); return;}
         var rec = new SpeechRec();
         rec.lang = 'vi-VN';
-        rec.interimResults = false;
+        rec.interimResults = true;
         rec.maxAlternatives = 3;
         rec.continuous = false;
         try { rec.speechDetectionTimeout = 1500; } catch(e){}
@@ -1192,9 +1192,16 @@
         document.getElementById('pf').textContent = '🔴 录音中...请朗读';
 
         rec.onresult = function(e){
-            br.classList.remove('rec'); P.activeRec = null;
+            // interimResults=true 让浏览器更敏感检测语音，但只对 final result 评分
             var rs = [];
-            for (var i = 0; i < e.results[0].length; i++) rs.push(e.results[0][i].transcript.trim().toLowerCase());
+            for (var i = e.results.length - 1; i >= 0; i--){
+                if (e.results[i].isFinal){
+                    for (var j = 0; j < e.results[i].length; j++) rs.push(e.results[i][j].transcript.trim().toLowerCase());
+                    break;
+                }
+            }
+            if (!rs.length) return; // 忽略 interim，等 final
+            br.classList.remove('rec'); P.activeRec = null;
             scorePron(rs);
         };
         rec.onerror = function(err){
