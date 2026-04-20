@@ -1185,38 +1185,51 @@
             // 原生 TTS 无法捕获音频，后台静默获取 Google TTS 用于对比
             prefetchTTSBuffer(w);
         } else {
-            // 没有越南语语音 → Google TTS 兜底（已内置音频捕获）
+            // 没有越南语语音 → Google TTS 兜底
             P.lastTTSMode = 'google';
             playGoogleTTS(w, speed === 'slow' ? 0.7 : 1.0, btn);
+            // 也预取 TTS 缓冲（正常播放用 <audio>，缓冲用代理）
+            if (speed !== 'slow') prefetchTTSBuffer(w);
         }
     }
 
-    // 静默预取 TTS 音频用于对比评分（不播放）
+    // 静默预取 TTS 音频用于对比评分（通过 CORS 代理）
     function prefetchTTSBuffer(word){
-        var url = 'https://translate.google.com/translate_tts?ie=UTF-8&q=' + encodeURIComponent(word) + '&tl=vi&client=tw-ob';
-        try{
-            var xhr = new XMLHttpRequest();
-            xhr.open('GET', url, true);
-            xhr.responseType = 'arraybuffer';
-            xhr.onload = function(){
-                if (xhr.status === 200){
-                    var actx = new (window.AudioContext || window.webkitAudioContext)();
-                    actx.decodeAudioData(xhr.response, function(buf){
-                        _ttsAudioBuffer = buf;
-                        actx.close();
-                    }, function(){actx.close();});
-                }
-            };
-            xhr.onerror = function(){};
-            xhr.send();
-        }catch(e){}
+        var ttsUrl = 'https://translate.google.com/translate_tts?ie=UTF-8&q=' + encodeURIComponent(word) + '&tl=vi&client=tw-ob';
+        // 多个 CORS 代理依次尝试
+        var proxies = [
+            'https://corsproxy.io/?' + encodeURIComponent(ttsUrl),
+            'https://api.allorigins.win/raw?url=' + encodeURIComponent(ttsUrl)
+        ];
+        function tryProxy(idx){
+            if (idx >= proxies.length){console.warn('所有代理均失败，音频对比不可用'); return;}
+            try{
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', proxies[idx], true);
+                xhr.responseType = 'arraybuffer';
+                xhr.timeout = 8000;
+                xhr.onload = function(){
+                    if (xhr.status === 200 && xhr.response.byteLength > 100){
+                        var actx = new (window.AudioContext || window.webkitAudioContext)();
+                        actx.decodeAudioData(xhr.response, function(buf){
+                            _ttsAudioBuffer = buf;
+                            console.log('[预取] TTS音频已获取，时长:' + buf.duration.toFixed(2) + 's');
+                            actx.close();
+                        }, function(){actx.close(); tryProxy(idx+1);});
+                    } else {tryProxy(idx+1);}
+                };
+                xhr.onerror = function(){tryProxy(idx+1);};
+                xhr.ontimeout = function(){tryProxy(idx+1);};
+                xhr.send();
+            }catch(e){tryProxy(idx+1);}
+        }
+        tryProxy(0);
     }
 
     function playGoogleTTS(word, rate, btn){
         if (_ttsAudio){ _ttsAudio.pause(); _ttsAudio = null; }
         var url = 'https://translate.google.com/translate_tts?ie=UTF-8&q=' + encodeURIComponent(word) + '&tl=vi&client=tw-ob';
         var audio = new Audio(url);
-        audio.crossOrigin = 'anonymous';
         audio.playbackRate = rate;
         var t0 = 0;
         audio.onplay = function(){ t0 = Date.now(); };
@@ -1231,39 +1244,6 @@
             _ttsAudio = null;
         };
         _ttsAudio = audio;
-        // 捕获 TTS 音频用于对比评分
-        try{
-            var actx = new (window.AudioContext || window.webkitAudioContext)();
-            var src = actx.createMediaElementSource(audio);
-            var dest = actx.createMediaStreamDestination();
-            var recorder = new MediaRecorder(dest.stream);
-            var ttsChunks = [];
-            recorder.ondataavailable = function(e){if(e.data.size>0) ttsChunks.push(e.data);};
-            recorder.onstop = function(){
-                if (ttsChunks.length){
-                    var blob = new Blob(ttsChunks, {type: recorder.mimeType});
-                    var r = new FileReader();
-                    r.onload = function(){
-                        actx.decodeAudioData(r.result, function(buf){ _ttsAudioBuffer = buf; actx.close(); }, function(){actx.close();});
-                    };
-                    r.readAsArrayBuffer(blob);
-                } else { actx.close(); }
-            };
-            src.connect(dest);
-            src.connect(actx.destination); // 同时输出到扬声器
-            recorder.start();
-            audio.onended = function(){
-                if (t0) P.lastTTSDuration = (Date.now() - t0) / 1000;
-                if (btn) btn.classList.remove('speaking');
-                _ttsAudio = null;
-                if (recorder.state === 'recording') recorder.stop();
-            };
-            audio.onerror = function(){
-                if (btn) btn.classList.remove('speaking');
-                _ttsAudio = null;
-                if (recorder.state === 'recording') recorder.stop();
-            };
-        }catch(e){console.warn('TTS音频捕获跳过:', e);}
         audio.play().catch(function(e){
             console.error('Google TTS play 失败:', e);
             if (btn) btn.classList.remove('speaking');
