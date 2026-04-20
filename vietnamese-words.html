@@ -1214,10 +1214,11 @@
         };
         rec.onerror = function(err){
             br.classList.remove('rec'); P.activeRec = null;
-            if (err.error === 'not-allowed'){
-                P.micAllowed = false;
-                document.getElementById('pf').className = 'pf bad';
-                document.getElementById('pf').textContent = '❌ 麦克风权限被拒绝，请允许后重试';
+            if (err.error === 'not-allowed' || err.error === 'service-not-allowed'){
+                // SpeechRecognition 不可用（手机常见），但不代表麦克风没权限
+                // 不要设置 P.micAllowed = false，直接走 fallback
+                console.warn('SpeechRecognition 不可用，切换到录音模式:', err.error);
+                startRecFallback();
             } else if (err.error === 'no-speech'){
                 // no-speech 对单音节词很常见，不显示为错误
                 document.getElementById('pf').className = 'pf wait';
@@ -1225,8 +1226,9 @@
             } else if (err.error === 'aborted'){
                 // 正常手动停止，忽略
             } else {
-                document.getElementById('pf').className = 'pf bad';
-                document.getElementById('pf').textContent = '⚠️ 识别失败，请重试';
+                // 其他未知错误也走 fallback，而不是报错
+                console.warn('SpeechRecognition 错误，切换到录音模式:', err.error);
+                startRecFallback();
             }
         };
         rec.onend = function(){br.classList.remove('rec'); P.activeRec = null;};
@@ -1281,30 +1283,34 @@
     }
 
     function startRecFallback(){
+        // 录音模式：用于不支持 SpeechRecognition 的手机浏览器
+        document.getElementById('pf').className = 'pf wait';
+        document.getElementById('pf').textContent = '🎤 录音中（3秒）...请朗读';
+        document.getElementById('br').classList.add('rec');
         navigator.mediaDevices.getUserMedia({audio: true}).then(function(s){
             var mr = new MediaRecorder(s); var ch = [];
             mr.ondataavailable = function(e){ch.push(e.data);};
             mr.onstop = function(){
                 s.getTracks().forEach(function(t){t.stop();});
-                var sc = Math.round(Math.random() * 30 + 50);
-                var cls = sc >= 70 ? 'great' : 'good'; if (sc < 50) cls = 'bad';
-                document.getElementById('pf').className = 'pf ' + cls;
-                document.getElementById('pf').textContent = sc + '分 - 基础评分，建议使用Chrome';
+                document.getElementById('br').classList.remove('rec');
+                var word = P.words[P.index] ? P.words[P.index].word : '';
+                document.getElementById('pf').className = 'pf good';
+                document.getElementById('pf').textContent = '✅ 已录音！请对比原音 "' + word + '" 自评发音';
             };
-            document.getElementById('br').classList.add('rec');
             mr.start();
-            setTimeout(function(){if (mr.state === 'recording') mr.stop(); document.getElementById('br').classList.remove('rec');}, 3000);
+            setTimeout(function(){if (mr.state === 'recording') mr.stop();}, 3000);
         }).catch(function(e){
             console.error('fallback录音失败:', e);
+            document.getElementById('br').classList.remove('rec');
             P.micAllowed = false;
             var msg = '❌ 请允许麦克风权限后重试';
             if (e.name === 'NotAllowedError'){
-                msg = '❌ 麦克风权限被拒绝，请在浏览器设置中允许麦克风访问后刷新页面';
+                msg = '❌ 麦克风权限被拒绝，请在浏览器设置中允许后刷新页面';
             } else if (e.name === 'NotFoundError'){
                 msg = '❌ 未检测到麦克风设备';
             }
             document.getElementById('pf').className = 'pf bad';
-            document.getById('pf').textContent = msg;
+            document.getElementById('pf').textContent = msg;
         });
     }
 
