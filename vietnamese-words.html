@@ -1193,21 +1193,20 @@
         }
     }
 
-    // 静默预取 TTS 音频用于对比评分（通过 CORS 代理）
+    // 静默预取 TTS 音频用于对比评分（通过 CORS 代理，尽力而为）
     function prefetchTTSBuffer(word){
         var ttsUrl = 'https://translate.google.com/translate_tts?ie=UTF-8&q=' + encodeURIComponent(word) + '&tl=vi&client=tw-ob';
-        // 多个 CORS 代理依次尝试
         var proxies = [
-            'https://corsproxy.io/?' + encodeURIComponent(ttsUrl),
-            'https://api.allorigins.win/raw?url=' + encodeURIComponent(ttsUrl)
+            'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(ttsUrl),
+            'https://thingproxy.freeboard.io/fetch/' + ttsUrl
         ];
         function tryProxy(idx){
-            if (idx >= proxies.length){console.warn('所有代理均失败，音频对比不可用'); return;}
+            if (idx >= proxies.length) return; // 静默失败，用时长评分兜底
             try{
                 var xhr = new XMLHttpRequest();
                 xhr.open('GET', proxies[idx], true);
                 xhr.responseType = 'arraybuffer';
-                xhr.timeout = 8000;
+                xhr.timeout = 6000;
                 xhr.onload = function(){
                     if (xhr.status === 200 && xhr.response.byteLength > 100){
                         var actx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1215,13 +1214,13 @@
                             _ttsAudioBuffer = buf;
                             console.log('[预取] TTS音频已获取，时长:' + buf.duration.toFixed(2) + 's');
                             actx.close();
-                        }, function(){actx.close(); tryProxy(idx+1);});
-                    } else {tryProxy(idx+1);}
+                        }, function(){actx.close();});
+                    }
                 };
-                xhr.onerror = function(){tryProxy(idx+1);};
-                xhr.ontimeout = function(){tryProxy(idx+1);};
+                xhr.onerror = function(){};
+                xhr.ontimeout = function(){};
                 xhr.send();
-            }catch(e){tryProxy(idx+1);}
+            }catch(e){}
         }
         tryProxy(0);
     }
@@ -1620,50 +1619,98 @@
         return cosineSim(e1, e2);
     }
 
-    // 主对比函数：对比用户录音与 TTS 原音，返回 0-100 分
+    // 主对比函数：有TTS原音时做频谱对比，无则用独立声学分析评分
     function compareAndScore(userBlob, cb){
-        if (!_ttsAudioBuffer){cb(null); return;}
+        var ttsDur = P.lastTTSDuration || 0;
         decodeBlob(userBlob, function(userBuf){
             if (!userBuf){cb(null); return;}
             try{
-                // 1) 能量包络相似度 (权重 30%)
-                var envSim = envelopeSim(_ttsAudioBuffer, userBuf);
-                var envScore = Math.round(envSim * 100);
+                // ---- 方案A：有TTS原音 → 频谱DTW对比 ----
+                if (_ttsAudioBuffer){
+                    var envSim = envelopeSim(_ttsAudioBuffer, userBuf);
+                    var envScore = Math.round(envSim * 100);
+                    var dur1 = _ttsAudioBuffer.length / _ttsAudioBuffer.sampleRate;
+                    var dur2 = userBuf.length / userBuf.sampleRate;
+                    var targetSamples = 8000;
+                    var d1 = normalize(resampleData(_ttsAudioBuffer, targetSamples));
+                    var d2 = normalize(resampleData(userBuf, targetSamples));
+                    var frameSize = 256, hopSize = 128;
+                    var feat1 = spectralFeatures(d1, _ttsAudioBuffer.sampleRate, frameSize, hopSize);
+                    var feat2 = spectralFeatures(d2, _ttsAudioBuffer.sampleRate, frameSize, hopSize);
+                    var dtwDist = dtwDistance(feat1, feat2);
+                    var specScore = Math.round(Math.max(0, (1 - dtwDist)) * 100);
+                    var durRatio = Math.min(dur1, dur2) / Math.max(dur1, dur2);
+                    var durScore = Math.round(durRatio * 100);
+                    var finalScore = Math.round(envScore * 0.3 + specScore * 0.5 + durScore * 0.2);
+                    finalScore = Math.max(20, Math.min(98, finalScore));
+                    var detail = finalScore >= 85 ? '发音接近原音' : finalScore >= 65 ? '部分相似，注意声调' : finalScore >= 45 ? '差异较大，仔细听原音' : '发音差异明显，多听多练';
+                    console.log('[频谱对比] 包络:'+envScore+' 频谱:'+specScore+' 时长:'+durScore+' → '+finalScore);
+                    cb({score: finalScore, detail: detail});
+                    return;
+                }
 
-                // 2) 频谱 DTW 相似度 (权重 50%)
-                var targetRate = _ttsAudioBuffer.sampleRate;
-                // 把用户录音重采样到与 TTS 相同采样率长度
-                var dur1 = _ttsAudioBuffer.length / _ttsAudioBuffer.sampleRate;
-                var dur2 = userBuf.length / userBuf.sampleRate;
-                var targetSamples = 8000; // 统一重采样点数
-                var d1 = normalize(resampleData(_ttsAudioBuffer, targetSamples));
-                var d2 = normalize(resampleData(userBuf, targetSamples));
+                // ---- 方案B：无TTS原音 → 独立声学分析评分 ----
+                var raw = userBuf.getChannelData(0);
+                var recDur = userBuf.length / userBuf.sampleRate;
 
-                var frameSize = 256, hopSize = 128;
-                var feat1 = spectralFeatures(d1, targetRate, frameSize, hopSize);
-                var feat2 = spectralFeatures(d2, targetRate, frameSize, hopSize);
-                var dtwDist = dtwDistance(feat1, feat2);
-                var specScore = Math.round(Math.max(0, (1 - dtwDist)) * 100);
+                // 1) 时长匹配分（40%权重）
+                var durScore2 = 50;
+                if (ttsDur > 0){
+                    var ratio = recDur / ttsDur;
+                    if (ratio >= 0.6 && ratio <= 2.0) durScore2 = 100;
+                    else if (ratio >= 0.4 && ratio <= 3.0) durScore2 = 70;
+                    else durScore2 = 40;
+                }
 
-                // 3) 时长相似度 (权重 20%)
-                var durRatio = Math.min(dur1, dur2) / Math.max(dur1, dur2);
-                var durScore = Math.round(durRatio * 100);
+                // 2) 语音活跃度分（30%权重）：有效语音段占比
+                var frameLen = Math.floor(userBuf.sampleRate * 0.03); // 30ms帧
+                var hop = Math.floor(frameLen / 2);
+                var energyThresh = 0.01;
+                var voiced = 0, total = 0;
+                for (var i = 0; i + frameLen <= raw.length; i += hop){
+                    var e = 0;
+                    for (var j = 0; j < frameLen; j++) e += raw[i+j] * raw[i+j];
+                    e = Math.sqrt(e / frameLen);
+                    if (e > energyThresh) voiced++;
+                    total++;
+                }
+                var voicedRatio = total > 0 ? voiced / total : 0;
+                // 理想：40%-90% 是语音，太少=没说话，太多=全是噪音
+                var voicedScore;
+                if (voicedRatio >= 0.3 && voicedRatio <= 0.85) voicedScore = 90 + Math.round(voicedRatio * 10);
+                else if (voicedRatio >= 0.15) voicedScore = 60;
+                else voicedScore = 30;
+
+                // 3) 清晰度分（30%权重）：分析频谱是否有清晰共振峰
+                var targetSamples2 = 8000;
+                var d = normalize(resampleData(userBuf, targetSamples2));
+                var frameSize2 = 256, hopSize2 = 128;
+                var feats = spectralFeatures(d, userBuf.sampleRate, frameSize2, hopSize2);
+                // 计算频谱质心（spectral centroid）越高越清晰
+                var centroidSum = 0, centroidCount = 0;
+                for (var fi = 0; fi < feats.length; fi++){
+                    var f = feats[fi];
+                    var num = 0, den = 0;
+                    for (var k = 0; k < f.length; k++){num += k * f[k]; den += f[k];}
+                    if (den > 0) centroidSum += num / den;
+                    centroidCount++;
+                }
+                var avgCentroid = centroidCount > 0 ? centroidSum / centroidCount : 0;
+                // 归一化：越南语语音质心通常在 10-35 范围（64频点中）
+                var clarityScore;
+                if (avgCentroid >= 8 && avgCentroid <= 40) clarityScore = 85 + Math.round(Math.min(15, (40 - Math.abs(avgCentroid - 20)) * 0.5));
+                else if (avgCentroid >= 5 && avgCentroid <= 50) clarityScore = 65;
+                else clarityScore = 40;
 
                 // 综合评分
-                var finalScore = Math.round(envScore * 0.3 + specScore * 0.5 + durScore * 0.2);
-                // 限制范围 20-98（避免极端值）
-                finalScore = Math.max(20, Math.min(98, finalScore));
+                var finalScore2 = Math.round(durScore2 * 0.4 + voicedScore * 0.3 + clarityScore * 0.3);
+                finalScore2 = Math.max(20, Math.min(95, finalScore2));
 
-                var detail = '';
-                if (finalScore >= 85) detail = '发音接近原音';
-                else if (finalScore >= 65) detail = '部分相似，注意声调';
-                else if (finalScore >= 45) detail = '差异较大，仔细听原音';
-                else detail = '发音差异明显，多听多练';
-
-                console.log('[音频对比] 包络:'+envScore+' 频谱:'+specScore+' 时长:'+durScore+' → 综合:'+finalScore);
-                cb({score: finalScore, detail: detail, envScore: envScore, specScore: specScore, durScore: durScore});
+                var detail2 = finalScore2 >= 80 ? '发音清晰，节奏良好' : finalScore2 >= 60 ? '基本正确，注意节奏和声调' : finalScore2 >= 40 ? '发音偏弱，请大声清晰朗读' : '未检测到清晰发音，请重试';
+                console.log('[独立分析] 时长:'+durScore2+' 活跃度:'+voicedScore+'(占比'+Math.round(voicedRatio*100)+'%) 清晰度:'+clarityScore+'(质心'+avgCentroid.toFixed(1)+') → '+finalScore2);
+                cb({score: finalScore2, detail: detail2});
             }catch(e){
-                console.error('音频对比失败:', e);
+                console.error('评分失败:', e);
                 cb(null);
             }
         });
