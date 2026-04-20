@@ -312,6 +312,7 @@
                         </div>
                         <div class="rec-btns">
                             <button class="pb" id="br" onclick="startRec()" title="开始录音">🎙️</button>
+                            <button class="pb" id="bplay" onclick="playMyRec()" title="播放录音" style="opacity:.4;pointer-events:none">🔊</button>
                         </div>
                         <div class="pf wait" id="pf">点击 🔊 听发音 → 🎙 录音跟读</div>
                         <div class="phint">建议使用 Chrome 浏览器以获得最佳语音识别效果</div>
@@ -1103,6 +1104,8 @@
     var P = {index: 0, words: [], totalScore: 0, lowScores: [], activeRec: null, micAllowed: false, lastTTSDuration: 0, shortRetry: 0, recBusy: false, hasVietVoice: null, lastTTSMode: null};
     var SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
     var _ttsAudio = null; // Google TTS 音频对象复用
+    var _lastRecBlob = null; // 最近一次录音的音频数据
+    var _lastRecUrl = null; // 最近一次录音的播放 URL
 
     function requestMicPermission(){
         return new Promise(function(resolve){
@@ -1238,6 +1241,23 @@
         doStartRec();
     }
 
+    function playMyRec(){
+        if (!_lastRecBlob){return;}
+        if (_lastRecUrl) URL.revokeObjectURL(_lastRecUrl);
+        _lastRecUrl = URL.createObjectURL(_lastRecBlob);
+        var a = new Audio(_lastRecUrl);
+        var btn = document.getElementById('bplay');
+        if (btn){btn.style.opacity='1';btn.classList.add('spk');}
+        a.onended = function(){if(btn)btn.classList.remove('spk');};
+        a.play().catch(function(e){console.error('播放录音失败:',e);if(btn)btn.classList.remove('spk');});
+    }
+
+    function saveRecBlob(blob){
+        _lastRecBlob = blob;
+        var btn = document.getElementById('bplay');
+        if (btn){btn.style.opacity='1';btn.style.pointerEvents='auto';}
+    }
+
     function doStartRec(){
         if (P.activeRec){try{P.activeRec.abort();}catch(e){}}
         if (P.recBusy) return;
@@ -1270,7 +1290,9 @@
             source.connect(analyser);
 
             var mr = new MediaRecorder(stream);
+            var ch = [];
             var hasSound = false;
+            mr.ondataavailable = function(e){if(e.data.size>0) ch.push(e.data);};
             var checkInterval = setInterval(function(){
                 var data = new Uint8Array(analyser.frequencyBinCount);
                 analyser.getByteFrequencyData(data);
@@ -1287,6 +1309,7 @@
                 stream.getTracks().forEach(function(t){t.stop();});
                 document.getElementById('br').classList.remove('rec');
                 P.recBusy = false;
+                if (ch.length) saveRecBlob(new Blob(ch, {type: mr.mimeType}));
                 var word = P.words[P.index] ? P.words[P.index].word : '';
                 if (hasSound){
                     document.getElementById('pf').className = 'pf good';
@@ -1412,9 +1435,10 @@
             mr.onstop = function(){
                 s.getTracks().forEach(function(t){t.stop();});
                 document.getElementById('br').classList.remove('rec');
+                if (ch.length) saveRecBlob(new Blob(ch, {type: mr.mimeType}));
                 var word = P.words[P.index] ? P.words[P.index].word : '';
                 document.getElementById('pf').className = 'pf good';
-                document.getElementById('pf').textContent = '✅ 已录音！请对比原音 "' + word + '" 自评发音';
+                document.getElementById('pf').textContent = '✅ 已录音！点击 🔊 回听，对比原音自评';
             };
             mr.start();
             setTimeout(function(){if (mr.state === 'recording') mr.stop();}, 3000);
