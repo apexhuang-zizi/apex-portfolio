@@ -1100,7 +1100,7 @@
     });
 
     /* ========== 单词跟读 ========== */
-    var P = {index: 0, words: [], totalScore: 0, lowScores: [], activeRec: null, micAllowed: false, lastTTSDuration: 0, shortRetry: 0};
+    var P = {index: 0, words: [], totalScore: 0, lowScores: [], activeRec: null, micAllowed: false, lastTTSDuration: 0, shortRetry: 0, recBusy: false};
     var SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
 
     function requestMicPermission(){
@@ -1152,6 +1152,11 @@
     }
 
     function startRec(){
+        if (P.recBusy){
+            document.getElementById('pf').className = 'pf wait';
+            document.getElementById('pf').textContent = '⏳ 请稍等...';
+            return;
+        }
         if (!P.micAllowed){
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
                 document.getElementById('pf').className = 'pf bad';
@@ -1182,22 +1187,82 @@
 
     function doStartRec(){
         if (P.activeRec){try{P.activeRec.abort();}catch(e){}}
-        if (!SpeechRec){startRecFallback(); return;}
+        if (P.recBusy) return;
+        P.recBusy = true;
 
-        // 根据 TTS 播放时长动态计算录音超时
+        // 短音节（< 1s）用 MediaRecorder + 音量检测，不走 SpeechRecognition
         var dur = P.lastTTSDuration || 0.5;
-        var isShort = dur < 1.0; // 短音节（单音节通常 < 0.8s）
-        // 超时 = 播放时长 × 5（给人反应+朗读时间），最短 3s，最长 8s
-        var timeout = Math.max(3000, Math.min(8000, Math.round(dur * 5000)));
-        // 短音节给更多等待，因为浏览器需要更久才能检测到语音起点
-        if (isShort) timeout = Math.max(timeout, 5000);
+        if (dur < 1.0){
+            doShortWordRec(dur);
+        } else if (!SpeechRec){
+            P.recBusy = false;
+            startRecFallback();
+        } else {
+            doLongWordRec(dur);
+        }
+    }
 
+    // ---- 短音节录音：MediaRecorder + 音量检测 ----
+    function doShortWordRec(ttsDur){
+        var recDur = Math.max(2000, Math.round(ttsDur * 4000)); // 录音时长 = TTS × 4，最短 2s
+        document.getElementById('pf').className = 'pf wait';
+        document.getElementById('pf').textContent = '🎤 录音中（' + Math.round(recDur/1000) + '秒）...请朗读';
+        document.getElementById('br').classList.add('rec');
+
+        navigator.mediaDevices.getUserMedia({audio: true}).then(function(stream){
+            var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            var source = audioCtx.createMediaStreamSource(stream);
+            var analyser = audioCtx.createAnalyser();
+            analyser.fftSize = 512;
+            source.connect(analyser);
+
+            var mr = new MediaRecorder(stream);
+            var hasSound = false;
+            var checkInterval = setInterval(function(){
+                var data = new Uint8Array(analyser.frequencyBinCount);
+                analyser.getByteFrequencyData(data);
+                var sum = 0;
+                for (var i = 0; i < data.length; i++) sum += data[i];
+                var avg = sum / data.length;
+                if (avg > 15) hasSound = true; // 有声音
+            }, 100);
+
+            mr.onstop = function(){
+                clearInterval(checkInterval);
+                source.disconnect();
+                audioCtx.close();
+                stream.getTracks().forEach(function(t){t.stop();});
+                document.getElementById('br').classList.remove('rec');
+                P.recBusy = false;
+                var word = P.words[P.index] ? P.words[P.index].word : '';
+                if (hasSound){
+                    document.getElementById('pf').className = 'pf good';
+                    document.getElementById('pf').textContent = '✅ 已检测到声音！请对比原音 "' + word + '" 自评发音';
+                } else {
+                    document.getElementById('pf').className = 'pf wait';
+                    document.getElementById('pf').textContent = '🔇 未检测到声音，请靠近麦克风再试';
+                }
+            };
+            mr.start();
+            setTimeout(function(){if (mr.state === 'recording') mr.stop();}, recDur);
+        }).catch(function(e){
+            P.recBusy = false;
+            document.getElementById('br').classList.remove('rec');
+            console.error('短音节录音失败:', e);
+            document.getElementById('pf').className = 'pf bad';
+            document.getElementById('pf').textContent = '❌ 录音失败，请重试';
+        });
+    }
+
+    // ---- 长单词录音：SpeechRecognition（原有逻辑） ----
+    function doLongWordRec(dur){
+        var timeout = Math.max(3000, Math.min(8000, Math.round(dur * 5000)));
         var rec = new SpeechRec();
         rec.lang = 'vi-VN';
-        rec.interimResults = isShort; // 短音节开启 interim 提高敏感度
-        rec.maxAlternatives = 5;       // 增加候选数提高匹配概率
+        rec.interimResults = false;
+        rec.maxAlternatives = 5;
         rec.continuous = false;
-        try { rec.speechDetectionTimeout = isShort ? 3000 : 1500; } catch(e){}
+        try { rec.speechDetectionTimeout = 1500; } catch(e){}
         P.activeRec = rec;
         var br = document.getElementById('br'); br.classList.add('rec');
         document.getElementById('pf').className = 'pf wait';
@@ -1205,56 +1270,38 @@
 
         var scored = false;
         rec.onresult = function(e){
+            br.classList.remove('rec'); P.activeRec = null; P.recBusy = false;
             var rs = [];
-            for (var i = e.results.length - 1; i >= 0; i--){
-                if (e.results[i].isFinal){
-                    for (var j = 0; j < e.results[i].length; j++) rs.push(e.results[i][j].transcript.trim().toLowerCase());
-                    break;
-                }
-            }
-            if (!rs.length) return; // 忽略 interim，等 final
-            br.classList.remove('rec'); P.activeRec = null;
+            for (var i = 0; i < e.results[0].length; i++) rs.push(e.results[0][i].transcript.trim().toLowerCase());
             scored = true;
-            P.shortRetry = 0;
             scorePron(rs);
         };
         rec.onerror = function(err){
-            br.classList.remove('rec'); P.activeRec = null;
+            br.classList.remove('rec'); P.activeRec = null; P.recBusy = false;
             if (err.error === 'not-allowed' || err.error === 'service-not-allowed'){
                 console.warn('SpeechRecognition 不可用，切换到录音模式:', err.error);
-                P.shortRetry = 0;
                 startRecFallback();
             } else if (err.error === 'no-speech'){
-                // 短音节 no-speech 很常见，自动重试一次
-                if (isShort && P.shortRetry < 1){
-                    P.shortRetry++;
-                    console.log('短音节 no-speech，自动重试第' + P.shortRetry + '次');
-                    document.getElementById('pf').className = 'pf wait';
-                    document.getElementById('pf').textContent = '🔇 再试一次...请大声朗读';
-                    setTimeout(doStartRec, 800);
-                } else {
-                    P.shortRetry = 0;
-                    document.getElementById('pf').className = 'pf wait';
-                    document.getElementById('pf').textContent = '🔇 没听清，请靠近麦克风再试一次';
-                }
+                document.getElementById('pf').className = 'pf wait';
+                document.getElementById('pf').textContent = '🔇 没听清，请靠近麦克风再试一次';
             } else if (err.error === 'aborted'){
-                // 如果没评分也不是用户主动取消，可能是超时
                 if (!scored){
                     document.getElementById('pf').className = 'pf wait';
                     document.getElementById('pf').textContent = '⏱ 超时，请再点一次麦克风';
                 }
             } else {
-                console.warn('SpeechRecognition 错误:', err.error);
-                P.shortRetry = 0;
                 document.getElementById('pf').className = 'pf bad';
                 document.getElementById('pf').textContent = '⚠️ 识别失败，请重试';
             }
         };
         rec.onend = function(){
             br.classList.remove('rec');
-            if (P.activeRec === rec) P.activeRec = null;
+            if (P.activeRec === rec){P.activeRec = null; P.recBusy = false;}
         };
-        try{rec.start();}catch(e){br.classList.remove('rec'); P.activeRec = null;}
+        try{rec.start();}catch(e){br.classList.remove('rec'); P.activeRec = null; P.recBusy = false;
+            document.getElementById('pf').className = 'pf bad';
+            document.getElementById('pf').textContent = '❌ 无法开始识别，请刷新页面';
+        }
         setTimeout(function(){if (P.activeRec === rec && !scored){try{rec.stop();}catch(e){}}}, timeout);
     }
 
