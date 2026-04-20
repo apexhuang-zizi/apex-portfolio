@@ -1100,7 +1100,7 @@
     });
 
     /* ========== 单词跟读 ========== */
-    var P = {index: 0, words: [], totalScore: 0, lowScores: [], activeRec: null, micAllowed: false};
+    var P = {index: 0, words: [], totalScore: 0, lowScores: [], activeRec: null, micAllowed: false, lastTTSDuration: 0, shortRetry: 0};
     var SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
 
     function requestMicPermission(){
@@ -1141,10 +1141,13 @@
         u.rate = speed === 'slow' ? 0.5 : 1.0;
         u.pitch = 1;
         var btn = document.getElementById(speed === 'slow' ? 'pspk-slow' : 'pspk-norm');
-        if (btn){
-            btn.classList.add('speaking');
-            u.onend = function(){btn.classList.remove('speaking');};
-        }
+        if (btn) btn.classList.add('speaking');
+        var t0 = 0;
+        u.onstart = function(){ t0 = Date.now(); };
+        u.onend = function(){
+            if (t0) P.lastTTSDuration = (Date.now() - t0) / 1000;
+            if (btn) btn.classList.remove('speaking');
+        };
         speechSynthesis.cancel(); speechSynthesis.speak(u);
     }
 
@@ -1228,7 +1231,7 @@
         // 超时自动停止：单音节词 3 秒足够
         var word = P.words[P.index] ? P.words[P.index].word : '';
         var timeout = word.length <= 3 ? 4000 : 6000;
-        setTimeout(function(){if (P.activeRec === rec && !gotFinal){try{rec.stop();}catch(e){}}}, timeout);
+        setTimeout(function(){if (P.activeRec === rec){try{rec.stop();}catch(e){}}}, timeout);
     }
 
     function stripVietTones(s){
