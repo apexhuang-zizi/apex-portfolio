@@ -1100,8 +1100,9 @@
     });
 
     /* ========== 单词跟读 ========== */
-    var P = {index: 0, words: [], totalScore: 0, lowScores: [], activeRec: null, micAllowed: false, lastTTSDuration: 0, shortRetry: 0, recBusy: false};
+    var P = {index: 0, words: [], totalScore: 0, lowScores: [], activeRec: null, micAllowed: false, lastTTSDuration: 0, shortRetry: 0, recBusy: false, hasVietVoice: null, lastTTSMode: null};
     var SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    var _ttsAudio = null; // Google TTS 音频对象复用
 
     function requestMicPermission(){
         return new Promise(function(resolve){
@@ -1133,22 +1134,74 @@
         document.getElementById('pf').textContent = '点击 🔊 听发音 → 🎙 录音跟读';
     }
 
+    function checkVietVoice(){
+        // 检查设备是否有越南语 TTS 语音
+        if (!window.speechSynthesis) { P.hasVietVoice = false; return; }
+        var voices = speechSynthesis.getVoices();
+        if (!voices.length) { P.hasVietVoice = false; return; }
+        for (var i = 0; i < voices.length; i++){
+            var lang = (voices[i].lang || '').toLowerCase();
+            if (lang === 'vi-vn' || lang === 'vi' || lang.startsWith('vi')){P.hasVietVoice = true; return;}
+        }
+        P.hasVietVoice = false;
+    }
+    // Chrome 异步加载语音列表，需要监听
+    if (window.speechSynthesis){
+        speechSynthesis.onvoiceschanged = checkVietVoice;
+        checkVietVoice();
+    }
+
     function playWS(speed){
-        if (!window.speechSynthesis) return;
         var w = P.words[P.index].word;
-        var u = new SpeechSynthesisUtterance(w);
-        u.lang = 'vi-VN';
-        u.rate = speed === 'slow' ? 0.5 : 1.0;
-        u.pitch = 1;
         var btn = document.getElementById(speed === 'slow' ? 'pspk-slow' : 'pspk-norm');
         if (btn) btn.classList.add('speaking');
+        P.lastTTSMode = null;
+
+        // 如果设备有越南语语音，用原生 TTS
+        if (P.hasVietVoice){
+            P.lastTTSMode = 'native';
+            var u = new SpeechSynthesisUtterance(w);
+            u.lang = 'vi-VN';
+            u.rate = speed === 'slow' ? 0.5 : 1.0;
+            u.pitch = 1;
+            var t0 = 0;
+            u.onstart = function(){ t0 = Date.now(); };
+            u.onend = function(){
+                if (t0) P.lastTTSDuration = (Date.now() - t0) / 1000;
+                if (btn) btn.classList.remove('speaking');
+            };
+            u.onerror = function(){if (btn) btn.classList.remove('speaking');};
+            speechSynthesis.cancel(); speechSynthesis.speak(u);
+        } else {
+            // 没有越南语语音 → Google TTS 兜底
+            P.lastTTSMode = 'google';
+            playGoogleTTS(w, speed === 'slow' ? 0.7 : 1.0, btn);
+        }
+    }
+
+    function playGoogleTTS(word, rate, btn){
+        if (_ttsAudio){ _ttsAudio.pause(); _ttsAudio = null; }
+        var url = 'https://translate.google.com/translate_tts?ie=UTF-8&q=' + encodeURIComponent(word) + '&tl=vi&client=tw-ob';
+        var audio = new Audio(url);
+        audio.playbackRate = rate;
         var t0 = 0;
-        u.onstart = function(){ t0 = Date.now(); };
-        u.onend = function(){
+        audio.onplay = function(){ t0 = Date.now(); };
+        audio.onended = function(){
             if (t0) P.lastTTSDuration = (Date.now() - t0) / 1000;
             if (btn) btn.classList.remove('speaking');
+            _ttsAudio = null;
         };
-        speechSynthesis.cancel(); speechSynthesis.speak(u);
+        audio.onerror = function(){
+            console.error('Google TTS 加载失败，尝试备用');
+            if (btn) btn.classList.remove('speaking');
+            _ttsAudio = null;
+        };
+        _ttsAudio = audio;
+        audio.play().catch(function(e){
+            console.error('Google TTS play 失败:', e);
+            if (btn) btn.classList.remove('speaking');
+            _ttsAudio = null;
+        });
     }
 
     function startRec(){
