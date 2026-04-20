@@ -382,29 +382,29 @@
     (function init(){
         console.log('[Init] 初始化越南语单词模块...');
         
-        // 初始化 Firebase
-        var firebaseReady;
-        if (typeof firebase !== 'undefined') {
-            firebase.initializeApp(fbc);
-            db = firebase.firestore();
-            firebaseReady = firebase.auth().signInAnonymously().catch(function(e){
-                console.warn('[Init] 匿名登录失败，将使用本地词库:', e.message);
-            });
-        } else {
-            firebaseReady = Promise.reject(new Error('Firebase SDK 未加载'));
-        }
+        // 第一步：立即从本地 JS 加载词库（保证页面秒开）
+        loadLocalFallback();
+        renderHistory();
         
-        // 等待 Firebase 登录 + IndexedDB 初始化
-        Promise.all([firebaseReady, initIndexedDB()]).then(function(){
-            console.log('[Init] Firebase + IndexedDB 就绪');
-            return loadVocabRegistry();
+        // 第二步：后台尝试 Firebase 更新（可选，失败不影响使用）
+        initIndexedDB().catch(function(){
+            console.warn('[Init] IndexedDB 不可用，跳过缓存');
         }).then(function(){
-            console.log('[Init] 词库注册表加载完成');
-            renderVocabButtons();
-            renderHistory();
-        }).catch(function(err){
-            console.warn('[Init] 初始化异常，使用本地词库:', err.message);
-            loadLocalFallback();
+            if (typeof firebase !== 'undefined') {
+                firebase.initializeApp(fbc);
+                db = firebase.firestore();
+                firebase.auth().signInAnonymously().then(function(){
+                    console.log('[Init] Firebase 登录成功，检查更新...');
+                    return loadVocabRegistry();
+                }).then(function(){
+                    if (Object.keys(VOCAB_REGISTRY).length > 0){
+                        console.log('[Init] 从 Firebase 获取到最新词库注册表');
+                        renderVocabButtons();
+                    }
+                }).catch(function(e){
+                    console.warn('[Init] Firebase 不可用，使用本地词库:', e.message);
+                });
+            }
         });
     })();
 
@@ -527,52 +527,61 @@
 
     function loadVocabData(vocabId){
         return new Promise(function(resolve, reject){
-            showLoading('加载词库: ' + vocabId + '...');
-            
-            var meta = VOCAB_REGISTRY[vocabId];
-            if (!meta){
-                hideLoading();
-                reject(new Error('词库不存在: ' + vocabId));
-                return;
-            }
-            
-            // 检查内存缓存
+            // 1. 检查内存缓存
             if (VOCAB_CACHE[vocabId]){
                 console.log('[Vocab] 从内存缓存加载:', vocabId);
-                hideLoading();
                 resolve(VOCAB_CACHE[vocabId]);
                 return;
             }
             
-            // 从 IndexedDB 加载
+            // 2. 从本地 JS 文件加载
+            if (typeof VN_VOCAB !== 'undefined' && VN_VOCAB[vocabId]){
+                var words = VN_VOCAB[vocabId].map(function(w){
+                    return {word: w[0], translation: w[1], translation_en: w[2], is_sino: w[3]};
+                });
+                VOCAB_CACHE[vocabId] = words;
+                console.log('[Vocab] 从本地 JS 加载:', vocabId, words.length, '词');
+                resolve(words);
+                // 后台尝试从 Firebase 更新缓存
+                tryUpdateFromFirebase(vocabId);
+                return;
+            }
+            
+            // 3. 从 IndexedDB 缓存加载
+            var meta = VOCAB_REGISTRY[vocabId];
             getChunksByVocabId(vocabId).then(function(chunks){
-                if (chunks.length >= meta.chunks){
-                    // 本地缓存完整，合并分片
-                    console.log('[Vocab] 从 IndexedDB 加载:', vocabId, chunks.length, '分片');
+                var needed = meta ? meta.chunks : 0;
+                if (needed > 0 && chunks.length >= needed){
                     var words = [];
-                    chunks.forEach(function(chunk){
-                        words = words.concat(chunk.words);
-                    });
+                    chunks.forEach(function(chunk){ words = words.concat(chunk.words); });
                     VOCAB_CACHE[vocabId] = words;
-                    hideLoading();
+                    console.log('[Vocab] 从 IndexedDB 加载:', vocabId, words.length, '词');
                     resolve(words);
-                    return null; // 跳过后续
+                    return;
+                }
+                // 4. 最后尝试 Firebase 下载
+                if (db && meta){
+                    downloadVocabFromFirebase(vocabId, meta).then(resolve).catch(reject);
                 } else {
-                    // 需要从 Firebase 下载
-                    console.log('[Vocab] 从 Firebase 下载:', vocabId);
-                    return downloadVocabFromFirebase(vocabId, meta);
+                    reject(new Error('词库 ' + vocabId + ' 不可用'));
                 }
-            }).then(function(words){
-                if (words){
-                    VOCAB_CACHE[vocabId] = words;
-                    hideLoading();
-                    resolve(words);
-                }
-            }).catch(function(err){
-                hideLoading();
-                reject(err);
             });
         });
+    }
+
+    function tryUpdateFromFirebase(vocabId){
+        if (!db) return;
+        var meta = VOCAB_REGISTRY[vocabId];
+        if (!meta) return;
+        var cacheWords = VOCAB_CACHE[vocabId] || [];
+        if (cacheWords.length >= (meta.count || 0)) return; // 本地已是最新的
+        console.log('[Vocab] 后台从 Firebase 更新:', vocabId);
+        downloadVocabFromFirebase(vocabId, meta).then(function(words){
+            if (words.length > cacheWords.length){
+                VOCAB_CACHE[vocabId] = words;
+                console.log('[Vocab] Firebase 更新完成:', vocabId, words.length, '词');
+            }
+        }).catch(function(){});
     }
 
     function downloadVocabFromFirebase(vocabId, meta){
@@ -709,20 +718,8 @@
             console.log('[selVocab] 词库加载完成:', vocabId, words.length, '词');
             updateGameCardCounts();
         }).catch(function(err){
-            console.warn('[selVocab] Firebase 加载失败，尝试本地回退:', err.message);
-            // 尝试从本地 JS 文件加载
-            if (typeof VN_VOCAB !== 'undefined' && VN_VOCAB[vocabId]){
-                var words = VN_VOCAB[vocabId].map(function(w){
-                    return {word: w[0], translation: w[1], translation_en: w[2], is_sino: w[3]};
-                });
-                VOCAB_CACHE[vocabId] = words;
-                fullPool = words;
-                updateGameCardCounts();
-                console.log('[selVocab] 本地回退成功:', vocabId, words.length, '词');
-            } else {
-                console.error('[selVocab] 本地回退也失败:', vocabId);
-                alert('词库加载失败，请刷新页面重试');
-            }
+            console.error('[selVocab] 词库加载失败:', err);
+            alert('词库加载失败: ' + err.message);
         });
     }
 
