@@ -1182,34 +1182,19 @@
         if (!SpeechRec){startRecFallback(); return;}
         var rec = new SpeechRec();
         rec.lang = 'vi-VN';
-        rec.interimResults = true;       // 开启中间结果，让浏览器更敏感检测语音开始
+        rec.interimResults = false;
         rec.maxAlternatives = 3;
         rec.continuous = false;
-        // 缩短浏览器默认静音超时（ms），让短音节更快被捕获
         try { rec.speechDetectionTimeout = 1500; } catch(e){}
         P.activeRec = rec;
         var br = document.getElementById('br'); br.classList.add('rec');
         document.getElementById('pf').className = 'pf wait';
         document.getElementById('pf').textContent = '🔴 录音中...请朗读';
 
-        var gotFinal = false;
         rec.onresult = function(e){
             br.classList.remove('rec'); P.activeRec = null;
-            // 取最后一条 final result
             var rs = [];
-            for (var i = e.results.length - 1; i >= 0; i--){
-                if (e.results[i].isFinal){
-                    for (var j = 0; j < e.results[i].length; j++) rs.push(e.results[i][j].transcript.trim().toLowerCase());
-                    break;
-                }
-            }
-            // 如果没有 final result（只拿到 interim），也拿来评分
-            if (!rs.length){
-                var last = e.results[e.results.length - 1];
-                for (var j = 0; j < last.length; j++) rs.push(last[j].transcript.trim().toLowerCase());
-            }
-            gotFinal = true;
-            try{rec.abort();}catch(e){}
+            for (var i = 0; i < e.results[0].length; i++) rs.push(e.results[0][i].transcript.trim().toLowerCase());
             scorePron(rs);
         };
         rec.onerror = function(err){
