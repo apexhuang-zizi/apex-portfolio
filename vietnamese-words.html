@@ -143,9 +143,9 @@
 
         /* ====== 跟读 ====== */
         .pwd{text-align:center;padding:1.5rem;background:var(--sf);border:2px solid var(--bd);border-radius:16px;margin-bottom:.8rem}
-        .pw{font-size:3rem;font-weight:800;color:var(--pri);margin-bottom:.2rem;font-family:'Arial Unicode MS',sans-serif}
-        .ptr{font-size:1.1rem;color:#6b7280;margin-bottom:.3rem}
-        .pen{font-size:.8rem;color:#9ca3af;margin-bottom:.8rem}
+        .pw{font-size:6rem;font-weight:800;color:var(--pri);margin-bottom:.2rem;font-family:'Arial Unicode MS',sans-serif}
+        .ptr{font-size:2.2rem;color:#6b7280;margin-bottom:.5rem}
+        .pen{font-size:1.6rem;color:#9ca3af;margin-bottom:.8rem}
         .pct{display:flex;justify-content:center;gap:1rem;flex-wrap:wrap;margin-bottom:.6rem}
         .pb{width:52px;height:52px;border-radius:50%;border:2px solid var(--pri);background:var(--sf);color:var(--pri);font-size:1.3rem;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center}
         .pb:hover{background:var(--pri);color:#fff}
@@ -166,7 +166,7 @@
         @media(max-width:900px){#sub-layout.on{grid-template-columns:1fr}.side-l,.side-r{display:none}}
         @media(max-width:768px){
             .hdr h1{font-size:1rem}
-            .g-q{font-size:2rem}.pw{font-size:2.2rem}
+            .g-q{font-size:3.5rem}.pw{font-size:4rem}
             .gc,.pwd{padding:1rem}.g-inp{min-width:180px;font-size:1.2rem;padding:.7rem 1rem}
             .rs-detail{grid-template-columns:1fr}
             .sel-row{flex-direction:column;align-items:flex-start}
@@ -1330,7 +1330,7 @@
         });
     }
 
-    // ---- 长单词录音：SpeechRecognition（原有逻辑） ----
+    // ---- 长单词录音：SpeechRecognition + MediaRecorder 并行 ----
     function doLongWordRec(dur){
         var timeout = Math.max(3000, Math.min(8000, Math.round(dur * 5000)));
         var rec = new SpeechRec();
@@ -1345,15 +1345,39 @@
         document.getElementById('pf').textContent = '🔴 录音中...请朗读';
 
         var scored = false;
+        var mrStream = null, mr = null, mrChunks = [];
+
+        // 同时用 MediaRecorder 录音，供回放
+        navigator.mediaDevices.getUserMedia({audio: true}).then(function(stream){
+            mrStream = stream;
+            mr = new MediaRecorder(stream);
+            mr.ondataavailable = function(e){if(e.data.size>0) mrChunks.push(e.data);};
+            mr.start();
+        }).catch(function(e){console.warn('并行录音启动失败:', e);});
+
+        function stopMr(){
+            if (mr && mr.state === 'recording'){
+                mr.onstop = function(){
+                    if (mrChunks.length) saveRecBlob(new Blob(mrChunks, {type: mr.mimeType}));
+                    if (mrStream) mrStream.getTracks().forEach(function(t){t.stop();});
+                };
+                mr.stop();
+            } else if (mrStream) {
+                mrStream.getTracks().forEach(function(t){t.stop();});
+            }
+        }
+
         rec.onresult = function(e){
             br.classList.remove('rec'); P.activeRec = null; P.recBusy = false;
             var rs = [];
             for (var i = 0; i < e.results[0].length; i++) rs.push(e.results[0][i].transcript.trim().toLowerCase());
             scored = true;
+            stopMr();
             scorePron(rs);
         };
         rec.onerror = function(err){
             br.classList.remove('rec'); P.activeRec = null; P.recBusy = false;
+            stopMr();
             if (err.error === 'not-allowed' || err.error === 'service-not-allowed'){
                 console.warn('SpeechRecognition 不可用，切换到录音模式:', err.error);
                 startRecFallback();
@@ -1375,6 +1399,7 @@
             if (P.activeRec === rec){P.activeRec = null; P.recBusy = false;}
         };
         try{rec.start();}catch(e){br.classList.remove('rec'); P.activeRec = null; P.recBusy = false;
+            stopMr();
             document.getElementById('pf').className = 'pf bad';
             document.getElementById('pf').textContent = '❌ 无法开始识别，请刷新页面';
         }
