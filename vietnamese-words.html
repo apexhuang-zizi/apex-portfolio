@@ -214,14 +214,14 @@
                             <div class="tt">单词跟读</div>
                             <div class="st" id="pron-desc">听发音跟读练习</div>
                         </div>
+                        <div class="game-card" onclick="startGame('wrong')">
+                            <div class="em">🔁</div>
+                            <div class="tt">错词练习</div>
+                            <div class="st" id="wrong-desc">强化记忆错词</div>
+                        </div>
                         <div class="game-card off">
                             <div class="em">📝</div>
                             <div class="tt">拼写挑战</div>
-                            <div class="st">敬请期待</div>
-                        </div>
-                        <div class="game-card off">
-                            <div class="em">🎯</div>
-                            <div class="tt">词汇接龙</div>
                             <div class="st">敬请期待</div>
                         </div>
                     </div>
@@ -323,6 +323,38 @@
                     </div>
 
                 </div>
+
+                <!-- 错词练习 -->
+                <div id="wp" style="display:none">
+                    <div class="gtb">
+                        <div class="gtm">🔁 错词练习</div>
+                        <div class="gpg" id="wp-pg">0 / 0</div>
+                        <div class="gsc" id="wp-cnt">错 0 / 对 0</div>
+                    </div>
+                    <div class="pwd">
+                        <div class="pw" id="wp-w">加载中...</div>
+                        <div class="ptr" id="wp-tr">-</div>
+                        <div class="speak-btns">
+                            <button class="speak-btn" id="wpk-slow" onclick="playWrongWord('slow')">
+                                🐢 慢速 🔊 <span class="spd">×0.5</span>
+                            </button>
+                            <button class="speak-btn" id="wpk-norm" onclick="playWrongWord('normal')">
+                                🐰 正常 🔊
+                            </button>
+                        </div>
+                        <div class="g-inp-wrap" style="margin-top:.8rem">
+                            <input class="g-inp" id="wp-inp" type="text" placeholder="输入越南文后按回车..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                        </div>
+                        <div class="g-feedback" id="wp-fb" style="display:none;margin-top:.6rem"></div>
+                    </div>
+                    <div style="display:flex;justify-content:center;gap:.8rem;margin-bottom:.7rem">
+                        <button class="btn-o" onclick="wpNext()">下一个 →</button>
+                    </div>
+                    <div style="display:flex;justify-content:center;gap:.8rem">
+                        <button class="btn-p" onclick="confirmQuit()">⏹ 退出练习</button>
+                    </div>
+                </div>
+
             </div>
 
             <!-- 右侧：规则 -->
@@ -818,6 +850,8 @@
             showRules('dictation');
             showWord();
             startTimer();
+        } else if (type === 'wrong'){
+            startWrongPractice();
         } else if (type === 'pron'){
             var pool2 = fullPool.slice();
             P.words = pool2.sort(function(){return Math.random() - 0.5;}).slice(0, 50);
@@ -854,6 +888,13 @@
                 '<div class="rule-item"><b>📖 发音按钮</b><br>🐢慢速=50%语速<br>🐰正常=原速</div>' +
                 '<div class="rule-item"><b>🏆 评分规则</b><br>• 准确率：最高60分<br>• 连击：每1次+1分，上限20分<br>• 速度：每对一题+0.4分，上限20分<br>• <b>满分100分</b></div>' +
                 '<div class="rule-item"><b>📊 等级划分</b><br>🏆90+ S级　⭐80+ A级<br>👍60+ B级　💪40+ C级</div>';
+        } else if (type === 'wrong') {
+            el.innerHTML = 
+                '<div class="rule-item"><b>🎯 练习目标</b><br>强化记忆错词，多次输入巩固记忆</div>' +
+                '<div class="rule-item"><b>📖 操作方式</b><br>输入越南文后按 <b>回车键</b> 提交，1.2秒后自动清空输入框</div>' +
+                '<div class="rule-item"><b>🔊 发音按钮</b><br>🐢慢速=50%语速<br>🐰正常=原速</div>' +
+                '<div class="rule-item"><b>🔁 循环机制</b><br>错词练习完一轮后自动循环，直到掌握</div>' +
+                '<div class="rule-item"><b>✅ 掌握规则</b><br>答对累计超过5次，该词自动从错词库移除</div>';
         } else {
             el.innerHTML = 
                 '<div class="rule-item"><b>🎯 游戏目标</b><br>听发音后跟读，系统自动评分</div>' +
@@ -927,6 +968,7 @@
 
         if (ans === correct){
             G.correct++; G.total++; G.combo++;
+            recordCorrect(G.currentWord.word);
             if (G.combo > G.maxCombo) G.maxCombo = G.combo;
             G.score = Math.min(Math.round(G.correct * 0.4), 20) + Math.min(G.combo, 20);
 
@@ -949,6 +991,7 @@
             if (G.attempts >= G.maxAttempts){
                 G.wrong++; G.total++;
                 G.wrongWords.push(G.currentWord);
+                recordWrong(G.currentWord.word, G.currentWord.translation, G.currentWord.translation_en);
                 inpEl.disabled = true;
                 fbEl.textContent = '❌ 正确答案：'; fbEl.className = 'g-feedback err-fb'; fbEl.style.display = 'block';
                 cwEl.innerHTML = '<span style="font-size:2.5rem;font-weight:800;color:var(--no)">' + G.currentWord.word + '</span> <small style="font-size:.9rem;color:#6b7280">(' + G.currentWord.translation_en + ')</small>';
@@ -1062,7 +1105,11 @@
         if (!confirm('确定结束游戏？当前成绩将保存。')) return;
         if (G.timer) clearInterval(G.timer);
         G.playing = false;
-        endGame();
+        if (document.getElementById('wp').style.display !== 'none'){
+            backToMain();
+        } else {
+            endGame();
+        }
     }
 
     function quitGame(){
@@ -1077,6 +1124,7 @@
         document.getElementById('ga').classList.remove('on');
         document.getElementById('gr').style.display = 'none';
         document.getElementById('pa').style.display = 'none';
+        document.getElementById('wp').style.display = 'none';
         document.getElementById('sub-layout').classList.remove('on');
         document.querySelector('.mc').classList.remove('wide');
         document.getElementById('main-page').style.display = 'block';
@@ -1087,7 +1135,8 @@
         var ga = document.getElementById('ga');
         var pa = document.getElementById('pa');
         var gr = document.getElementById('gr');
-        if (ga.style.display !== 'none' || pa.style.display !== 'none' || gr.style.display !== 'none'){
+        var wp = document.getElementById('wp');
+        if (ga.style.display !== 'none' || pa.style.display !== 'none' || gr.style.display !== 'none' || wp.style.display !== 'none'){
             if (G.timer) clearInterval(G.timer);
             if (P.activeRec){try{P.activeRec.abort();}catch(e){}}
             backToMain();
@@ -1445,6 +1494,8 @@
         P.totalScore += best;
         document.getElementById('p-score').textContent = P.totalScore + ' 分';
         if (best < 80){P.lowScores.push(P.words[P.index]);}
+        if (best < 60){recordWrong(P.words[P.index].word, P.words[P.index].translation, P.words[P.index].translation_en);}
+        else {recordCorrect(P.words[P.index].word);}
         savePronRecord(P.words[P.index].word, P.words[P.index].translation, best);
         if (P.index >= P.words.length - 1){showPronComplete();}
     }
@@ -1585,6 +1636,157 @@
             })).catch(function(){});
         }
     }
+
+    /* ========== 错词数据库 ========== */
+    function loadWrongDB(){
+        return JSON.parse(localStorage.getItem('vn_wrong_words') || '[]');
+    }
+    function saveWrongDB(db){
+        localStorage.setItem('vn_wrong_words', JSON.stringify(db));
+        // 同步到 Firebase
+        if (typeof db_firebase !== 'undefined' && db){
+            db.collection('vietnamese_wrong_words').doc(CU).set({words: db, updatedAt: firebase.firestore.FieldValue.serverTimestamp()}).catch(function(){});
+        }
+    }
+    function recordWrong(word, translation, translation_en){
+        var wdb = loadWrongDB();
+        var found = false;
+        for (var i = 0; i < wdb.length; i++){
+            if (wdb[i].word === word){wdb[i].errCount++; found = true; break;}
+        }
+        if (!found){wdb.push({word: word, translation: translation, translation_en: translation_en || '', errCount: 1, okCount: 0});}
+        saveWrongDB(wdb);
+        updateWrongDesc();
+    }
+    function recordCorrect(word){
+        var wdb = loadWrongDB();
+        var changed = false;
+        for (var i = 0; i < wdb.length; i++){
+            if (wdb[i].word === word){wdb[i].okCount++; changed = true; break;}
+        }
+        if (changed){
+            // 移除 okCount > 5 的词
+            wdb = wdb.filter(function(w){return w.okCount <= 5;});
+            saveWrongDB(wdb);
+        }
+        updateWrongDesc();
+    }
+    function updateWrongDesc(){
+        var wdb = loadWrongDB();
+        var el = document.getElementById('wrong-desc');
+        if (el) el.textContent = wdb.length > 0 ? '强化记忆错词 (' + wdb.length + '个)' : '暂无错词';
+    }
+    // 初始化时更新错词数量
+    updateWrongDesc();
+
+    /* ========== 错词练习 ========== */
+    var WP = {words: [], index: 0, totalErr: 0, totalOk: 0};
+
+    function startWrongPractice(){
+        var wdb = loadWrongDB();
+        if (!wdb.length){
+            alert('暂无错词，继续加油！');
+            return;
+        }
+        WP.words = wdb.sort(function(){return Math.random() - 0.5;}).slice();
+        WP.index = 0; WP.totalErr = 0; WP.totalOk = 0;
+
+        document.getElementById('main-page').style.display = 'none';
+        document.getElementById('sub-layout').classList.add('on');
+        document.querySelector('.mc').classList.add('wide');
+        document.getElementById('ga').style.display = 'none';
+        document.getElementById('gr').style.display = 'none';
+        document.getElementById('pa').style.display = 'none';
+        document.getElementById('wp').style.display = 'block';
+
+        showRules('wrong');
+        wpShowWord();
+    }
+
+    function wpShowWord(){
+        if (!WP.words.length) return;
+        var w = WP.words[WP.index];
+        document.getElementById('wp-w').textContent = w.word;
+        document.getElementById('wp-tr').textContent = w.translation + (w.translation_en ? ' (' + w.translation_en + ')' : '');
+        document.getElementById('wp-pg').textContent = (WP.index + 1) + ' / ' + WP.words.length;
+        document.getElementById('wp-cnt').textContent = '错 ' + WP.totalErr + ' / 对 ' + WP.totalOk;
+        var fb = document.getElementById('wp-fb');
+        fb.style.display = 'none';
+        var inp = document.getElementById('wp-inp');
+        inp.value = ''; inp.className = 'g-inp'; inp.focus();
+    }
+
+    function wpSubmitAnswer(){
+        var inp = document.getElementById('wp-inp');
+        var fb = document.getElementById('wp-fb');
+        var answer = inp.value.trim().toLowerCase();
+        if (!answer) return;
+        var w = WP.words[WP.index];
+        var correct = answer === w.word.toLowerCase();
+        // 不区分声调的匹配
+        if (!correct){
+            var ansNoTone = stripVietTones(answer);
+            var tgtNoTone = stripVietTones(w.word.toLowerCase());
+            correct = ansNoTone === tgtNoTone;
+        }
+        fb.style.display = 'block';
+        if (correct){
+            WP.totalOk++;
+            recordCorrect(w.word);
+            fb.textContent = '🎉 正确！太棒了！';
+            fb.className = 'g-feedback ok-fb';
+            inp.className = 'g-inp';
+        } else {
+            WP.totalErr++;
+            recordWrong(w.word, w.translation, w.translation_en);
+            fb.textContent = '💪 再接再厉！正确：' + w.word;
+            fb.className = 'g-feedback err-fb';
+            inp.className = 'g-inp err';
+        }
+        document.getElementById('wp-cnt').textContent = '错 ' + WP.totalErr + ' / 对 ' + WP.totalOk;
+    }
+
+    function wpNext(){
+        WP.index++;
+        if (WP.index >= WP.words.length){
+            // 循环再来
+            WP.words = loadWrongDB();
+            if (!WP.words.length){
+                alert('所有错词已掌握！🎉');
+                backToMain();
+                return;
+            }
+            WP.words = WP.words.sort(function(){return Math.random() - 0.5;}).slice();
+            WP.index = 0;
+        }
+        wpShowWord();
+    }
+
+    function playWrongWord(speed){
+        if (!window.speechSynthesis) return;
+        var w = WP.words[WP.index];
+        if (!w) return;
+        var u = new SpeechSynthesisUtterance(w.word);
+        u.lang = 'vi-VN';
+        u.rate = speed === 'slow' ? 0.5 : 1.0;
+        u.pitch = 1;
+        var btn = document.getElementById(speed === 'slow' ? 'wpk-slow' : 'wpk-norm');
+        if (btn){
+            btn.classList.add('speaking');
+            u.onend = function(){btn.classList.remove('speaking');};
+        }
+        speechSynthesis.cancel(); speechSynthesis.speak(u);
+    }
+
+    document.getElementById('wp-inp').addEventListener('keydown', function(e){
+        if (e.key === 'Enter'){
+            e.preventDefault();
+            wpSubmitAnswer();
+            // 清空输入框让用户再次输入
+            var inp = document.getElementById('wp-inp');
+            setTimeout(function(){inp.value = ''; inp.className = 'g-inp'; inp.focus();}, 1200);
+        }
+    });
     </script>
 </body>
 </html>
