@@ -1657,7 +1657,6 @@
                 var durScore2 = 50;
                 if (ttsDur > 0){
                     var ratio = recDur / ttsDur;
-                    // 越接近1分越高，允许 0.3-3 倍范围
                     if (ratio >= 0.5 && ratio <= 2.0) durScore2 = 100;
                     else if (ratio >= 0.3 && ratio <= 3.5) durScore2 = 75;
                     else if (ratio >= 0.15) durScore2 = 50;
@@ -1667,7 +1666,7 @@
                 // 2) 语音存在感（30%权重）：有效语音段占比（是否真说了话）
                 var frameLen = Math.floor(userBuf.sampleRate * 0.03);
                 var hop = Math.max(1, Math.floor(frameLen / 2));
-                var energyThresh = 0.008; // 适当降低阈值，手机麦克风灵敏度低
+                var energyThresh = 0.008;
                 var voiced = 0, total = 0;
                 for (var i = 0; i + frameLen <= raw.length; i += hop){
                     var e = 0;
@@ -1694,24 +1693,23 @@
                     }
                     energies.push(Math.sqrt(s / segSize));
                 }
-                // 计算有声音的段占比（去掉首尾静音段）
                 var meanE = 0, voicedCount = 0;
                 for (var i = 0; i < energies.length; i++){
                     if (energies[i] > energyThresh){meanE += energies[i]; voicedCount++;}
                 }
                 var stabilityScore = 50;
+                var cv = 0;
                 if (voicedCount > 0 && meanE > 0){
                     meanE /= voicedCount;
-                    // 计算变异系数（越低越稳定）
                     var variance = 0;
                     for (var i = 0; i < energies.length; i++){
                         if (energies[i] > energyThresh){
                             var diff = energies[i] - meanE;
                             variance += diff * diff;
                         }
+                    }
                     variance /= voicedCount;
-                    var cv = Math.sqrt(variance);
-                    // CV < 1.0 说明能量稳定，发音连贯
+                    cv = Math.sqrt(variance);
                     if (cv < 0.5) stabilityScore = 90;
                     else if (cv < 1.0) stabilityScore = 75;
                     else if (cv < 2.0) stabilityScore = 55;
@@ -1727,7 +1725,8 @@
                 else if (finalScore2 >= 60) detail2 = '有清晰语音，继续保持';
                 else if (finalScore2 >= 40) detail2 = '语音偏短或偏弱，请大声清晰朗读';
                 else detail2 = '未检测到有效语音，请重试';
-                console.log('[独立分析] 时长:'+durScore2+' 语音占比:'+Math.round(voicedRatio*100)+'%('+voicedScore+'分) 稳定性:'+stabilityScore+'(CV:'+Math.sqrt(variance).toFixed(2)+') → '+finalScore2);
+                console.log('[独立分析] 时长:'+durScore2+' 语音占比:'+Math.round(voicedRatio*100)+'%('+voicedScore+'分) 稳定性:'+stabilityScore+' → '+finalScore2);
+                cb({score: finalScore2, detail: detail2});长:'+durScore2+' 活跃度:'+voicedScore+'(占比'+Math.round(voicedRatio*100)+'%) 清晰度:'+clarityScore+'(质心'+avgCentroid.toFixed(1)+') → '+finalScore2);
                 cb({score: finalScore2, detail: detail2});
             }catch(e){
                 console.error('评分失败:', e);
