@@ -1649,23 +1649,25 @@
                     return;
                 }
 
-                // ---- 方案B：无TTS原音 → 独立声学分析评分 ----
+                // ---- 方案B：无TTS原音 → 独立声学分析评分（不受性别差异影响） ----
                 var raw = userBuf.getChannelData(0);
                 var recDur = userBuf.length / userBuf.sampleRate;
 
-                // 1) 时长匹配分（40%权重）
+                // 1) 时长匹配分（50%权重）：录音时长与TTS播放时长是否接近
                 var durScore2 = 50;
                 if (ttsDur > 0){
                     var ratio = recDur / ttsDur;
-                    if (ratio >= 0.6 && ratio <= 2.0) durScore2 = 100;
-                    else if (ratio >= 0.4 && ratio <= 3.0) durScore2 = 70;
-                    else durScore2 = 40;
+                    // 越接近1分越高，允许 0.3-3 倍范围
+                    if (ratio >= 0.5 && ratio <= 2.0) durScore2 = 100;
+                    else if (ratio >= 0.3 && ratio <= 3.5) durScore2 = 75;
+                    else if (ratio >= 0.15) durScore2 = 50;
+                    else durScore2 = 30;
                 }
 
-                // 2) 语音活跃度分（30%权重）：有效语音段占比
-                var frameLen = Math.floor(userBuf.sampleRate * 0.03); // 30ms帧
-                var hop = Math.floor(frameLen / 2);
-                var energyThresh = 0.01;
+                // 2) 语音存在感（30%权重）：有效语音段占比（是否真说了话）
+                var frameLen = Math.floor(userBuf.sampleRate * 0.03);
+                var hop = Math.max(1, Math.floor(frameLen / 2));
+                var energyThresh = 0.008; // 适当降低阈值，手机麦克风灵敏度低
                 var voiced = 0, total = 0;
                 for (var i = 0; i + frameLen <= raw.length; i += hop){
                     var e = 0;
@@ -1675,39 +1677,57 @@
                     total++;
                 }
                 var voicedRatio = total > 0 ? voiced / total : 0;
-                // 理想：40%-90% 是语音，太少=没说话，太多=全是噪音
                 var voicedScore;
-                if (voicedRatio >= 0.3 && voicedRatio <= 0.85) voicedScore = 90 + Math.round(voicedRatio * 10);
-                else if (voicedRatio >= 0.15) voicedScore = 60;
-                else voicedScore = 30;
+                if (voicedRatio >= 0.25 && voicedRatio <= 0.9) voicedScore = 90 + Math.round(Math.min(10, voicedRatio * 20));
+                else if (voicedRatio >= 0.1) voicedScore = 60;
+                else voicedScore = 25;
 
-                // 3) 清晰度分（30%权重）：分析频谱是否有清晰共振峰
-                var targetSamples2 = 8000;
-                var d = normalize(resampleData(userBuf, targetSamples2));
-                var frameSize2 = 256, hopSize2 = 128;
-                var feats = spectralFeatures(d, userBuf.sampleRate, frameSize2, hopSize2);
-                // 计算频谱质心（spectral centroid）越高越清晰
-                var centroidSum = 0, centroidCount = 0;
-                for (var fi = 0; fi < feats.length; fi++){
-                    var f = feats[fi];
-                    var num = 0, den = 0;
-                    for (var k = 0; k < f.length; k++){num += k * f[k]; den += f[k];}
-                    if (den > 0) centroidSum += num / den;
-                    centroidCount++;
+                // 3) 能量稳定性（20%权重）：发音是否连贯不中断
+                var segments = 100;
+                var segSize = Math.floor(raw.length / segments);
+                var energies = [];
+                for (var i = 0; i < segments; i++){
+                    var s = 0;
+                    for (var j = 0; j < segSize; j++){
+                        var idx = i * segSize + j;
+                        if (idx < raw.length) s += raw[idx] * raw[idx];
+                    }
+                    energies.push(Math.sqrt(s / segSize));
                 }
-                var avgCentroid = centroidCount > 0 ? centroidSum / centroidCount : 0;
-                // 归一化：越南语语音质心通常在 10-35 范围（64频点中）
-                var clarityScore;
-                if (avgCentroid >= 8 && avgCentroid <= 40) clarityScore = 85 + Math.round(Math.min(15, (40 - Math.abs(avgCentroid - 20)) * 0.5));
-                else if (avgCentroid >= 5 && avgCentroid <= 50) clarityScore = 65;
-                else clarityScore = 40;
+                // 计算有声音的段占比（去掉首尾静音段）
+                var meanE = 0, voicedCount = 0;
+                for (var i = 0; i < energies.length; i++){
+                    if (energies[i] > energyThresh){meanE += energies[i]; voicedCount++;}
+                }
+                var stabilityScore = 50;
+                if (voicedCount > 0 && meanE > 0){
+                    meanE /= voicedCount;
+                    // 计算变异系数（越低越稳定）
+                    var variance = 0;
+                    for (var i = 0; i < energies.length; i++){
+                        if (energies[i] > energyThresh){
+                            var diff = energies[i] - meanE;
+                            variance += diff * diff;
+                        }
+                    variance /= voicedCount;
+                    var cv = Math.sqrt(variance);
+                    // CV < 1.0 说明能量稳定，发音连贯
+                    if (cv < 0.5) stabilityScore = 90;
+                    else if (cv < 1.0) stabilityScore = 75;
+                    else if (cv < 2.0) stabilityScore = 55;
+                    else stabilityScore = 35;
+                }
 
                 // 综合评分
-                var finalScore2 = Math.round(durScore2 * 0.4 + voicedScore * 0.3 + clarityScore * 0.3);
+                var finalScore2 = Math.round(durScore2 * 0.5 + voicedScore * 0.3 + stabilityScore * 0.2);
                 finalScore2 = Math.max(20, Math.min(95, finalScore2));
 
-                var detail2 = finalScore2 >= 80 ? '发音清晰，节奏良好' : finalScore2 >= 60 ? '基本正确，注意节奏和声调' : finalScore2 >= 40 ? '发音偏弱，请大声清晰朗读' : '未检测到清晰发音，请重试';
-                console.log('[独立分析] 时长:'+durScore2+' 活跃度:'+voicedScore+'(占比'+Math.round(voicedRatio*100)+'%) 清晰度:'+clarityScore+'(质心'+avgCentroid.toFixed(1)+') → '+finalScore2);
+                var detail2 = '';
+                if (finalScore2 >= 80) detail2 = '发音连贯，语速良好';
+                else if (finalScore2 >= 60) detail2 = '有清晰语音，继续保持';
+                else if (finalScore2 >= 40) detail2 = '语音偏短或偏弱，请大声清晰朗读';
+                else detail2 = '未检测到有效语音，请重试';
+                console.log('[独立分析] 时长:'+durScore2+' 语音占比:'+Math.round(voicedRatio*100)+'%('+voicedScore+'分) 稳定性:'+stabilityScore+'(CV:'+Math.sqrt(variance).toFixed(2)+') → '+finalScore2);
                 cb({score: finalScore2, detail: detail2});
             }catch(e){
                 console.error('评分失败:', e);
