@@ -1773,12 +1773,14 @@
             console.warn('[Init] Failed to load wrong words from Firebase:', e.message);
         });
     }
-    function saveWrongDB(db){
-        localStorage.setItem('vn_wrong_words', JSON.stringify(db));
+    function saveWrongDB(wdb){
+        localStorage.setItem('vn_wrong_words', JSON.stringify(wdb));
         invalidateWrongCache();
         // 同步到 Firebase
-        if (typeof db_firebase !== 'undefined' && db){
-            db.collection('vietnamese_wrong_words').doc(CU).set({words: db, updatedAt: firebase.firestore.FieldValue.serverTimestamp()}).catch(function(){});
+        if (typeof db !== 'undefined' && db && wdb && wdb.length > 0){
+            db.collection('vietnamese_wrong_words').doc(CU).set({words: wdb, updatedAt: firebase.firestore.FieldValue.serverTimestamp()}).catch(function(e){
+                console.warn('[WrongDB] Firebase sync failed:', e.message);
+            });
         }
     }
     function recordWrong(word, translation, translation_en){
