@@ -194,7 +194,10 @@
                 <div class="sel-btns" id="vocabBtns">
                     <!-- 动态生成词库按钮 -->
                 </div>
-                <div style="display:flex;gap:.5rem">
+                <div style="display:flex;align-items:center;gap:.5rem">
+                    <select id="unitFilter" style="display:none;padding:.4rem .7rem;border:2px solid var(--bd);border-radius:8px;background:var(--sf);color:var(--tx);font-size:.85rem;font-weight:600;cursor:pointer;outline:none;font-family:inherit;min-width:100px" onchange="filterByUnit(this.value)">
+                        <option value="all">全部单元</option>
+                    </select>
                     <button class="btn-o" onclick="refreshVocabList()">🔄 刷新</button>
                 </div>
             </div>
@@ -380,6 +383,7 @@
     <script src="starter-vocab.js"></script>
     <script src="basic-vocab.js"></script>
     <script src="hanviet-vocab.js"></script>
+    <script src="vsl2-vocab.js"></script>
     <script>
     /* ========== 配置 ========== */
     // Firebase 配置
@@ -406,6 +410,7 @@
     var VOCAB_CACHE = {};     // 词库缓存 {vocabId: [words]}
     var currentVocab = null;  // 当前选中的词库ID
     var fullPool = [];        // 当前词库的完整词集
+    var currentUnitFilter = 'all';  // 当前单元筛选
     
     /* 用户 */
     var CU = sessionStorage.getItem('apex_username') || localStorage.getItem('vn_user') || '游客';
@@ -428,12 +433,30 @@
                 db = firebase.firestore();
                 firebase.auth().signInAnonymously().then(function(){
                     console.log('[Init] Firebase 登录成功，检查更新...');
+                    // Clear stale VSL2 IndexedDB cache if count is too low
+                    getChunksByVocabId('vsl2').then(function(chunks){
+                        var cachedCount = 0;
+                        chunks.forEach(function(c){ cachedCount += (c.words || []).length; });
+                        if (cachedCount > 0 && cachedCount < 100){
+                            console.log('[Init] Clearing stale VSL2 cache (' + cachedCount + ' words, expected 640)');
+                            return Promise.all(chunks.map(function(c){
+                                return new Promise(function(res){
+                                    openIDB().then(function(idb){
+                                        var tx = idb.transaction('vocab_chunks', 'readwrite');
+                                        tx.objectStore('vocab_chunks').delete(c.key);
+                                        tx.oncomplete = res;
+                                    });
+                                });
+                            }));
+                        }
+                    }).catch(function(){}).then(function(){
                     return loadVocabRegistry();
-                }).then(function(){
+                    });
                     if (Object.keys(VOCAB_REGISTRY).length > 0){
                         console.log('[Init] 从 Firebase 获取到最新词库注册表');
                         renderVocabButtons();
                     }
+                    loadWrongFromFirebase();
                 }).catch(function(e){
                     console.warn('[Init] Firebase 不可用，使用本地词库:', e.message);
                 });
@@ -570,7 +593,16 @@
             // 2. 从本地 JS 文件加载
             if (typeof VN_VOCAB !== 'undefined' && VN_VOCAB[vocabId]){
                 var words = VN_VOCAB[vocabId].map(function(w){
-                    return {word: w[0], translation: w[1], translation_en: w[2], is_sino: w[3]};
+                    var obj = {word: w[0], translation: w[1], translation_en: w[2]};
+                    if (w.length > 4) {
+                        obj.is_sino = w[3];
+                        obj.unit = w[4];
+                    } else if (typeof w[3] === 'number') {
+                        obj.unit = w[3];
+                    } else {
+                        obj.is_sino = w[3];
+                    }
+                    return obj;
                 });
                 VOCAB_CACHE[vocabId] = words;
                 console.log('[Vocab] 从本地 JS 加载:', vocabId, words.length, '词');
@@ -637,13 +669,23 @@
                 docs.forEach(function(doc, idx){
                     if (doc.exists){
                         var data = doc.data();
+                        // words may be stored as array field or as w0,w1,... map fields
+                        var chunkWords = data.words || [];
+                        if (chunkWords.length === 0){
+                            chunkWords = [];
+                            var wi = 0;
+                            while (data['w' + wi]){
+                                chunkWords.push(data['w' + wi]);
+                                wi++;
+                            }
+                        }
                         chunkData.push({
                             key: vocabId + '_' + String(idx).padStart(3, '0'),
                             vocabId: vocabId,
                             index: idx,
-                            words: data.words
+                            words: chunkWords
                         });
-                        words = words.concat(data.words);
+                        words = words.concat(chunkWords);
                     }
                 });
                 
@@ -670,7 +712,11 @@
             for (var lv in VN_VOCAB){
                 if (VN_VOCAB[lv]){
                     VOCAB_CACHE[lv] = VN_VOCAB[lv].map(function(w){
-                        return {word: w[0], translation: w[1], translation_en: w[2], is_sino: w[3]};
+                        var obj = {word: w[0], translation: w[1], translation_en: w[2]};
+                        if (w.length > 4) { obj.is_sino = w[3]; obj.unit = w[4]; }
+                        else if (typeof w[3] === 'number') { obj.unit = w[3]; }
+                        else if (w[3] !== undefined) { obj.is_sino = w[3]; }
+                        return obj;
                     });
                     VOCAB_REGISTRY[lv] = {
                         id: lv,
@@ -744,16 +790,69 @@
         if (el) el.classList.add('on');
         
         currentVocab = vocabId;
+        currentUnitFilter = 'all';
+        document.getElementById('unitFilter').value = 'all';
         
         // 加载词库数据
+        // Clear stale cache to force fresh load
+        delete VOCAB_CACHE[vocabId];
         loadVocabData(vocabId).then(function(words){
             fullPool = words;
             console.log('[selVocab] 词库加载完成:', vocabId, words.length, '词');
+            if (words.length > 0) {
+            }
+            updateUnitDropdown(words);
             updateGameCardCounts();
         }).catch(function(err){
             console.error('[selVocab] 词库加载失败:', err);
             alert('词库加载失败: ' + err.message);
         });
+    }
+
+    /* ========== 单元筛选 ========== */
+    function updateUnitDropdown(words){
+        var sel = document.getElementById('unitFilter');
+        if (words && words.length > 0)        if (!words || !words.length) { sel.style.display = 'none'; return; }
+        
+        var hasUnit = words.some(function(w){ return w.unit !== undefined && w.unit !== null; });
+        if (!hasUnit) { console.log('[unitFilter] no unit field found, hiding dropdown'); sel.style.display = 'none'; return; }
+        console.log('[unitFilter] showing dropdown with units');
+        
+        var units = [];
+        words.forEach(function(w){
+            var u = w.unit;
+            if (u !== undefined && u !== null && units.indexOf(u) === -1) units.push(u);
+        });
+        units.sort(function(a,b){ return a - b; });
+        
+        if (units.length <= 1) { sel.style.display = 'none'; return; }
+        
+        sel.style.display = 'block';
+        var html = '<option value="all">全部单元 (' + words.length + '词)</option>';
+        units.forEach(function(u){
+            var count = words.filter(function(w){ return w.unit === u; }).length;
+            html += '<option value="' + u + '">第' + u + '单元 (' + count + '词)</option>';
+        });
+        sel.innerHTML = html;
+        sel.value = currentUnitFilter;
+    }
+
+    function getFilteredPool(){
+        if (currentUnitFilter === 'all') return fullPool;
+        return fullPool.filter(function(w){ return w.unit === parseInt(currentUnitFilter); });
+    }
+
+    function filterByUnit(val){
+        currentUnitFilter = val;
+        var pool = getFilteredPool();
+        var total = pool.length;
+        var dictN = Math.min(120, total);
+        var pronN = Math.min(50, total);
+        document.getElementById('dictation-desc').textContent = '从' + total + '词中随机' + dictN + '词';
+        document.getElementById('pron-desc').textContent = '从' + total + '词中随机' + pronN + '词';
+        if (total === 0) {
+            document.getElementById('wrong-desc').textContent = '无可用单词';
+        }
     }
 
     function updateGameCardCounts(){
@@ -833,10 +932,9 @@
         }
         
         if (type === 'dictation'){
-            var pool = fullPool.slice();
+            var pool = getFilteredPool().slice();
             var n = Math.min(120, pool.length);
             G.words = pool.sort(function(){return Math.random() - 0.5;}).slice(0, n);
-            G.index = 0; G.score = 0; G.correct = 0; G.wrong = 0; G.combo = 0; G.maxCombo = 0; G.total = 0;
             G.timeLeft = 300; G.playing = true; G.wrongWords = [];
 
             document.getElementById('main-page').style.display = 'none';
@@ -853,7 +951,7 @@
         } else if (type === 'wrong'){
             startWrongPractice();
         } else if (type === 'pron'){
-            var pool2 = fullPool.slice();
+            var pool2 = getFilteredPool().slice();
             P.words = pool2.sort(function(){return Math.random() - 0.5;}).slice(0, 50);
             P.lowScores = [];
             P.index = 0; P.totalScore = 0;
@@ -1567,7 +1665,7 @@
     function pronAgain(){
         var done = document.getElementById('pron-done');
         if (done) done.remove();
-        var pool = fullPool.slice();
+        var pool = getFilteredPool().slice();
         var usedWords = P.words.map(function(w){return w.word;});
         var fresh = pool.filter(function(w){return usedWords.indexOf(w.word) === -1;});
         fresh.sort(function(){return Math.random() - 0.5;});
@@ -1638,11 +1736,46 @@
     }
 
     /* ========== 错词数据库 ========== */
+    var _wrongDBCache = null;
     function loadWrongDB(){
-        return JSON.parse(localStorage.getItem('vn_wrong_words') || '[]');
+        if (_wrongDBCache) return _wrongDBCache;
+        _wrongDBCache = JSON.parse(localStorage.getItem('vn_wrong_words') || '[]');
+        return _wrongDBCache;
+    }
+    function invalidateWrongCache(){
+        _wrongDBCache = null;
+    }
+    function loadWrongFromFirebase(){
+        if (typeof db === 'undefined' || !db) return Promise.resolve();
+        return db.collection('vietnamese_wrong_words').doc(CU).get().then(function(doc){
+            if (doc.exists){
+                var cloud = doc.data().words || [];
+                var local = JSON.parse(localStorage.getItem('vn_wrong_words') || '[]');
+                if (cloud.length === 0) return;
+                // Merge: by word, take max errCount & okCount
+                var map = {};
+                local.forEach(function(w){ map[w.word] = Object.assign({}, w); });
+                cloud.forEach(function(w){
+                    if (map[w.word]){
+                        map[w.word].errCount = Math.max(map[w.word].errCount || 0, w.errCount || 0);
+                        map[w.word].okCount = Math.max(map[w.word].okCount || 0, w.okCount || 0);
+                    } else {
+                        map[w.word] = Object.assign({}, w);
+                    }
+                });
+                var merged = Object.values(map);
+                localStorage.setItem('vn_wrong_words', JSON.stringify(merged));
+                _wrongDBCache = merged;
+                updateWrongDesc();
+                console.log('[Init] Synced wrong words from Firebase: ' + merged.length + ' words');
+            }
+        }).catch(function(e){
+            console.warn('[Init] Failed to load wrong words from Firebase:', e.message);
+        });
     }
     function saveWrongDB(db){
         localStorage.setItem('vn_wrong_words', JSON.stringify(db));
+        invalidateWrongCache();
         // 同步到 Firebase
         if (typeof db_firebase !== 'undefined' && db){
             db.collection('vietnamese_wrong_words').doc(CU).set({words: db, updatedAt: firebase.firestore.FieldValue.serverTimestamp()}).catch(function(){});
