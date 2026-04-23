@@ -513,6 +513,18 @@ function showAutoAddNotice(text) {
 }
 
 function renderList() {
+    // Sort dialogues by created/date descending (newest first)
+    dialogues.sort(function(a, b) {
+        var ta = a.created || a.date || 0;
+        var tb = b.created || b.date || 0;
+        // If created is number, compare directly
+        if (typeof ta === 'number' && typeof tb === 'number') {
+            return tb - ta; // descending (newest first)
+        }
+        // If date is string, compare as strings
+        return String(tb).localeCompare(String(ta), 'zh-CN');
+    });
+    
     var list = document.getElementById('dialogueList');
     if (!dialogues.length) {
         list.innerHTML = '<div class="empty-state"><div class="icon">🗣️</div><p>暂无对话记录</p><p style="font-size:.8rem;margin-top:8px">点击「新增对话」添加内容</p></div>';
@@ -1019,7 +1031,8 @@ function downloadWord() {
     for (var i = 0; i < dialogues.length; i++) {
         var d = dialogues[i];
         // 跳过被筛选隐藏的对话
-        if (currentFilter !== 'all' && dialogueCategories[i] !== currentFilter) continue;
+        var cat = categorizeDialogue(d);
+        if (currentFilter !== 'all' && cat !== currentFilter) continue;
         content += '<p class="date">📅 ' + escHtml(d.date) + '</p>';
         content += '<p class="topic">📌 ' + escHtml(d.topic) + '</p>';
         
