@@ -173,6 +173,18 @@
             #sub-layout.on{grid-template-columns:1fr}
             .side-l,.side-r{display:none}
         }
+
+        /* 按词造句样式 */
+        #sm-input:focus{border-color:var(--pri);outline:none}
+        .sm-sentence{padding:.5rem .8rem;margin:.3rem 0;background:var(--sf);border-radius:6px;font-size:.85rem;border-left:3px solid var(--pri)}
+        .sm-sentence .sm-text{font-weight:600;color:var(--tx);margin-bottom:.2rem}
+        .sm-sentence .sm-meta{font-size:.75rem;color:var(--tx-m)}
+        .sm-sentence .sm-score{font-weight:700}
+        .sm-sentence .sm-score.s5{color:var(--ok)}
+        .sm-sentence .sm-score.s4{color:#22c55e}
+        .sm-sentence .sm-score.s3{color:var(--wn)}
+        .sm-sentence .sm-score.s2,.sm-sentence .sm-score.s1{color:#f97316}
+        .sm-sentence .sm-score.s0{color:var(--no)}
     </style>
 </head>
 <body>
@@ -222,10 +234,11 @@
                             <div class="tt">错词练习</div>
                             <div class="st" id="wrong-desc">强化记忆错词</div>
                         </div>
-                        <div class="game-card off">
+                        <div class="game-card" onclick="startGame('sentence')">
                             <div class="em">📝</div>
-                            <div class="tt">拼写挑战</div>
-                            <div class="st">敬请期待</div>
+                            <div class="tt">按词造句</div>
+                            <div class="st" id="sentence-desc">用单词造句练习</div>
+                        </div>
                         </div>
                     </div>
                 </div>
@@ -359,6 +372,47 @@
                 </div>
 
             </div>
+
+
+                <!-- 按词造句 -->
+                <div id="sm" style="display:none">
+                    <div class="gtb">
+                        <div class="gtm">📝 按词造句</div>
+                        <div class="gpg" id="sm-pg">0 / 0</div>
+                        <div class="gsc" id="sm-cnt">已造 0 句</div>
+                    </div>
+                    <div class="pwd">
+                        <div style="display:flex;justify-content:center;align-items:center;gap:1rem;margin-bottom:.5rem">
+                            <div class="pw" id="sm-w" style="font-size:4rem">加载中...</div>
+                            <button class="btn-o" id="sm-show-trans" onclick="toggleSmTrans()" style="font-size:.8rem;padding:.3rem .6rem">显示译文</button>
+                        </div>
+                        <div class="ptr" id="sm-tr" style="display:none">-</div>
+                        <div class="pen" id="sm-en" style="display:none"></div>
+                        <div style="margin-top:.5rem;font-size:.85rem;color:var(--tx-m)">已为该词造句 <b id="sm-count">0</b> 次</div>
+                        <div class="speak-btns" style="margin-top:.5rem">
+                            <button class="speak-btn" onclick="playSmWord('slow')">🐢 慢速 🔊 <span class="spd">×0.5</span></button>
+                            <button class="speak-btn" onclick="playSmWord('normal')">🐰 正常 🔊</button>
+                        </div>
+                        <div style="margin-top:1rem;padding:.8rem;background:var(--bg);border-radius:8px">
+                            <div style="font-size:.85rem;color:var(--tx-m);margin-bottom:.5rem">请用上面的单词造一个越南语句子：</div>
+                            <textarea id="sm-input" style="width:100%;min-height:80px;padding:.6rem;border:2px solid var(--bd);border-radius:8px;font-size:1.1rem;resize:vertical;font-family:inherit" placeholder="输入包含该单词的越南语句子..."></textarea>
+                        </div>
+                        <div class="g-feedback" id="sm-fb" style="display:none;margin-top:.8rem"></div>
+                        <div id="sm-history" style="margin-top:.8rem;max-height:150px;overflow-y:auto;display:none">
+                            <div style="font-size:.8rem;color:var(--tx-m);margin-bottom:.3rem">📝 该词历史造句：</div>
+                            <div id="sm-history-list"></div>
+                        </div>
+                    </div>
+                    <div style="display:flex;justify-content:center;gap:.8rem;margin-bottom:.7rem;flex-wrap:wrap">
+                        <button class="btn-o" onclick="smPrev()">← 上一词</button>
+                        <button class="btn-p" onclick="submitSentence()">提交评分 ✓</button>
+                        <button class="btn-o" onclick="smNext()">下一词 →</button>
+                    </div>
+                    <div style="display:flex;justify-content:center;gap:.8rem;flex-wrap:wrap">
+                        <button class="btn-o" onclick="smSkip()">跳过此词</button>
+                        <button class="btn-p" onclick="confirmQuit()">⏹ 结束练习</button>
+                    </div>
+                </div>
 
             <!-- 右侧：规则 -->
             <div class="side-r" id="side-right">
@@ -949,7 +1003,8 @@
             showWord();
             startTimer();
         } else if (type === 'wrong'){
-            startWrongPractice();
+        } else if (type === 'sentence'){
+            startSentenceMaking();
         } else if (type === 'pron'){
             var pool2 = getFilteredPool().slice();
             P.words = pool2.sort(function(){return Math.random() - 0.5;}).slice(0, 50);
@@ -993,6 +1048,13 @@
                 '<div class="rule-item"><b>🔊 发音按钮</b><br>🐢慢速=50%语速<br>🐰正常=原速</div>' +
                 '<div class="rule-item"><b>🔁 循环机制</b><br>错词练习完一轮后自动循环，直到掌握</div>' +
                 '<div class="rule-item"><b>✅ 掌握规则</b><br>答对累计超过5次，该词自动从错词库移除</div>';
+        } else if (type === 'sentence') {
+            el.innerHTML = 
+                '<div class="rule-item"><b>🎯 游戏目标</b><br>用给定单词造句，自动评分</div>' +
+                '<div class="rule-item"><b>📝 评分规则</b><br>0分：不含目标词<br>1分：含目标词<br>2分：句子长度合适<br>3分：格式正确<br>4分：语法结构良好<br>5分：句子完整且丰富</div>' +
+                '<div class="rule-item"><b>💡 操作提示</b><br>点击“显示译文”查看中文翻译<br>输入句子后点击“提交评分”</div>' +
+                '<div class="rule-item"><b>📊 历史记录</b><br>每个单词的造句会保存到云端</div>' +
+                '<div class="rule-item"><b>📥 导出功能</b><br>练习结束后可导出造句记录</div>';
         } else {
             el.innerHTML = 
                 '<div class="rule-item"><b>🎯 游戏目标</b><br>听发音后跟读，系统自动评分</div>' +
@@ -1922,6 +1984,233 @@
             setTimeout(function(){inp.value = ''; inp.className = 'g-inp'; inp.focus();}, 1200);
         }
     });
+
+
+    /* ========== 按词造句模块 ========== */
+    var SM = {words:[],index:0,totalSentences:0,currentWord:null,showTrans:false,history:{}};
+    
+    function loadSentenceHistoryFromFirebase(){
+        if(typeof db==='undefined'||!db)return Promise.resolve();
+        return db.collection('vietnamese_sentences').doc(CU).get().then(function(doc){
+            if(doc.exists){SM.history=doc.data().history||{};}
+        }).catch(function(e){console.warn('[SM] Load failed:',e.message);});
+    }
+    
+    function saveSentenceHistoryToFirebase(){
+        if(typeof db==='undefined'||!db)return;
+        db.collection('vietnamese_sentences').doc(CU).set({
+            history:SM.history,
+            updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+        }).catch(function(e){console.warn('[SM] Save failed:',e.message);});
+    }
+    
+    function startSentenceMaking(){
+        var pool=getFilteredPool().slice();
+        if(!pool.length){alert('词库未加载');return;}
+        pool.sort(function(a,b){return(a.unit||0)-(b.unit||0);});
+        SM.words=pool;SM.index=0;SM.totalSentences=0;SM.showTrans=false;
+        document.getElementById('main-page').style.display='none';
+        document.getElementById('sub-layout').classList.add('on');
+        document.querySelector('.mc').classList.add('wide');
+        document.getElementById('ga').style.display='none';
+        document.getElementById('gr').style.display='none';
+        document.getElementById('pa').style.display='none';
+        document.getElementById('wp').style.display='none';
+        document.getElementById('sm').style.display='block';
+        showRules('sentence');
+        loadSentenceHistoryFromFirebase().then(function(){showSmWord();});
+    }
+    
+    function showSmWord(){
+        if(SM.index>=SM.words.length){showSmComplete();return;}
+        SM.currentWord=SM.words[SM.index];
+        var w=SM.currentWord;
+        document.getElementById('sm-w').textContent=w.word;
+        document.getElementById('sm-tr').textContent=w.translation;
+        document.getElementById('sm-en').textContent=w.translation_en||'';
+        document.getElementById('sm-pg').textContent=(SM.index+1)+' / '+SM.words.length;
+        document.getElementById('sm-cnt').textContent='已造 '+SM.totalSentences+' 句';
+        var count=(SM.history[w.word]&&SM.history[w.word].length)||0;
+        document.getElementById('sm-count').textContent=count;
+        showSmHistory(w.word);
+        document.getElementById('sm-input').value='';
+        document.getElementById('sm-fb').style.display='none';
+        document.getElementById('sm-show-trans').textContent='显示译文';
+        document.getElementById('sm-tr').style.display='none';
+        document.getElementById('sm-en').style.display='none';
+        SM.showTrans=false;
+        document.getElementById('sm-input').focus();
+    }
+    
+    function showSmHistory(word){
+        var list=SM.history[word]||[];
+        var el=document.getElementById('sm-history');
+        var listEl=document.getElementById('sm-history-list');
+        if(list.length===0){el.style.display='none';return;}
+        el.style.display='block';
+        var html='';
+        list.slice(-5).forEach(function(s){
+            html+='<div class="sm-sentence"><div class="sm-text">'+escapeHtml(s.text)+'</div>';
+            html+='<div class="sm-meta"><span class="sm-score s'+s.score+'">'+s.score+'分</span> - '+(s.feedback||'')+' - '+formatDate(s.date)+'</div></div>';
+        });
+        listEl.innerHTML=html;
+    }
+    
+    function escapeHtml(str){return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+    function formatDate(iso){if(!iso)return'';var d=new Date(iso);return(d.getMonth()+1)+'/'+d.getDate()+' '+d.getHours()+':'+pad2(d.getMinutes());}
+    
+    function toggleSmTrans(){
+        SM.showTrans=!SM.showTrans;
+        var btn=document.getElementById('sm-show-trans');
+        var tr=document.getElementById('sm-tr');
+        var en=document.getElementById('sm-en');
+        if(SM.showTrans){btn.textContent='隐藏译文';tr.style.display='block';en.style.display='block';}
+        else{btn.textContent='显示译文';tr.style.display='none';en.style.display='none';}
+    }
+    
+    function playSmWord(speed){
+        if(!window.speechSynthesis||!SM.currentWord)return;
+        var u=new SpeechSynthesisUtterance(SM.currentWord.word);
+        u.lang='vi-VN';u.rate=speed==='slow'?0.5:1.0;u.pitch=1;
+        speechSynthesis.cancel();speechSynthesis.speak(u);
+    }
+    
+    function submitSentence(){
+        var input=document.getElementById('sm-input').value.trim();
+        var fb=document.getElementById('sm-fb');
+        if(!input){fb.textContent='请输入句子';fb.className='g-feedback err-fb';fb.style.display='block';return;}
+        var word=SM.currentWord.word.toLowerCase();
+        var sentence=input.toLowerCase();
+        var result=scoreSentence(sentence,word);
+        fb.style.display='block';
+        if(result.score===0){fb.className='g-feedback err-fb';fb.innerHTML='0分 - 句子中未包含目标单词 "'+SM.currentWord.word+'"';}
+        else if(result.score>=4){fb.className='g-feedback ok-fb';fb.innerHTML=result.score+'分 - '+result.feedback;}
+        else{fb.className='g-feedback';fb.style.background='#fef3c7';fb.style.color='#92400e';fb.innerHTML=result.score+'分 - '+result.feedback;}
+        var historyEntry={text:input,score:result.score,feedback:result.feedback,date:new Date().toISOString(),word:SM.currentWord.word,unit:SM.currentWord.unit,vocab:currentVocab};
+        if(!SM.history[SM.currentWord.word])SM.history[SM.currentWord.word]=[];
+        SM.history[SM.currentWord.word].push(historyEntry);
+        saveSentenceHistoryToFirebase();
+        SM.totalSentences++;
+        document.getElementById('sm-cnt').textContent='已造 '+SM.totalSentences+' 句';
+        document.getElementById('sm-count').textContent=SM.history[SM.currentWord.word].length;
+        showSmHistory(SM.currentWord.word);
+    }
+    
+    function scoreSentence(sentence,targetWord){
+        var score=0,feedback='';
+        var sentenceNoTone=stripVietTones(sentence);
+        var targetNoTone=stripVietTones(targetWord);
+        var hasWord=sentence.indexOf(targetWord)!==-1||sentenceNoTone.indexOf(targetNoTone)!==-1;
+        if(!hasWord)return{score:0,feedback:'句子必须包含目标单词'};
+        score=1;
+        var words=sentence.split(/\s+/).filter(function(w){return w.length>0;});
+        if(words.length>=5){score++;feedback='句子长度合适';}else{feedback='句子太短，建议至少5个词';}
+        var hasCapital=sentence.charAt(0)!==sentence.charAt(0).toLowerCase();
+        var hasPunctuation=/[.!?]$/.test(sentence.trim());
+        if(hasCapital&&hasPunctuation){score++;feedback+='，格式正确';}
+        else{if(!hasCapital)feedback+='，首字母应大写';if(!hasPunctuation)feedback+='，应有结尾标点';}
+        var hasVerb=/\b(la|co|di|an|uong|hoc|lam|nghe|nhin|noi|viet|doc|thich|muon|can|biet|hieu)\b/.test(sentenceNoTone);
+        var hasSubject=/\b(toi|tao|may|han|no|anh|chi|em|ho|co|thay)\b/.test(sentenceNoTone);
+        if(hasVerb&&hasSubject){score++;feedback+='，语法结构良好';}
+        else if(!hasVerb)feedback+='，缺少动词';else if(!hasSubject)feedback+='，缺少主语';
+        if(words.length>=8&&hasVerb&&hasSubject&&hasCapital&&hasPunctuation){score++;feedback='句子完整且结构丰富';}
+        return{score:Math.min(score,5),feedback:feedback};
+    }
+    
+    function smPrev(){if(SM.index>0){SM.index--;showSmWord();}}
+    function smNext(){SM.index++;showSmWord();}
+    function smSkip(){smNext();}
+    
+    function showSmComplete(){
+        var sm=document.getElementById('sm');
+        var existing=document.getElementById('sm-done');
+        if(existing)existing.remove();
+        var div=document.createElement('div');
+        div.id='sm-done';
+        div.style.cssText='text-align:center;padding:1.5rem;margin-top:1rem;background:var(--card);border-radius:12px;border:2px solid var(--pri)';
+        div.innerHTML='<div style="font-size:1.4rem;font-weight:700;margin-bottom:.5rem">造句练习完成！</div>'+
+            '<div style="margin-bottom:.5rem">共练习 <b>'+SM.words.length+'</b> 个单词，造句 <b>'+SM.totalSentences+'</b> 句</div>'+
+            '<button class="btn-p" onclick="exportSentences()" style="margin:.5rem">导出造句记录</button>'+
+            '<button class="btn-o" onclick="goBack()" style="margin:.5rem">返回</button>';
+        sm.appendChild(div);
+        saveSmRecord();
+    }
+    
+    function saveSmRecord(){
+        var rec={type:'sentence_making',level:currentVocab,totalWords:SM.words.length,totalSentences:SM.totalSentences,date:new Date().toISOString(),user:CU};
+        var h=JSON.parse(localStorage.getItem('vn_hist')||'[]');
+        h.unshift(rec);if(h.length>200)h=h.slice(0,200);
+        localStorage.setItem('vn_hist',JSON.stringify(h));
+        if(typeof db!=='undefined'&&db){
+            db.collection('vietnamese_word_records').add(Object.assign({},rec,{createdAt:firebase.firestore.FieldValue.serverTimestamp()})).catch(function(){});
+        }
+        renderHistory();
+    }
+    
+    function exportSentences(){
+        var data=[],currentUnit=currentUnitFilter!=='all'?parseInt(currentUnitFilter):null;
+        for(var word in SM.history){
+            SM.history[word].forEach(function(s){
+                if(currentUnit&&s.unit!==currentUnit)return;
+                if(s.vocab!==currentVocab)return;
+                data.push(s);
+            });
+        }
+        if(data.length===0){alert('当前单元暂无造句记录');return;}
+        data.sort(function(a,b){return new Date(b.date)-new Date(a.date);});
+        var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>造句记录-'+CU+'</title>';
+        html+='<style>body{font-family:Arial,sans-serif;padding:20px;}h1{color:#7c3aed;}.word{font-size:18px;font-weight:bold;color:#7c3aed;margin:15px 0 5px 0;}';
+        html+='.sentence{background:#f5f5f5;padding:10px;margin:5px 0;border-radius:5px;border-left:3px solid #7c3aed;}.meta{font-size:12px;color:#666;margin-top:5px;}';
+        html+='.score{font-weight:bold;}.s5,.s4{color:#10b981;}.s3{color:#f59e0b;}.s2,.s1,.s0{color:#ef4444;}</style></head><body>';
+        html+='<h1>越南语造句记录</h1><p>用户:<b>'+CU+'</b> | 词库:<b>'+currentVocab+'</b>';
+        if(currentUnit)html+=' | 单元:<b>第'+currentUnit+'单元</b>';
+        html+='</p><hr>';
+        var currentWord='';
+        data.forEach(function(s){
+            if(s.word!==currentWord){currentWord=s.word;html+='<div class="word">'+currentWord+'</div>';}
+            html+='<div class="sentence"><div>'+escapeHtml(s.text)+'</div><div class="meta"><span class="score s'+s.score+'">'+s.score+'分</span> - '+s.feedback+' - '+new Date(s.date).toLocaleString('vi-VN')+'</div></div>';
+        });
+        html+='</body></html>';
+        var blob=new Blob([html],{type:'text/html'});
+        var url=URL.createObjectURL(blob);
+        var a=document.createElement('a');a.href=url;a.download='造句记录_'+CU+'_'+(currentUnit||'全部')+'.html';a.click();
+        URL.revokeObjectURL(url);
+        alert('已导出 '+data.length+' 条造句记录');
+    }
+
+    /* ========== 权限系统 ========== */
+    var USER_ROLES={
+        roles:{'admin':{level:100,name:'管理员',canManageUsers:true,canViewAll:true},'teacher':{level:50,name:'老师',canManageUsers:false,canViewAll:true},'user':{level:10,name:'用户',canManageUsers:false,canViewAll:false}},
+        userRoles:{},
+        currentRole:'user'
+    };
+    
+    function loadUserRolesFromFirebase(){
+        if(typeof db==='undefined'||!db)return Promise.resolve();
+        return db.collection('system_config').doc('user_roles').get().then(function(doc){
+            if(doc.exists){USER_ROLES.userRoles=doc.data().mapping||{};USER_ROLES.currentRole=USER_ROLES.userRoles[CU]||'user';}
+        }).catch(function(e){console.warn('[Auth] Failed:',e.message);});
+    }
+    
+    function hasPermission(action){
+        var role=USER_ROLES.roles[USER_ROLES.currentRole]||USER_ROLES.roles['user'];
+        if(action==='viewAll')return role.canViewAll;
+        if(action==='manageUsers')return role.canManageUsers;
+        return false;
+    }
+    
+    function searchAllUserSentences(targetUser,targetUnit){
+        if(!hasPermission('viewAll')){alert('您没有权限查看其他用户数据');return Promise.resolve([]);}
+        if(typeof db==='undefined'||!db)return Promise.resolve([]);
+        return db.collection('vietnamese_sentences').doc(targetUser||CU).get().then(function(doc){
+            if(!doc.exists)return[];
+            var history=doc.data().history||{},results=[];
+            for(var word in history){history[word].forEach(function(s){if(targetUnit&&s.unit!==parseInt(targetUnit))return;results.push(Object.assign({user:targetUser||CU},s));});}
+            return results;
+        }).catch(function(e){console.error('[Search] Failed:',e.message);return[];});
+    }
+    
+    loadUserRolesFromFirebase();
     </script>
 </body>
 </html>
