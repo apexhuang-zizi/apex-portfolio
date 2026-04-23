@@ -70,6 +70,7 @@ body { font-family: "Outfit", sans-serif; background: var(--bg); color: var(--te
 .role-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: .8rem; font-weight: 500; }
 .role-admin { background: #fef2f2; color: var(--danger); }
 .role-user { background: #eff6ff; color: var(--primary); }
+.role-teacher { background: #f0fdf4; color: #16a34a; }
 .mini-badge { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; font-size: .85rem; vertical-align: middle; }
 .mini-badge.on { background: #dcfce7; }
 .mini-badge.off { background: #f1f5f9; opacity: .45; }
@@ -248,6 +249,8 @@ body { font-family: "Outfit", sans-serif; background: var(--bg); color: var(--te
             💡 <strong>角色说明：</strong>
             <strong style="color: var(--danger);">管理员</strong> - 可管理所有用户、访问全部模块
             | 
+            <strong style="color: #16a34a;">教师</strong> - 可查看所有用户学习数据
+            | 
             <strong style="color: var(--primary);">普通用户</strong> - 只能访问基础模块
         </div>
         
@@ -266,6 +269,7 @@ body { font-family: "Outfit", sans-serif; background: var(--bg); color: var(--te
                     <th>用户名</th>
                     <th>角色</th>
                     <th>可访问模块</th>
+                    <th>学习数据</th>
                     <th>创建者</th>
                     <th>操作</th>
                 </tr>
@@ -322,6 +326,7 @@ body { font-family: "Outfit", sans-serif; background: var(--bg); color: var(--te
             <label>🎯 分配角色</label>
             <select id="newUserRole">
                 <option value="user">普通用户 (user) - 基础访问</option>
+                <option value="teacher">教师 (teacher) - 查看学习数据</option>
                 <option value="admin">管理员 (admin) - 完全访问</option>
             </select>
         </div>
@@ -540,11 +545,11 @@ function showAppPage(user) {
     // 更新用户信息
     document.getElementById("currentUserName").textContent = user.username;
     var roleEl = document.getElementById("currentUserRole");
-    roleEl.textContent = user.role === "admin" ? "管理员" : "普通用户";
+    roleEl.textContent = user.role === "admin" ? "管理员" : user.role === "teacher" ? "教师" : "普通用户";
     roleEl.className = "role-badge role-" + user.role;
     
-    // 管理员显示用户管理按钮
-    document.getElementById("btnUserMgmt").style.display = user.role === "admin" ? "flex" : "none";
+    // 管理员和教师显示用户管理按钮
+    document.getElementById("btnUserMgmt").style.display = (user.role === "admin" || user.role === "teacher") ? "flex" : "none";
     
     // 更新模块访问
     updateModuleAccess(user);
@@ -560,7 +565,7 @@ function hideAllPanels() {
 
 // ========== 辅助：检查用户是否有某模块权限 ==========
 function userHasModule(user, moduleId) {
-    if (user.role === "admin") return true;
+    if (user.role === "admin" || user.role === "teacher") return true;
     if (!user.modules) return false;
     if (typeof user.modules === "string") {
         return user.modules === "full";
@@ -594,7 +599,7 @@ function updateModuleAccess(user) {
     });
     
     // 状态日志按钮 - 仅管理员可见
-    if (user.role === "admin") {
+    if (user.role === "admin" || user.role === "teacher") {
         document.getElementById("btnLogs").style.display = "inline-flex";
     } else {
         document.getElementById("btnLogs").style.display = "none";
@@ -604,6 +609,8 @@ function updateModuleAccess(user) {
     var allowed = ALL_MODULES.filter(function(m) { return userHasModule(user, m.id); }).map(function(m) { return m.name; });
     document.getElementById("moduleHint").textContent = user.role === "admin"
         ? "您是管理员，可访问全部模块"
+        : user.role === "teacher"
+        ? "您是教师，可访问全部模块并查看学习数据"
         : "您的权限：" + (allowed.length ? allowed.join("、") : "无");
 }
 
@@ -753,6 +760,143 @@ function saveModulePermissions() {
     }
 }
 
+
+// ========== 学习数据单元格 ==========
+function getDataCell(u) {
+    if (u.role === "admin") return '<span style="color:var(--text-muted);font-size:0.8rem;">—</span>';
+    var btn = '<button class="btn-outline btn-sm" onclick="showUserLearningData(\'' + u.username + '\')" style="font-size:0.78rem;">📊 查看</button>';
+    return btn;
+}
+
+// ========== 用户学习数据面板 ==========
+function showUserLearningData(username) {
+    var panel = document.getElementById("userLearningDataPanel");
+    if (!panel) {
+        // 创建面板
+        panel = document.createElement("div");
+        panel.id = "userLearningDataPanel";
+        panel.className = "panel hidden";
+        panel.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
+            '<h3 style="margin:0;">📊 学习数据 <small id="uldUsername" style="font-weight:normal;color:var(--text-muted);font-size:0.9rem;"></small></h3>' +
+            '<button class="btn-outline" onclick="closeLearningDataPanel()" style="padding:6px 12px;">✕ 关闭</button>' +
+        '</div>' +
+        '<div id="uldContent" style="max-height:500px;overflow-y:auto;"></div>';
+        // 插入到 userManagementPanel 后面
+        var ump = document.getElementById("userManagementPanel");
+        ump.parentNode.insertBefore(panel, ump.nextSibling);
+    }
+    panel.classList.remove("hidden");
+    document.getElementById("uldUsername").textContent = "— " + username;
+    
+    // 加载数据
+    loadUserLearningData(username);
+}
+
+function closeLearningDataPanel() {
+    var panel = document.getElementById("userLearningDataPanel");
+    if (panel) panel.classList.add("hidden");
+}
+
+function loadUserLearningData(username) {
+    var container = document.getElementById("uldContent");
+    container.innerHTML = '<p style="color:var(--text-muted);">⏳ 正在加载...</p>';
+    
+    var html = '';
+    
+    // 1. 英语学习数据（Firebase CloudBase）
+    var engKey = 'apex_eng_scores_' + username;
+    var engData = localStorage.getItem(engKey);
+    if (engData) {
+        try {
+            var scores = JSON.parse(engData);
+            html += buildScoreCard('🇬🇧 英语学习', scores);
+        } catch(e) {
+            html += '<div style="padding:12px;background:#f8fafc;border-radius:8px;margin-bottom:12px;"><strong>🇬🇧 英语学习</strong><br><span style="color:var(--text-muted);font-size:0.85rem;">数据解析失败</span></div>';
+        }
+    } else {
+        html += '<div style="padding:12px;background:#f8fafc;border-radius:8px;margin-bottom:12px;"><strong>🇬🇧 英语学习</strong><br><span style="color:var(--text-muted);font-size:0.85rem;">暂无本地数据</span></div>';
+    }
+    
+    // 2. 越南语学习数据
+    var viKey = 'apex_vi_scores_' + username;
+    var viData = localStorage.getItem(viKey);
+    if (viData) {
+        try {
+            var viScores = JSON.parse(viData);
+            html += buildScoreCard('🇻🇳 越南语学习', viScores);
+        } catch(e) {
+            html += '<div style="padding:12px;background:#f8fafc;border-radius:8px;margin-bottom:12px;"><strong>🇻🇳 越南语学习</strong><br><span style="color:var(--text-muted);font-size:0.85rem;">数据解析失败</span></div>';
+        }
+    } else {
+        html += '<div style="padding:12px;background:#f8fafc;border-radius:8px;margin-bottom:12px;"><strong>🇻🇳 越南语学习</strong><br><span style="color:var(--text-muted);font-size:0.85rem;">暂无本地数据</span></div>';
+    }
+    
+    // 3. 错词记录
+    var wrongKey = 'apex_wrong_words_' + username;
+    var wrongData = localStorage.getItem(wrongKey);
+    if (wrongData) {
+        try {
+            var wrongWords = JSON.parse(wrongData);
+            var wrongCount = Array.isArray(wrongWords) ? wrongWords.length : Object.keys(wrongWords).length;
+            html += '<div style="padding:12px;background:#fef2f2;border-radius:8px;margin-bottom:12px;">' +
+                '<strong>❌ 错词记录</strong><br>' +
+                '<span style="font-size:0.85rem;">累计错词：<strong>' + wrongCount + '</strong> 个</span>' +
+            '</div>';
+        } catch(e) {}
+    } else {
+        html += '<div style="padding:12px;background:#f8fafc;border-radius:8px;margin-bottom:12px;"><strong>❌ 错词记录</strong><br><span style="color:var(--text-muted);font-size:0.85rem;">暂无错词</span></div>';
+    }
+    
+    // 4. 造句记录
+    var smKey = 'apex_sm_records_' + username;
+    var smData = localStorage.getItem(smKey);
+    if (smData) {
+        try {
+            var smRecords = JSON.parse(smData);
+            var smCount = Array.isArray(smRecords) ? smRecords.length : 0;
+            var smAvg = 0;
+            if (smCount > 0) {
+                var total = smRecords.reduce(function(s, r) { return s + (r.score || 0); }, 0);
+                smAvg = Math.round(total / smCount);
+            }
+            html += '<div style="padding:12px;background:#f0fdf4;border-radius:8px;margin-bottom:12px;">' +
+                '<strong>📝 造句记录</strong><br>' +
+                '<span style="font-size:0.85rem;">累计造句：<strong>' + smCount + '</strong> 次' +
+                (smCount > 0 ? '｜平均分：<strong>' + smAvg + '</strong>' : '') + '</span>' +
+            '</div>';
+        } catch(e) {}
+    } else {
+        html += '<div style="padding:12px;background:#f8fafc;border-radius:8px;margin-bottom:12px;"><strong>📝 造句记录</strong><br><span style="color:var(--text-muted);font-size:0.85rem;">暂无造句记录</span></div>';
+    }
+    
+    if (!html) {
+        html = '<p style="color:var(--text-muted);text-align:center;padding:20px;">该用户暂无学习数据</p>';
+    }
+    
+    container.innerHTML = html;
+}
+
+function buildScoreCard(title, data) {
+    var html = '<div style="padding:12px;background:#f8fafc;border-radius:8px;margin-bottom:12px;">';
+    html += '<strong>' + title + '</strong>';
+    if (Array.isArray(data)) {
+        var count = data.length;
+        var avg = 0;
+        var best = 0;
+        if (count > 0) {
+            var total = data.reduce(function(s, r) { return s + (r.score || 0); }, 0);
+            avg = Math.round(total / count);
+            best = Math.max.apply(null, data.map(function(r) { return r.score || 0; }));
+        }
+        html += '<br><span style="font-size:0.85rem;">练习次数：<strong>' + count + '</strong>｜平均分：<strong>' + avg + '</strong>｜最高分：<strong>' + best + '</strong></span>';
+    } else if (typeof data === 'object') {
+        var keys = Object.keys(data);
+        html += '<br><span style="font-size:0.85rem;">数据条目：<strong>' + keys.length + '</strong></span>';
+    }
+    html += '</div>';
+    return html;
+}
+
 function renderUserTable() {
     var users = getUsers();
     var currentUser = sessionStorage.getItem("apex_username");
@@ -770,7 +914,7 @@ function renderUserTable() {
     }
 
     tbody.innerHTML = users.map(function(u) {
-        var roleText = u.role === "admin" ? "管理员" : "普通用户";
+        var roleText = u.role === "admin" ? "管理员" : u.role === "teacher" ? "教师" : "普通用户";
         var canDelete = u.username !== currentUser && u.username !== "apex";
         var deleteBtn = canDelete
             ? '<button class="btn-danger btn-sm" onclick="deleteUser(\'' + u.username + '\')">🗑</button>'
@@ -779,6 +923,7 @@ function renderUserTable() {
             '<td><strong>' + u.username + '</strong></td>' +
             '<td><span class="role-badge role-' + u.role + '">' + roleText + '</span></td>' +
             '<td><div class="module-cell">' + getModuleCell(u) + '</div></td>' +
+            '<td>' + getDataCell(u) + '</td>' +
             '<td>' + (u.createdBy || "-") + '</td>' +
             '<td>' + deleteBtn + '</td>' +
         '</tr>';
