@@ -1927,6 +1927,7 @@
     }
 
     function savePronRound(){
+        flushPronBufferToFirebase(); // flush buffered pronunciation records
         var total = P.words.length;
         var avgScore = total > 0 ? Math.round(P.totalScore / total) : 0;
         var lowList = P.lowScores.map(function(w){
@@ -2171,6 +2172,11 @@
     }
     
     function saveSentenceHistoryToFirebase(){
+        _smDirty = true; // mark dirty, write to Firebase on module exit
+    }
+    function flushSmHistoryToFirebase(){
+        if(!_smDirty) return;
+        _smDirty = false;
         if(typeof db==='undefined'||!db)return;
         db.collection('vietnamese_sentences').doc(CU).set({
             history:SM.history,
