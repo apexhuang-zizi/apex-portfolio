@@ -380,7 +380,7 @@
                 <!-- 按词造句 -->
                 <div id="sm" style="display:none">
                     <div class="gtb">
-                        <button class="btn-back-sm" onclick="backToMain()" style="background:none;border:none;color:var(--tx-m);cursor:pointer;font-size:.85rem;padding:.2rem .6rem;border-radius:8px">← 返回</button>
+                        <button class="btn-back-sm" onclick="smBack()" style="background:none;border:none;color:var(--tx-m);cursor:pointer;font-size:.85rem;padding:.2rem .6rem;border-radius:8px">← 返回</button>
                         <div class="gtm">📝 按词造句</div>
                         <div class="gpg" id="sm-pg">0 / 0</div>
                         <div class="gsc" id="sm-cnt">已造 0 句</div>
@@ -1318,6 +1318,19 @@
         backToMain();
     }
 
+
+    function smBack(){
+        // 保存当前进度
+        if (SM.totalSentences > 0){
+            saveSmRecord();
+        }
+        backToMain();
+        // 滚动到选择词库区域
+        setTimeout(function(){
+            var selRow = document.querySelector('.sel-row');
+            if (selRow) selRow.scrollIntoView({behavior:'smooth', block:'start'});
+        }, 100);
+    }
     function backToMain(){
         document.getElementById('ga').style.display = 'none';
         document.getElementById('ga').classList.remove('on');
@@ -1983,11 +1996,15 @@
         if (!answer) return;
         var w = WP.words[WP.index];
         var correct = answer === w.word.toLowerCase();
-        // 不区分声调的匹配
+        // 声调必须完全匹配（越南语音调不同词义不同）
+        // 检查是否声调错误（字母对但声调不对）
+        var toneHint = '';
         if (!correct){
             var ansNoTone = stripVietTones(answer);
             var tgtNoTone = stripVietTones(w.word.toLowerCase());
-            correct = ansNoTone === tgtNoTone;
+            if (ansNoTone === tgtNoTone){
+                toneHint = '（字母正确，但声调有误！）';
+            }
         }
         fb.style.display = 'block';
         if (correct){
@@ -1999,7 +2016,7 @@
         } else {
             WP.totalErr++;
             recordWrong(w.word, w.translation, w.translation_en);
-            fb.textContent = '💪 再接再厉！正确：' + w.word;
+            fb.textContent = '💪 再接再厉' + toneHint + '！正确：' + w.word;
             fb.className = 'g-feedback err-fb';
             inp.className = 'g-inp err';
         }
