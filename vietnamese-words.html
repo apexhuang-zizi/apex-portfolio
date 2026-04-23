@@ -1372,14 +1372,48 @@
     var _ttsAudio = null; // Google TTS 音频对象复用
     var _lastRecBlob = null; // 最近一次录音的音频数据
     var _lastRecUrl = null; // 最近一次录音的播放 URL
+    var _micStream = null; // 缓存的麦克风 stream，避免重复请求
+    var _audioCtx = null; // 缓存的 AudioContext，避免重复创建
+
+    // 获取麦克风 stream（优先使用缓存，无缓存则请求新 stream）
+    function getMicStream(){
+        if (_micStream && _micStream.active && _micStream.getAudioTracks().length > 0){
+            return Promise.resolve(_micStream);
+        }
+        _micStream = null; // 旧 stream 已失效，清空
+        return navigator.mediaDevices.getUserMedia({audio: true}).then(function(stream){
+            _micStream = stream;
+            P.micAllowed = true;
+            return stream;
+        });
+    }
+
+    // 获取 AudioContext（复用缓存，关闭时重建）
+    function getAudioCtx(){
+        if (_audioCtx && _audioCtx.state !== 'closed') return _audioCtx;
+        _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        return _audioCtx;
+    }
+
+    // 释放麦克风和音频资源（退出跟读模块时调用）
+    function releaseMicStream(){
+        if (_micStream){
+            _micStream.getTracks().forEach(function(t){t.stop();});
+            _micStream = null;
+        }
+        if (_audioCtx && _audioCtx.state !== 'closed'){
+            try{_audioCtx.close();}catch(e){}
+            _audioCtx = null;
+        }
+    }
 
     function requestMicPermission(){
         return new Promise(function(resolve){
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
                 P.micAllowed = false; resolve(false); return;
             }
-            navigator.mediaDevices.getUserMedia({audio: true}).then(function(stream){
-                stream.getTracks().forEach(function(t){t.stop();});
+            getMicStream().then(function(stream){
+                // 权限已获取，保留 stream 缓存不清除
                 P.micAllowed = true; resolve(true);
             }).catch(function(err){
                 console.warn('预请求麦克风权限失败(手机端正常):', err && err.name || err);
@@ -1485,12 +1519,13 @@
                 document.getElementById('pf').textContent = '❌ 浏览器不支持录音，请使用Chrome';
                 return;
             }
-            navigator.mediaDevices.getUserMedia({audio: true}).then(function(stream){
-                stream.getTracks().forEach(function(t){t.stop();});
+            getMicStream().then(function(stream){
+                // 权限已获取，stream 已缓存
                 P.micAllowed = true;
                 doStartRec();
             }).catch(function(err){
                 console.error('麦克风权限被拒绝:', err);
+                _micStream = null; // 清空缓存
                 var msg = '❌ 请允许麦克风权限后重试';
                 if (err.name === 'NotAllowedError'){
                     msg = '❌ 麦克风权限被拒绝，请在浏览器设置中允许麦克风访问后刷新页面';
@@ -1541,15 +1576,15 @@
         }
     }
 
-    // ---- 短音节录音：MediaRecorder + 音量检测 ----
+    // ---- 短音节录音：MediaRecorder + 音量检测（优化版：复用缓存stream/audioCtx） ----
     function doShortWordRec(ttsDur){
         var recDur = Math.max(2000, Math.round(ttsDur * 4000)); // 录音时长 = TTS × 4，最短 2s
         document.getElementById('pf').className = 'pf wait';
         document.getElementById('pf').textContent = '🎤 录音中（' + Math.round(recDur/1000) + '秒）...请朗读';
         document.getElementById('br').classList.add('rec');
 
-        navigator.mediaDevices.getUserMedia({audio: true}).then(function(stream){
-            var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        getMicStream().then(function(stream){
+            var audioCtx = getAudioCtx();
             var source = audioCtx.createMediaStreamSource(stream);
             var analyser = audioCtx.createAnalyser();
             analyser.fftSize = 512;
@@ -1570,9 +1605,8 @@
 
             mr.onstop = function(){
                 clearInterval(checkInterval);
-                source.disconnect();
-                audioCtx.close();
-                stream.getTracks().forEach(function(t){t.stop();});
+                source.disconnect(); // 断开节点，保留 audioCtx 和 stream 缓存
+                // 不关闭 audioCtx，不停止 stream tracks，以便复用
                 document.getElementById('br').classList.remove('rec');
                 P.recBusy = false;
                 if (ch.length) saveRecBlob(new Blob(ch, {type: mr.mimeType}));
@@ -1596,7 +1630,7 @@
         });
     }
 
-    // ---- 长单词录音：SpeechRecognition + MediaRecorder 并行 ----
+    // ---- 长单词录音：SpeechRecognition + MediaRecorder 并行（优化版：复用缓存stream） ----
     function doLongWordRec(dur){
         var timeout = Math.max(3000, Math.min(8000, Math.round(dur * 5000)));
         var rec = new SpeechRec();
@@ -1613,8 +1647,8 @@
         var scored = false;
         var mrStream = null, mr = null, mrChunks = [];
 
-        // 同时用 MediaRecorder 录音，供回放
-        navigator.mediaDevices.getUserMedia({audio: true}).then(function(stream){
+        // 同时用 MediaRecorder 录音，供回放（复用缓存）
+        getMicStream().then(function(stream){
             mrStream = stream;
             mr = new MediaRecorder(stream);
             mr.ondataavailable = function(e){if(e.data.size>0) mrChunks.push(e.data);};
@@ -1625,12 +1659,11 @@
             if (mr && mr.state === 'recording'){
                 mr.onstop = function(){
                     if (mrChunks.length) saveRecBlob(new Blob(mrChunks, {type: mr.mimeType}));
-                    if (mrStream) mrStream.getTracks().forEach(function(t){t.stop();});
+                    // 不停止 stream tracks，保留缓存复用
                 };
                 mr.stop();
-            } else if (mrStream) {
-                mrStream.getTracks().forEach(function(t){t.stop();});
             }
+            // 不再停止 mrStream tracks
         }
 
         rec.onresult = function(e){
@@ -1718,15 +1751,15 @@
     }
 
     function startRecFallback(){
-        // 录音模式：用于不支持 SpeechRecognition 的手机浏览器
+        // 录音模式：用于不支持 SpeechRecognition 的手机浏览器（优化版：复用缓存stream）
         document.getElementById('pf').className = 'pf wait';
         document.getElementById('pf').textContent = '🎤 录音中（3秒）...请朗读';
         document.getElementById('br').classList.add('rec');
-        navigator.mediaDevices.getUserMedia({audio: true}).then(function(s){
-            var mr = new MediaRecorder(s); var ch = [];
+        getMicStream().then(function(stream){
+            var mr = new MediaRecorder(stream); var ch = [];
             mr.ondataavailable = function(e){ch.push(e.data);};
             mr.onstop = function(){
-                s.getTracks().forEach(function(t){t.stop();});
+                // 不停止 stream tracks，保留缓存复用
                 document.getElementById('br').classList.remove('rec');
                 if (ch.length) saveRecBlob(new Blob(ch, {type: mr.mimeType}));
                 var word = P.words[P.index] ? P.words[P.index].word : '';
@@ -1738,7 +1771,8 @@
         }).catch(function(e){
             console.error('fallback录音失败:', e);
             document.getElementById('br').classList.remove('rec');
-            P.micAllowed = false;
+            // stream 缓存失败，清空以便下次重试
+            _micStream = null;
             var msg = '❌ 请允许麦克风权限后重试';
             if (e.name === 'NotAllowedError'){
                 msg = '❌ 麦克风权限被拒绝，请在浏览器设置中允许后刷新页面';
@@ -1763,7 +1797,7 @@
 
     function pNext(){P.index++; showPWord();}
     function pPrev(){P.index--; if (P.index < 0) P.index = P.words.length - 1; showPWord();}
-    function quitPron(){backToMain();}
+    function quitPron(){releaseMicStream(); backToMain();}
 
     function showPronComplete(){
         var pa = document.getElementById('pa');
