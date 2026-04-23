@@ -170,6 +170,10 @@ body { font-family: "Outfit", sans-serif; background: var(--bg); color: var(--te
         <button class="quick-btn btn-users" id="btnLogs" onclick="showLogsPanel()">
             📜 状态日志
         </button>
+        <!-- 教师：学习数据按钮 -->
+        <button class="quick-btn btn-users" id="btnTeacherData" onclick="showTeacherDataPanel()" style="display:none;">
+            📊 学习数据
+        </button>
     </div>
 
     <!-- 功能模块区 -->
@@ -549,7 +553,7 @@ function showAppPage(user) {
     roleEl.className = "role-badge role-" + user.role;
     
     // 管理员和教师显示用户管理按钮
-    document.getElementById("btnUserMgmt").style.display = (user.role === "admin" || user.role === "teacher") ? "flex" : "none";
+    document.getElementById("btnUserMgmt").style.display = user.role === "admin" ? "flex" : "none";
     
     // 更新模块访问
     updateModuleAccess(user);
@@ -565,7 +569,7 @@ function hideAllPanels() {
 
 // ========== 辅助：检查用户是否有某模块权限 ==========
 function userHasModule(user, moduleId) {
-    if (user.role === "admin" || user.role === "teacher") return true;
+    if (user.role === "admin") return true;
     if (!user.modules) return false;
     if (typeof user.modules === "string") {
         return user.modules === "full";
@@ -599,19 +603,139 @@ function updateModuleAccess(user) {
     });
     
     // 状态日志按钮 - 仅管理员可见
-    if (user.role === "admin" || user.role === "teacher") {
+    if (user.role === "admin") {
         document.getElementById("btnLogs").style.display = "inline-flex";
     } else {
         document.getElementById("btnLogs").style.display = "none";
     }
+    
+    // 教师数据按钮 - 仅教师可见
+    document.getElementById("btnTeacherData").style.display = user.role === "teacher" ? "inline-flex" : "none";
     
     // 更新提示
     var allowed = ALL_MODULES.filter(function(m) { return userHasModule(user, m.id); }).map(function(m) { return m.name; });
     document.getElementById("moduleHint").textContent = user.role === "admin"
         ? "您是管理员，可访问全部模块"
         : user.role === "teacher"
-        ? "您是教师，可访问全部模块并查看学习数据"
+        ? "您是教师，可查看授权模块内所有用户的学习数据"
         : "您的权限：" + (allowed.length ? allowed.join("、") : "无");
+}
+
+// ==================== 教师学习数据面板 ====================
+function showTeacherDataPanel() {
+    hideAllPanels();
+    var panel = document.getElementById("teacherDataPanel");
+    if (!panel) {
+        // 创建面板
+        panel = document.createElement("div");
+        panel.id = "teacherDataPanel";
+        panel.className = "panel hidden";
+        panel.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
+            '<h3 style="margin:0;">📊 学习数据总览</h3>' +
+            '<button class="btn-outline" onclick="hideAllPanels()" style="padding:6px 12px;">✕ 关闭</button>' +
+        '</div>' +
+        '<p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:16px;">仅显示您有权限的模块数据</p>' +
+        '<div id="teacherDataContent" style="max-height:600px;overflow-y:auto;"></div>';
+        var ump = document.getElementById("userManagementPanel");
+        ump.parentNode.insertBefore(panel, ump.nextSibling);
+    }
+    panel.classList.remove("hidden");
+    loadAllUsersLearningData();
+}
+
+function loadAllUsersLearningData() {
+    var container = document.getElementById("teacherDataContent");
+    container.innerHTML = '<p style="color:var(--text-muted);">⏳ 正在加载...</p>';
+    
+    var users = getUsers().filter(function(u) { return u.role !== "admin"; }); // 排除管理员
+    var currentUser = { role: sessionStorage.getItem("apex_user_role") || "user" };
+    
+    // 获取教师有权限的模块
+    var myModules = [];
+    var currentUsername = sessionStorage.getItem("apex_username");
+    var me = users.find(function(u) { return u.username === currentUsername; });
+    if (!me) me = JSON.parse(sessionStorage.getItem("apex_auth") || "{}");
+    if (me && me.role === "teacher") {
+        myModules = typeof me.modules === "string" 
+            ? (me.modules === "full" ? ALL_MODULES.map(function(m) { return m.id; }) : ["vietnamese"])
+            : (Array.isArray(me.modules) ? me.modules : []);
+    }
+    
+    if (!learningDb) {
+        container.innerHTML = '<p style="color:#ef4444;">❌ 云端数据库未连接</p>';
+        return;
+    }
+    
+    var html = '<table style="width:100%;border-collapse:collapse;font-size:0.9rem;">';
+    html += '<thead><tr style="background:var(--bg);">' +
+        '<th style="padding:10px;text-align:left;border-bottom:1px solid var(--border);">用户</th>' +
+        '<th style="padding:10px;text-align:center;border-bottom:1px solid var(--border);">🇬🇧 英语</th>' +
+        '<th style="padding:10px;text-align:center;border-bottom:1px solid var(--border);">🇻🇳 越南语</th>' +
+        '<th style="padding:10px;text-align:center;border-bottom:1px solid var(--border);">操作</th>' +
+        '</tr></thead><tbody>';
+    
+    var pending = users.length;
+    var userData = {};
+    
+    users.forEach(function(u) {
+        userData[u.username] = { english: null, vietnamese: null };
+    });
+    
+    function checkDone() {
+        pending--;
+        if (pending <= 0) {
+            // 渲染表格
+            users.forEach(function(u) {
+                var d = userData[u.username];
+                var engText = d.english ? d.english.count + "次" : "<span style=\'color:var(--text-muted)\'>—</span>";
+                var vieText = d.vietnamese ? d.vietnamese.count + "次" : "<span style=\'color:var(--text-muted)\'>—</span>";
+                
+                // 检查教师是否有权限查看该模块
+                var canViewEng = myModules.indexOf("english") !== -1;
+                var canViewVie = myModules.indexOf("vietnamese") !== -1;
+                
+                if (!canViewEng) engText = "<span style=\'color:var(--text-muted)\'>无权限</span>";
+                if (!canViewVie) vieText = "<span style=\'color:var(--text-muted)\'>无权限</span>";
+                
+                html += '<tr>' +
+                    '<td style="padding:10px;border-bottom:1px solid var(--border);font-weight:500;">' + u.username + '</td>' +
+                    '<td style="padding:10px;border-bottom:1px solid var(--border);text-align:center;">' + engText + '</td>' +
+                    '<td style="padding:10px;border-bottom:1px solid var(--border);text-align:center;">' + vieText + '</td>' +
+                    '<td style="padding:10px;border-bottom:1px solid var(--border);text-align:center;">' +
+                    '<button class="btn-outline btn-sm" onclick="showUserLearningData(\'' + u.username + '\')">📊 详情</button>' +
+                    '</td></tr>';
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+    }
+    
+    // 加载每个用户数据
+    users.forEach(function(u) {
+        var userPending = 2;
+        
+        // 英语数据
+        learningDb.collection("english_records").where("user", "==", u.username).limit(100).get()
+            .then(function(snap) {
+                if (!snap.empty) {
+                    userData[u.username].english = { count: snap.size };
+                }
+                userPending--;
+                if (userPending <= 0) checkDone();
+            })
+            .catch(function() { userPending--; if (userPending <= 0) checkDone(); });
+        
+        // 越南语数据
+        learningDb.collection("vietnamese_word_records").where("user", "==", u.username).limit(100).get()
+            .then(function(snap) {
+                if (!snap.empty) {
+                    userData[u.username].vietnamese = { count: snap.size };
+                }
+                userPending--;
+                if (userPending <= 0) checkDone();
+            })
+            .catch(function() { userPending--; if (userPending <= 0) checkDone(); });
+    });
 }
 
 // ==================== 面板切换 ====================
