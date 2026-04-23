@@ -807,7 +807,7 @@
     /* ========== UI 渲染 ========== */
     function renderVocabButtons(){
         var container = document.getElementById('vocabBtns');
-        var ids = Object.keys(VOCAB_REGISTRY).sort(function(a, b){ return (a === 'hanviet' ? -1 : b === 'hanviet' ? 1 : a.localeCompare(b)); });
+        var ids = Object.keys(VOCAB_REGISTRY).sort(function(a, b){ if (a === 'vsl2') return -1; if (b === 'vsl2') return 1; return (a === 'hanviet' ? -1 : b === 'hanviet' ? 1 : a.localeCompare(b)); });
         
         if (ids.length === 0){
             container.innerHTML = '<span style="color:var(--tx-m)">暂无词库</span>';
@@ -824,11 +824,11 @@
         
         container.innerHTML = html;
         
-        // 默认选中第一个
+        // 默认选中VSL2
         if (ids.length > 0 && !currentVocab){
-            var firstBtn = container.querySelector('.sel-btn');
-            if (firstBtn){
-                selVocab(ids[0], firstBtn);
+            var vsl2Btn = container.querySelector('.sel-btn[data-lv="vsl2"]') || container.querySelector('.sel-btn');
+            if (vsl2Btn){
+                selVocab(vsl2Btn.getAttribute('data-lv'), vsl2Btn);
             }
         }
     }
@@ -1836,6 +1836,7 @@
             inp.className = 'write-input correct';
             hint.textContent = '✅ 完全正确！';
             hint.style.color = '#15803d';
+            speakWord(target);
         } else {
             inp.className = 'write-input wrong';
             hint.textContent = '❌ 正确拼写：' + target;
