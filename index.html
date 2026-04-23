@@ -930,13 +930,6 @@ function loadUserLearningData(username) {
             checkDone();
         });
 }
-eof data === 'object') {
-        var keys = Object.keys(data);
-        html += '<br><span style="font-size:0.85rem;">数据条目：<strong>' + keys.length + '</strong></span>';
-    }
-    html += '</div>';
-    return html;
-}
 
 function renderUserTable() {
     var users = getUsers();
