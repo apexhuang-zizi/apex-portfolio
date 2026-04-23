@@ -185,6 +185,7 @@
         .sm-sentence .sm-score.s3{color:var(--wn)}
         .sm-sentence .sm-score.s2,.sm-sentence .sm-score.s1{color:#f97316}
         .sm-sentence .sm-score.s0{color:var(--no)}
+        .btn-back-sm:hover{background:var(--bg);color:var(--pri)}
     </style>
 </head>
 <body>
@@ -411,6 +412,9 @@
                     <div style="display:flex;justify-content:center;gap:.8rem;flex-wrap:wrap">
                         <button class="btn-o" onclick="smSkip()">跳过此词</button>
                         <button class="btn-p" onclick="confirmQuit()">⏹ 结束练习</button>
+                    </div>
+                    <div style="display:flex;justify-content:center;margin-top:.5rem">
+                        <button class="btn-back-sm" onclick="goBack()" style="background:none;border:none;color:var(--tx-m);cursor:pointer;font-size:.85rem;padding:.4rem 1rem;border-radius:8px">← 返回主页</button>
                     </div>
                 </div>
 
@@ -1003,6 +1007,7 @@
             showWord();
             startTimer();
         } else if (type === 'wrong'){
+            startWrongPractice();
         } else if (type === 'sentence'){
             startSentenceMaking();
         } else if (type === 'pron'){
