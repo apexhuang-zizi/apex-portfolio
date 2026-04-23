@@ -1072,7 +1072,7 @@
                 '<div class="rule-item"><b>📖 操作方式</b><br>输入越南文后按 <b>回车键</b> 提交，1.2秒后自动清空输入框</div>' +
                 '<div class="rule-item"><b>🔊 发音按钮</b><br>🐢慢速=50%语速<br>🐰正常=原速</div>' +
                 '<div class="rule-item"><b>🔁 循环机制</b><br>错词练习完一轮后自动循环，直到掌握</div>' +
-                '<div class="rule-item"><b>✅ 掌握规则</b><br>答对累计超过5次，该词自动从错词库移除</div>';
+                '<div class="rule-item"><b>✅ 掌握规则</b><br>答对累计超过10次，该词自动从错词库移除</div>';
         } else if (type === 'sentence') {
             el.innerHTML = 
                 '<div class="rule-item"><b>🎯 游戏目标</b><br>用给定单词造句，自动评分</div>' +
@@ -1954,7 +1954,7 @@
         }
         if (changed){
             // 移除 okCount > 5 的词
-            wdb = wdb.filter(function(w){return w.okCount <= 5;});
+            wdb = wdb.filter(function(w){return w.okCount <= 10;});
             saveWrongDB(wdb);
         }
         updateWrongDesc();
