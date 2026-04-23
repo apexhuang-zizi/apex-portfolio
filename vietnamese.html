@@ -268,11 +268,16 @@ function buildFilter() {
   // 固定分类（手动标签）
   var sourceCategories = ['VSL2']; // 可扩展：['VSL1', 'VSL2', '基础词汇', ...]
   
-  // 统计手动分类
+  // 统计手动分类（VSL2特殊逻辑：按标题筛选）
   var sourceCount = {};
   for (var i = 0; i < dialogues.length; i++) {
+    // VSL2特殊逻辑：统计标题包含"VSL2"的对话
+    if (dialogues[i].title && dialogues[i].title.includes('VSL2')) {
+      sourceCount['VSL2'] = (sourceCount['VSL2'] || 0) + 1;
+    }
+    // 其他手动分类仍按source字段统计
     var src = dialogues[i].source || '';
-    if (src) sourceCount[src] = (sourceCount[src] || 0) + 1;
+    if (src && src !== 'VSL2') sourceCount[src] = (sourceCount[src] || 0) + 1;
   }
   
   // 生成标签：全部 + 手动分类(VSL2等) + 自动分类
@@ -317,7 +322,12 @@ function filterBySource(source) {
   var info = document.getElementById('filterInfo');
   var visibleCount = 0;
   for (var i = 0; i < dialogues.length; i++) {
-    if (dialogues[i].source === source) visibleCount++;
+    // VSL2特殊逻辑：按标题筛选（标题包含"VSL2"）
+    if (source === 'VSL2') {
+      if (dialogues[i].title && dialogues[i].title.includes('VSL2')) visibleCount++;
+    } else {
+      if (dialogues[i].source === source) visibleCount++;
+    }
   }
   info.style.display = 'inline';
   document.getElementById('filterLabel').textContent = source + '（' + visibleCount + '篇）';
@@ -326,10 +336,19 @@ function filterBySource(source) {
   for (var i = 0; i < dialogues.length; i++) {
     var item = document.getElementById('item_' + i);
     if (!item) continue;
-    if (dialogues[i].source === source) {
-      item.style.display = '';
+    // VSL2特殊逻辑：按标题筛选（标题包含"VSL2"）
+    if (source === 'VSL2') {
+      if (dialogues[i].title && dialogues[i].title.includes('VSL2')) {
+        item.style.display = '';
+      } else {
+        item.style.display = 'none';
+      }
     } else {
-      item.style.display = 'none';
+      if (dialogues[i].source === source) {
+        item.style.display = '';
+      } else {
+        item.style.display = 'none';
+      }
     }
   }
 }
