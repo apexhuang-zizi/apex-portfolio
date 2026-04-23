@@ -686,63 +686,6 @@
     margin-top: 4px;
     font-style: italic;
 }
-
-/* ========== 跟读小达人 ========== */
-.echo-word-area { text-align: center; margin: 24px 0 16px; }
-.echo-en-word { font-size: 5rem; font-weight: 800; color: var(--primary-light); margin-bottom: 8px; line-height: 1.1; }
-.echo-cn-word { font-size: 2rem; color: var(--text-muted); margin-bottom: 4px; }
-.echo-ph { font-size: 1.2rem; color: #999; font-style: italic; }
-.echo-btn-row { display: flex; justify-content: center; gap: 12px; margin: 8px 0; }
-.echo-speak-btn { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); border: none; color: white; padding: 12px 24px; border-radius: 12px; cursor: pointer; font-size: 15px; font-weight: 600; transition: all 0.2s; }
-.echo-speak-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4); }
-.echo-speak-btn.speaking { animation: bounce 0.3s ease infinite; }
-.echo-rec-btn { width: 64px; height: 64px; border-radius: 50%; border: 3px solid var(--primary); background: var(--bg-card); color: white; font-size: 28px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
-.echo-rec-btn:hover { background: var(--primary); }
-.echo-rec-btn.recording { border-color: #ef4444; background: rgba(239,68,68,0.2); animation: echo-pulse 1s ease infinite; }
-@keyframes echo-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.4)} 50%{box-shadow:0 0 0 12px rgba(239,68,68,0)} }
-.echo-feedback { text-align: center; font-size: 18px; font-weight: 600; min-height: 28px; margin-top: 12px; }
-.echo-feedback.ok { color: var(--success); }
-.echo-feedback.err { color: var(--danger); }
-.echo-feedback.wait { color: var(--text-muted); }
-.echo-detail { text-align: center; font-size: 14px; color: var(--text-muted); margin-top: 8px; }
-
-        /* ========== 单词练习 ========== */
-        .pra-question-area { text-align: center; margin: 20px 0 12px; }
-        .pra-en-word { font-size: 4.5rem; font-weight: 800; color: var(--primary-light); margin-bottom: 10px; line-height: 1.1; }
-        .pra-ph { font-size: 1.3rem; color: #888; font-style: italic; margin-bottom: 4px; }
-        .pra-cn-word { font-size: 1.6rem; color: var(--text-muted); }
-        .pra-type-label { font-size: 13px; color: var(--accent); font-weight: 600; letter-spacing: 1px; margin-bottom: 8px; }
-        .pra-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 16px 0; }
-        .pra-choice { background: var(--bg-card); border: 2px solid var(--border); border-radius: 12px; padding: 14px; text-align: center; cursor: pointer; font-size: 16px; font-weight: 600; transition: all 0.2s; color: var(--text); }
-        .pra-choice:hover { border-color: var(--primary); background: rgba(99,102,241,0.1); }
-        .pra-choice.correct { border-color: var(--success); background: rgba(16,185,129,0.15); color: var(--success); }
-        .pra-choice.wrong { border-color: var(--danger); background: rgba(239,68,68,0.15); color: var(--danger); }
-        .pra-choice.disabled { pointer-events: none; opacity: 0.6; }
-        .pra-btn-row { display: flex; justify-content: center; gap: 12px; margin-top: 12px; }
-        .pra-btn-row .echo-speak-btn { background: linear-gradient(135deg, var(--success), #059669); }
-        .pra-feedback { text-align: center; font-size: 17px; font-weight: 600; min-height: 28px; margin-top: 10px; }
-        .pra-feedback.ok { color: var(--success); }
-        .pra-feedback.err { color: var(--danger); }
-        .pra-score-board { display: flex; justify-content: center; gap: 24px; margin: 10px 0; }
-        .pra-score-chip { background: var(--bg-card); border: 1px solid var(--border); border-radius: 20px; padding: 4px 14px; font-size: 13px; color: var(--text-muted); }
-        .pra-score-chip span { color: var(--accent); font-weight: 700; }
-
-        .btn-secondary { background: rgba(30,41,59,0.8); border: 2px solid var(--border); color: var(--text); padding: 10px 24px; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-.btn-secondary:hover { border-color: var(--primary); }
-
-@media screen and (max-width: 768px) {
-    .pra-en-word { font-size: 3rem; }
-    .pra-choices { grid-template-columns: 1fr 1fr; gap: 8px; }
-    .echo-en-word { font-size: 3.5rem; }
-    .echo-cn-word { font-size: 1.5rem; }
-    .echo-speak-btn { padding: 10px 16px; font-size: 13px; }
-    .echo-rec-btn { width: 52px; height: 52px; font-size: 22px; }
-}
-@media screen and (max-width: 480px) {
-    .echo-en-word { font-size: 3rem; }
-    .echo-cn-word { font-size: 1.3rem; }
-    .echo-speak-btn { padding: 8px 12px; font-size: 12px; }
-}
 </style>
 </head>
 <body>
@@ -774,10 +717,6 @@
                 <div class="sidebar-label">📊 跟读记录</div>
                 <div id="history-echo"></div>
             </div>
-            <div id="left-pra" class="hidden">
-                <div class="sidebar-label">📊 练习记录</div>
-                <div id="history-pra"></div>
-            </div>
             <div id="left-write" class="hidden">
                 <div class="sidebar-label">📊 写作记录</div>
                 <div id="history-write"></div>
@@ -792,7 +731,6 @@
                 <div class="tab-nav">
                     <button class="tab-btn active" data-tab="tab-quest">🎯 单词大冒险</button>
                     <button class="tab-btn" data-tab="tab-echo">🎤 跟读小达人</button>
-                    <button class="tab-btn" data-tab="tab-pra">📝 单词练习</button>
                     <button class="tab-btn" data-tab="tab-write">✍️ 小小写作家</button>
                 </div>
             </div>
@@ -890,200 +828,14 @@
                 </div>
             </div>
 
-            <!-- Tab2: 跟读小达人 -->
+            <!-- Tab2 & Tab3 -->
             <div class="tab-content" id="tab-echo">
-                <!-- 选择区：共享年级/学期/单元选择器 -->
-                <div class="echo-selector" id="echoSelector">
-                    <div class="selector-group">
-                        <div class="selector-label">📚 选择年级</div>
-                        <button class="selector-btn" data-egrade="3" onclick="selectEchoGrade(this)">三年级</button>
-                        <button class="selector-btn selected" data-egrade="4" onclick="selectEchoGrade(this)">四年级</button>
-                        <button class="selector-btn" data-egrade="5" onclick="selectEchoGrade(this)">五年级</button>
-                        <button class="selector-btn" data-egrade="6" onclick="selectEchoGrade(this)">六年级</button>
-                    </div>
-                    <div class="selector-row">
-                        <div class="selector-group">
-                            <div class="selector-label">📖 选择学期</div>
-                            <button class="selector-btn selected" data-esemester="1" onclick="selectEchoSemester(this)">上册</button>
-                            <button class="selector-btn" data-esemester="2" onclick="selectEchoSemester(this)">下册</button>
-                        </div>
-                        <div class="selector-group" id="echoUnitSelector" style="display:none;">
-                            <div class="selector-label">📝 选择单元</div>
-                            <button class="selector-unit-btn selected" data-eunit="all" onclick="selectEchoUnit(this)">全部</button>
-                        </div>
-                    </div>
-                    <div style="text-align:center; margin:24px 0;">
-                        <button class="btn-primary" onclick="startEchoGame()">🎤 开始跟读</button>
-                    </div>
-                </div>
-
-                <!-- 跟读游戏区 -->
-                <div class="game-card hidden" id="echoCard">
-                    <div class="stats-bar">
-                        <div class="stat-item">
-                            <div class="stat-value" id="echoProgVal">1</div>
-                            <div class="stat-label">当前</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value" id="echoScoreVal">0</div>
-                            <div class="stat-label">总分</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value" id="echoTotalVal">50</div>
-                            <div class="stat-label">总数</div>
-                        </div>
-                    </div>
-
-                    <div class="echo-word-area">
-                        <div class="echo-en-word" id="echoEnWord">--</div>
-                        <div class="echo-cn-word" id="echoCnWord">--</div>
-                        <div class="echo-ph" id="echoPh"></div>
-                    </div>
-
-                    <div class="echo-btn-row">
-                        <button class="echo-speak-btn" id="echoSpkSlow" onclick="echoSpeak('slow')">
-                            🐢 慢速 🔊
-                        </button>
-                        <button class="echo-speak-btn" id="echoSpkNorm" onclick="echoSpeak('normal')">
-                            🐰 正常 🔊
-                        </button>
-                    </div>
-                    <div class="echo-btn-row">
-                        <button class="echo-rec-btn" id="echoRecBtn" onclick="echoStartRec()" title="开始录音">🎙️</button>
-                        <button class="echo-rec-btn" id="echoPlayBtn" onclick="echoPlayRec()" title="播放录音" style="opacity:.4;pointer-events:none">🔊</button>
-                    </div>
-                    <div class="echo-feedback" id="echoFeedback">点击 🔊 听发音 → 🎙 录音跟读</div>
-                    <div class="echo-detail" id="echoDetail" style="display:none"></div>
-
-                    <div style="display:flex;justify-content:center;gap:16px;margin-top:20px;">
-                        <button class="btn-secondary" id="echoPrev" onclick="echoPrev()">← 上一题</button>
-                        <button class="btn-secondary" id="echoNext" onclick="echoNext()">下一题 →</button>
-                    </div>
-                    <div style="display:flex;justify-content:center;gap:16px;margin-top:12px;">
-                        <button class="btn-primary" style="padding:12px 28px;font-size:16px;" onclick="echoQuit()">⏹ 退出跟读</button>
-                    </div>
-                </div>
-
-                <!-- 跟读结果 -->
-                <div class="game-card hidden" id="echoResultCard">
-                    <div id="echoResultTitle" style="font-size:26px;font-weight:700;margin-bottom:4px;">🎉 完成！</div>
-                    <div id="echoResultSub" style="color:var(--text-muted);margin-bottom:16px;">--</div>
-                    <div class="result-score" id="echoResultScore">0</div>
-                    <div style="font-size:14px;color:var(--text-muted);margin-bottom:20px;">平均得分</div>
-                    <div class="result-breakdown">
-                        <div class="breakdown-item">
-                            <div class="breakdown-value" id="echoResTotal">0</div>
-                            <div class="breakdown-label">总词数</div>
-                        </div>
-                        <div class="breakdown-item">
-                            <div class="breakdown-value" id="echoResAvg" style="color:var(--success)">0</div>
-                            <div class="breakdown-label">平均分</div>
-                        </div>
-                        <div class="breakdown-item">
-                            <div class="breakdown-value" id="echoResHigh" style="color:var(--accent)">0</div>
-                            <div class="breakdown-label">最高分</div>
-                        </div>
-                    </div>
-                    <button class="btn-primary" onclick="echoRestart()" style="margin-top:16px;">🔄 再来一次</button>
+                <div class="placeholder">
+                    <h3>🎤 跟读小达人</h3>
+                    <p>情景对话跟读 → AI评分对比</p>
+                    <p style="margin-top:8px;font-size:14px;">功能开发中...</p>
                 </div>
             </div>
-            <!-- Tab3: 单词练习 -->
-            <div class="tab-content" id="tab-pra">
-                <div class="pra-selector" id="praSelector">
-                    <div class="selector-group">
-                        <div class="selector-label">📚 选择年级</div>
-                        <button class="selector-btn" data-pgrade="3" onclick="selectPraGrade(this)">三年级</button>
-                        <button class="selector-btn selected" data-pgrade="4" onclick="selectPraGrade(this)">四年级</button>
-                        <button class="selector-btn" data-pgrade="5" onclick="selectPraGrade(this)">五年级</button>
-                        <button class="selector-btn" data-pgrade="6" onclick="selectPraGrade(this)">六年级</button>
-                    </div>
-                    <div class="selector-row">
-                        <div class="selector-group">
-                            <div class="selector-label">📖 选择学期</div>
-                            <button class="selector-btn selected" data-psemester="1" onclick="selectPraSemester(this)">上册</button>
-                            <button class="selector-btn" data-psemester="2" onclick="selectPraSemester(this)">下册</button>
-                        </div>
-                        <div class="selector-group" id="praUnitSelector" style="display:none;">
-                            <div class="selector-label">📝 选择单元</div>
-                            <button class="selector-unit-btn selected" data-punit="all" onclick="selectPraUnit(this)">全部</button>
-                        </div>
-                    </div>
-                    <div style="text-align:center; margin:24px 0;">
-                        <button class="btn-primary" onclick="startPraGame()">📝 开始练习</button>
-                    </div>
-                </div>
-
-                <!-- 练习游戏区 -->
-                <div class="game-card hidden" id="praCard">
-                    <div class="stats-bar">
-                        <div class="stat-item">
-                            <div class="stat-value" id="praProgVal">1</div>
-                            <div class="stat-label">当前</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value" id="praScoreVal">0</div>
-                            <div class="stat-label">得分</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value" id="praTotalVal">50</div>
-                            <div class="stat-label">总数</div>
-                        </div>
-                    </div>
-
-                    <div class="pra-score-board">
-                        <div class="pra-score-chip">正确: <span id="praCorrectVal">0</span></div>
-                        <div class="pra-score-chip">错误: <span id="praWrongVal">0</span></div>
-                    </div>
-
-                    <div class="pra-question-area">
-                        <div class="pra-type-label" id="praTypeLabel">看英文选中文</div>
-                        <div class="pra-en-word" id="praEnWord">--</div>
-                        <div class="pra-ph" id="praPh"></div>
-                    </div>
-
-                    <div class="pra-btn-row">
-                        <button class="echo-speak-btn" onclick="praSpeak()">🔊 听发音</button>
-                    </div>
-
-                    <div class="pra-choices" id="praChoices">
-                        <!-- 4 choices will be inserted here -->
-                    </div>
-
-                    <div class="pra-feedback" id="praFeedback"></div>
-
-                    <div style="display:flex;justify-content:center;gap:16px;margin-top:20px;">
-                        <button class="btn-secondary" id="praPrev" onclick="praPrev()">← 上一题</button>
-                        <button class="btn-secondary" id="praNext" onclick="praNext()">下一题 →</button>
-                    </div>
-                    <div style="display:flex;justify-content:center;gap:16px;margin-top:12px;">
-                        <button class="btn-primary" style="padding:12px 28px;font-size:16px;" onclick="praQuit()">⏹ 退出练习</button>
-                    </div>
-                </div>
-
-                <!-- 练习结果 -->
-                <div class="game-card hidden" id="praResultCard">
-                    <div style="font-size:26px;font-weight:700;margin-bottom:4px;">🎉 练习完成！</div>
-                    <div id="praResultSub" style="color:var(--text-muted);margin-bottom:16px;">--</div>
-                    <div class="result-score" id="praResultScore">0</div>
-                    <div style="font-size:14px;color:var(--text-muted);margin-bottom:20px;">最终得分</div>
-                    <div class="result-breakdown">
-                        <div class="breakdown-item">
-                            <div class="breakdown-value" id="praResTotal">0</div>
-                            <div class="breakdown-label">总题数</div>
-                        </div>
-                        <div class="breakdown-item">
-                            <div class="breakdown-value" id="praResCorrect" style="color:var(--success)">0</div>
-                            <div class="breakdown-label">正确数</div>
-                        </div>
-                        <div class="breakdown-item">
-                            <div class="breakdown-value" id="praResAcc" style="color:var(--accent)">0%</div>
-                            <div class="breakdown-label">正确率</div>
-                        </div>
-                    </div>
-                    <button class="btn-primary" onclick="praRestart()" style="margin-top:16px;">🔄 再来一次</button>
-                </div>
-            </div>
-
             <div class="tab-content" id="tab-write">
                 <div class="placeholder">
                     <h3>✍️ 小小写作家</h3>
@@ -1127,15 +879,6 @@
                     <div class="rule-line"><strong>评分：</strong>AI对比发音相似度</div>
                 </div>
             </div>
-            <div id="right-pra" class="hidden">
-                <div class="rule-block">
-                    <h4>📝 练习规则</h4>
-                    <div class="rule-line"><strong>选择年级和单元</strong></div>
-                    <div class="rule-line"><strong>看英文</strong>选中文释义，或<strong>看中文</strong>选英文</div>
-                    <div class="rule-line"><strong>答对一题得10分</strong></div>
-                    <div class="rule-line"><strong>共50题</strong>，随机打乱顺序</div>
-                </div>
-            </div>
             <div id="right-write" class="hidden">
                 <div class="rule-block">
                     <h4>✍️ 写作规则</h4>
@@ -1158,8 +901,6 @@
 
         var db;
         var firebaseReady = false;
-        var currentUid = "";  // 必须在 initFirebase 之前声明
-        var currentUser = null;  // 必须在 initFirebase 之前声明
 
         var firebaseConfig = {
             apiKey: "AIzaSyCMPFTNEBWXA_EnkF7Yk__F1gdHYfPg8kM",
@@ -1171,11 +912,6 @@
         };
 
         (function initFirebase() {
-            // 确保有用户标识用于云端同步
-            if (!currentUid) {
-                var storedUsername = sessionStorage.getItem("apex_username");
-                currentUid = storedUsername || "guest_" + Date.now();
-            }
             try {
                 if (typeof firebase !== "undefined") {
                     firebase.initializeApp(firebaseConfig);
@@ -1919,22 +1655,13 @@ var UNIT_COUNTS = {
         }
 
         // ==================== 用户系统 ====================
-        // currentUser 和 currentUid 已在文件开头声明
+        var currentUser = null;
 
         function checkLogin() {
             var username = sessionStorage.getItem("apex_username");
             var role = sessionStorage.getItem("apex_role");
-            // 如果没有登录信息，设置默认用户（支持本地测试）
-            if (!username) {
-                username = "Guest";
-                role = "guest";
-                sessionStorage.setItem("apex_username", username);
-                sessionStorage.setItem("apex_role", role);
-                console.log("本地测试模式：使用默认用户 Guest");
-            }
+            if (!username) { window.location.href = "index.html"; return false; }
             currentUser = { username: username, role: role };
-            // 设置 currentUid 用于云端同步（使用 username 作为唯一标识）
-            currentUid = username || "guest_" + Date.now();
             document.getElementById("userName").textContent = username;
             document.getElementById("userAvatar").textContent = username.charAt(0).toUpperCase();
             return true;
@@ -1959,8 +1686,6 @@ var UNIT_COUNTS = {
                 document.getElementById('right-' + tab.replace('tab-', '')).classList.remove('hidden');
 
                 if (tab === 'tab-quest') loadHistoryQuest();
-                if (tab === 'tab-echo') { loadHistoryEcho(); updateEchoUnitButtons(); }
-                if (tab === 'tab-pra') { loadHistoryPra(); updatePraUnitButtons(); }
             });
         });
 
@@ -2094,7 +1819,7 @@ var UNIT_COUNTS = {
                 document.getElementById("feedback").className="feedback wrong";
 
                 if(G.attempts>=3){
-                    if(!G.wrong.find(function(x){return x.en===w.en;})){ G.wrong.push(w); WrongWords.add({en:w.en, cn:w.cn, ph:w.ph, grade:G.grade, semester:G.semester, module:"quest"}); }
+                    if(!G.wrong.find(function(x){return x.en===w.en;})) G.wrong.push(w);
                     document.getElementById("feedback").textContent="✗ "+w.en;
                     speakWord(w.en);
                     setTimeout(function(){G.idx++; showWord();},1500);
@@ -2371,9 +2096,7 @@ var UNIT_COUNTS = {
                 var time = d ? String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0") : "--";
                 var c=r.score>=90?"var(--success)":r.score>=70?"var(--accent)":"var(--text-muted)";
                 var wrongWords = r.wrongWords || [];
-                    html += '<span class="wrong-word-btn" onclick="WrongWords.speak(';
-                    html += "'" + (w.word||"").replace(/'/g,"\\'") + "'";
-                    html += ')" title="点击听发音">' + (w.word||"") + ' <span style="font-size:12px;color:var(--text-muted)">(' + w.wrongCount + '</span></span>';
+                var wrongHtml = wrongWords.map(function(w){return '<span class="wrong-word-btn" onclick="speakWord(\''+w.replace(/'/g,"\\'")+'\')">🔊 '+w+'</span>';}).join('');
                 var delBtn = isAdmin ? '<span class="history-del-btn" onclick="deleteHistoryRecord(\''+recordKey(r).replace(/'/g,"\\'")+'\')">🗑️</span>' : '';
                 html+='<div class="history-item">';
                 html+='  <div class="history-top">';
@@ -2427,27 +2150,20 @@ var UNIT_COUNTS = {
             var maxCombo = Math.max.apply(null, myRecords.map(function(r){return r.maxCombo||0;}));
 
             // 统计错词
-            // 错词来源：优先使用 WrongWords（云端同步，跨设备一致），回退到历史记录统计
-            var wrongEntries = [];
-            var wwList = WrongWords.getByFrequency(50);
-            if (wwList && wwList.length > 0) {
-                wrongEntries = wwList.map(function(x) { return { en: x.word, count: x.wrongCount, cn: x.cn || "" }; });
-            } else {
-                // Fallback: 从历史记录统计
-                var wrongMap = {};
-                for (var j = 0; j < myRecords.length; j++) {
-                    var ww2 = myRecords[j].wrongWords || [];
-                    for (var k = 0; k < ww2.length; k++) {
-                        var word = ww2[k];
-                        wrongMap[word] = (wrongMap[word] || 0) + 1;
-                    }
+            var wrongMap = {};
+            for (var j = 0; j < myRecords.length; j++) {
+                var ww = myRecords[j].wrongWords || [];
+                for (var k = 0; k < ww.length; k++) {
+                    var word = ww[k];
+                    wrongMap[word] = (wrongMap[word] || 0) + 1;
                 }
-                var allVocab = [];
-                for (var vk in LOCAL_VOCAB) { allVocab = allVocab.concat(LOCAL_VOCAB[vk]); }
-                var vocabMap = {};
-                for (var vi = 0; vi < allVocab.length; vi++) { vocabMap[allVocab[vi].en.toLowerCase()] = allVocab[vi].cn; }
-                for (var wm in wrongMap) { wrongEntries.push({ en: wm, count: wrongMap[wm], cn: vocabMap[wm.toLowerCase()] || "" }); }
             }
+            var allVocab = [];
+            for (var vk in LOCAL_VOCAB) { allVocab = allVocab.concat(LOCAL_VOCAB[vk]); }
+            var vocabMap = {};
+            for (var vi = 0; vi < allVocab.length; vi++) { vocabMap[allVocab[vi].en.toLowerCase()] = allVocab[vi].cn; }
+            var wrongEntries = [];
+            for (var wm in wrongMap) { wrongEntries.push({ en: wm, count: wrongMap[wm], cn: vocabMap[wm.toLowerCase()] || "" }); }
             wrongEntries.sort(function(a, b){ return b.count - a.count; });
             var totalWrongWords = wrongEntries.length;
             var highFreqWrong = wrongEntries.filter(function(w){ return w.count >= 3; });
@@ -2673,617 +2389,6 @@ var UNIT_COUNTS = {
                 // initVocabDatabase() 是纯后台操作，不影响页面显示，无需 await
             }
         };
-
-        // ==================== 跟读小达人 JS ====================
-        var EchoG = { grade:"4", semester:"1", unit:0, words:[], idx:0, total:0, score:0, scores:[], mediaRec:null, mediaStream:null, audioBlob:null };
-
-        // ==================== 统一错词库管理器 ====================
-        // 统一管理所有模块的错词，支持跨设备同步，语言隔离
-        var WrongWords = {
-            localKey: "wrongwords_v2",   // localStorage key（含版本号）
-            cloudKey: "wrongwords",      // Firebase collection name
-            lang: "en",                 // 语言标识：en=英语，vi=越南语
-
-            // 添加一个错词（实时同步到云端）
-            add: function(wordObj) {
-                var self = this;
-                var entry = {
-                    word: wordObj.en || wordObj.word || "",
-                    cn: wordObj.cn || "",
-                    ph: wordObj.ph || "",
-                    grade: wordObj.grade || G.grade || "",
-                    semester: wordObj.semester || G.semester || "",
-                    module: wordObj.module || "quest",  // quest | echo | practice
-                    wrongCount: 1,
-                    lastWrong: new Date().toISOString(),
-                    firstWrong: new Date().toISOString(),
-                    uid: currentUid || currentUser?.username || "anonymous",
-                    lang: self.lang,
-                    _local: true  // 标记本地新增（用于云端比对）
-                };
-                // 检查本地是否已有
-                var local = self.getLocal();
-                var existing = local.find(function(x){ return x.word === entry.word && x.lang === self.lang && x.module === entry.module; });
-                if (existing) {
-                    existing.wrongCount++;
-                    existing.lastWrong = entry.lastWrong;
-                } else {
-                    local.unshift(entry);
-                }
-                local = local.slice(0, 200); // 最多200条
-                localStorage.setItem(self.localKey, JSON.stringify(local));
-                // 实时同步到云端（异步，静默失败）
-                self.syncToCloud(entry, existing ? "update" : "add");
-                return entry;
-            },
-
-            // 从 localStorage 读取
-            getLocal: function() {
-                try {
-                    return JSON.parse(localStorage.getItem(this.localKey) || "[]");
-                } catch(e) { return []; }
-            },
-
-            // 获取错词列表（可选：按年级/模块过滤）
-            getList: function(filter) {
-                var local = this.getLocal();
-                var lang = filter && filter.lang !== undefined ? filter.lang : this.lang;
-                return local.filter(function(x) {
-                    var match = x.lang === lang;
-                    if (filter && filter.module) match = match && x.module === filter.module;
-                    if (filter && filter.grade) match = match && x.grade === filter.grade;
-                    return match;
-                });
-            },
-
-            // 按频率排序获取高频错词（用于错词本复习）
-            getByFrequency: function(limit) {
-                var list = this.getList({lang: this.lang});
-                list.sort(function(a,b){ return b.wrongCount - a.wrongCount; });
-                return list.slice(0, limit || 50);
-            },
-
-            // 从云端加载错词并合并到本地
-            loadFromCloud: function(callback) {
-                var self = this;
-                if (!firebaseReady || !db) { if (callback) callback([]); return; }
-                db.collection(self.cloudKey)
-                    .where("uid", "==", currentUid || currentUser?.username || "anonymous")
-                    .where("lang", "==", self.lang)
-                    .get({ source: "server" })
-                    .then(function(snap) {
-                        var cloudWords = {};
-                        snap.forEach(function(doc) {
-                            var d = doc.data();
-                            var key = d.word + "_" + d.module;
-                            if (!cloudWords[key] || cloudWords[key].wrongCount < (d.wrongCount || 0)) {
-                                cloudWords[key] = d;
-                            }
-                        });
-                        // 合并到本地
-                        var local = self.getLocal();
-                        var merged = {};
-                        local.forEach(function(x){ merged[x.word + "_" + x.module] = x; });
-                        for (var k in cloudWords) {
-                            var c = cloudWords[k];
-                            if (!merged[k] || merged[k].wrongCount < c.wrongCount) {
-                                merged[k] = c;
-                            }
-                        }
-                        var result = Object.values(merged);
-                        result.sort(function(a,b){ return new Date(b.lastWrong) - new Date(a.lastWrong); });
-                        localStorage.setItem(self.localKey, JSON.stringify(result.slice(0, 200)));
-                        if (callback) callback(result);
-                    })
-                    .catch(function() { if (callback) callback([]); });
-            },
-
-            // 同步单条到云端
-            syncToCloud: function(entry, action) {
-                var self = this;
-                if (!firebaseReady || !db) return; if (!currentUid) currentUid = currentUser?.username || "anonymous";
-                var docId = currentUid + "_" + entry.word + "_" + entry.module;
-                fbWithTimeout(
-                    db.collection(self.cloudKey).doc(docId).set({
-                        word: entry.word, cn: entry.cn, ph: entry.ph,
-                        grade: entry.grade, semester: entry.semester,
-                        module: entry.module, wrongCount: entry.wrongCount,
-                        firstWrong: entry.firstWrong, lastWrong: entry.lastWrong,
-                        uid: currentUid || currentUser?.username || "anonymous", lang: entry.lang || self.lang
-                    }, { merge: true }),
-                    8000
-                ).catch(function(){});
-            },
-
-            // 清除所有错词
-            clear: function() {
-                localStorage.setItem(this.localKey, "[]");
-                if (firebaseReady && db && currentUid) {
-                    db.collection(this.cloudKey)
-                        .where("uid", "==", currentUid || currentUser?.username || "anonymous")
-                        .where("lang", "==", this.lang)
-                        .get().then(function(snap) {
-                            var batch = db.batch();
-                            snap.forEach(function(d){ batch.delete(d.ref); });
-                            batch.commit().catch(function(){});
-                        }).catch(function(){});
-                }
-            },
-
-            // 渲染错词列表到指定容器（带发音按钮）
-            render: function(containerId, words) {
-                var self = this;
-                var container = document.getElementById(containerId);
-                if (!container) return;
-                if (!words || words.length === 0) {
-                    container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px;">暂无错词记录</div>';
-                    return;
-                }
-                var html = '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
-                words.forEach(function(w) {
-                    html += '<span class="wrong-word-btn" onclick="WrongWords.speak(';
-                    html += "'" + (w.word||"").replace(/'/g,"\\'") + "'";
-                    html += ')" title="点击听发音">' + (w.word||"") + ' <span style="font-size:12px;color:var(--text-muted)">(' + w.wrongCount + '</span></span>';
-
-
-
-
-
-
-
-
-                });
-                html += '</div>';
-                container.innerHTML = html;
-            },
-
-            // TTS发音
-            speak: function(word) {
-                var utt = new SpeechSynthesisUtterance(word); utt.lang = "en-US"; utt.rate = 0.9;
-                speechSynthesis.cancel(); speechSynthesis.speak(utt);
-            }
-        };
-
-        // 页面加载时从云端同步错词
-        if (firebaseReady) {
-            setTimeout(function() { WrongWords.loadFromCloud(); }, 3000);
-        }
-
-
-        function selectEchoGrade(el) {
-            document.querySelectorAll("[data-egrade]").forEach(function(b){b.classList.remove("selected");});
-            el.classList.add("selected"); EchoG.grade = el.dataset.egrade; updateEchoUnitButtons();
-        }
-        function selectEchoSemester(el) {
-            document.querySelectorAll("[data-esemester]").forEach(function(b){b.classList.remove("selected");});
-            el.classList.add("selected"); EchoG.semester = el.dataset.esemester; updateEchoUnitButtons();
-        }
-        function selectEchoUnit(el) {
-            document.querySelectorAll("#echoUnitSelector .selector-unit-btn").forEach(function(b){b.classList.remove("selected");});
-            el.classList.add("selected"); EchoG.unit = el.dataset.eunit === "all" ? 0 : parseInt(el.dataset.eunit);
-        }
-        function updateEchoUnitButtons() {
-            var container = document.getElementById("echoUnitSelector");
-            var key = EchoG.grade + "-" + EchoG.semester;
-            var counts = UNIT_COUNTS[key];
-            if (!counts) { container.style.display = "none"; return; }
-            container.style.display = "flex";
-            var html = '<div class="selector-label">📝 选择单元</div><button class="selector-unit-btn selected" data-eunit="all" onclick="selectEchoUnit(this)">全部</button>';
-            for (var i = 0; i < counts.length; i++) { html += '<button class="selector-unit-btn" data-eunit="'+(i+1)+'" onclick="selectEchoUnit(this)">U'+(i+1)+'</button>'; }
-            container.innerHTML = html; EchoG.unit = 0;
-        }
-
-        function startEchoGame() {
-            var words = getVocabByUnits(LOCAL_VOCAB, parseInt(EchoG.grade), parseInt(EchoG.semester), EchoG.unit);
-            if (words.length === 0) { alert("该单元暂无单词，请换其他选择！"); return; }
-            words = shuffle(words.slice());
-            EchoG.words = words; EchoG.idx = 0; EchoG.total = words.length; EchoG.score = 0; EchoG.scores = [];
-            document.getElementById("echoSelector").style.display = "none";
-            document.getElementById("echoCard").classList.remove("hidden");
-            document.getElementById("echoProgVal").textContent = "1";
-            document.getElementById("echoScoreVal").textContent = "0";
-            document.getElementById("echoTotalVal").textContent = words.length;
-            echoShowWord();
-        }
-
-        function echoShowWord() {
-            var w = EchoG.words[EchoG.idx];
-            document.getElementById("echoEnWord").textContent = w.en || "--";
-            document.getElementById("echoCnWord").textContent = w.cn || "";
-            document.getElementById("echoPh").textContent = w.ph || "";
-            document.getElementById("echoFeedback").textContent = "点击 🔊 听发音 → 🎙 录音跟读";
-            document.getElementById("echoFeedback").className = "echo-feedback wait";
-            document.getElementById("echoDetail").style.display = "none";
-            document.getElementById("echoRecBtn").style.opacity = "1"; document.getElementById("echoRecBtn").style.pointerEvents = "";
-            document.getElementById("echoRecBtn").classList.remove("recording");
-            document.getElementById("echoPlayBtn").style.opacity = "0.4"; document.getElementById("echoPlayBtn").style.pointerEvents = "none";
-            // Update prev/next button state
-            document.getElementById("echoPrev").disabled = EchoG.idx === 0;
-            document.getElementById("echoNext").disabled = EchoG.idx === EchoG.total - 1;
-            EchoG.audioBlob = null;
-        }
-
-        function echoSpeak(speed) {
-            var text = (EchoG.words[EchoG.idx].en || "").trim();
-            if (!text) return;
-            var utt = new SpeechSynthesisUtterance(text); utt.lang = "en-US";
-            utt.rate = speed === "slow" ? 0.6 : 1.0; utt.pitch = 1;
-            var btn = speed === "slow" ? document.getElementById("echoSpkSlow") : document.getElementById("echoSpkNorm");
-            btn.classList.add("speaking"); utt.onend = function(){ btn.classList.remove("speaking"); };
-            utt.onerror = function(){ btn.classList.remove("speaking"); };
-            speechSynthesis.cancel(); speechSynthesis.speak(utt);
-        }
-
-        function echoStartRec() {
-            if (EchoG.mediaRec) {
-                EchoG.mediaRec.stop(); EchoG.mediaRec = null;
-                document.getElementById("echoRecBtn").classList.remove("recording");
-                echoRateRecording();
-                return;
-            }
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                alert("您的浏览器不支持录音功能，请使用 Chrome/Edge/Safari！"); return;
-            }
-            navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
-                EchoG.mediaStream = stream;
-                var rec = new MediaRecorder(stream, { mimeType: "audio/webm" });
-                var chunks = [];
-                rec.ondataavailable = function(e) { if (e.data.size > 0) chunks.push(e.data); };
-                rec.onstop = function() {
-                    EchoG.audioBlob = new Blob(chunks, { type: "audio/webm" });
-                    document.getElementById("echoPlayBtn").style.opacity = "1"; document.getElementById("echoPlayBtn").style.pointerEvents = "";
-                // Auto-play the recording once
-                setTimeout(function() {
-                    if (EchoG.audioBlob) {
-                        var url = URL.createObjectURL(EchoG.audioBlob);
-                        var au = new Audio(url); au.volume = 0.8; au.play();
-                    }
-                }, 100);
-                };
-                rec.start();
-                EchoG.mediaRec = rec;
-                document.getElementById("echoRecBtn").classList.add("recording");
-                document.getElementById("echoFeedback").textContent = "🔴 录音中...";
-                document.getElementById("echoFeedback").className = "echo-feedback wait";
-                setTimeout(function() {
-                    if (EchoG.mediaRec && EchoG.mediaRec.state === "recording") {
-                        EchoG.mediaRec.stop();
-                        EchoG.mediaRec = null;
-                        document.getElementById("echoRecBtn").classList.remove("recording");
-                        echoRateRecording();
-                    }
-                }, 8000);
-            }).catch(function(err) { alert("麦克风权限被拒绝，请允许使用麦克风！"); console.error(err); });
-        }
-
-        function echoPlayRec() {
-            if (!EchoG.audioBlob) return;
-            var url = URL.createObjectURL(EchoG.audioBlob);
-            var au = new Audio(url); au.volume = 0.9; au.play();
-        }
-
-        function echoRateRecording() {
-            document.getElementById("echoFeedback").textContent = "🎤 录音完成，正在评分...";
-            document.getElementById("echoFeedback").className = "echo-feedback wait";
-            setTimeout(function() {
-                var score = Math.floor(Math.random() * 30) + 70; // 70-100分随机模拟评分
-                EchoG.scores.push(score); EchoG.score += score;
-                var fb = document.getElementById("echoFeedback");
-                // 低于75分视为错词，实时记录
-                if (score < 75) {
-                    var w = EchoG.words[EchoG.idx];
-                    WrongWords.add({en: w.en, cn: w.cn, ph: w.ph, grade: EchoG.grade, semester: EchoG.semester, module: "echo"});
-                }
-                if (score >= 90) { fb.textContent = "🌟 太棒了！得分 " + score + " 分！"; fb.className = "echo-feedback ok"; }
-                else if (score >= 75) { fb.textContent = "👍 不错！得分 " + score + " 分"; fb.className = "echo-feedback ok"; }
-                else { fb.textContent = "💪 继续加油！得分 " + score + " 分"; fb.className = "echo-feedback err"; }
-                document.getElementById("echoScoreVal").textContent = EchoG.score;
-                document.getElementById("echoDetail").style.display = "block";
-                document.getElementById("echoDetail").textContent = "本次得分: " + score + " / 累计: " + EchoG.score;
-            }, 500);
-        }
-
-        function echoNext() {
-            if (EchoG.idx < EchoG.total - 1) { EchoG.idx++; document.getElementById("echoProgVal").textContent = EchoG.idx + 1; echoShowWord(); }
-            else { echoEndGame(); }
-        }
-        function echoPrev() {
-            if (EchoG.idx > 0) { EchoG.idx--; document.getElementById("echoProgVal").textContent = EchoG.idx + 1; echoShowWord(); }
-        }
-        function echoQuit() { echoStopRec(); document.getElementById("echoCard").classList.add("hidden"); document.getElementById("echoSelector").style.display = "block"; }
-        function echoRestart() { echoStopRec(); document.getElementById("echoResultCard").classList.add("hidden"); document.getElementById("echoSelector").style.display = "block"; }
-        function echoEndGame() {
-            echoStopRec();
-            if (EchoG.scores.length === 0) { echoQuit(); return; }
-            var avg = Math.round(EchoG.score / EchoG.scores.length);
-            document.getElementById("echoCard").classList.add("hidden");
-            document.getElementById("echoResultCard").classList.remove("hidden");
-            document.getElementById("echoResultScore").textContent = avg;
-            document.getElementById("echoResultSub").textContent = EchoG.grade + "年级 · " + (EchoG.semester === "1" ? "上册" : "下册") + " · " + EchoG.total + "词";
-            document.getElementById("echoResTotal").textContent = EchoG.total;
-            document.getElementById("echoResAvg").textContent = avg;
-            document.getElementById("echoResHigh").textContent = Math.max.apply(null, EchoG.scores);
-            saveEchoRecord(avg, EchoG.total, EchoG.grade, EchoG.semester);
-        }
-        function echoStopRec() {
-            if (EchoG.mediaRec) { EchoG.mediaRec.stop(); EchoG.mediaRec = null; }
-            if (EchoG.mediaStream) { EchoG.mediaStream.getTracks().forEach(function(t){t.stop();}); EchoG.mediaStream = null; }
-            document.getElementById("echoRecBtn").classList.remove("recording");
-        }
-
-        // ==================== 单词练习 JS ====================
-        var PraG = { grade:"4", semester:"1", unit:0, words:[], idx:0, total:0, score:0, correct:0, wrong:0, answered:false, history:[] };
-
-        function selectPraGrade(el) {
-            document.querySelectorAll("[data-pgrade]").forEach(function(b){b.classList.remove("selected");});
-            el.classList.add("selected"); PraG.grade = el.dataset.pgrade; updatePraUnitButtons();
-        }
-        function selectPraSemester(el) {
-            document.querySelectorAll("[data-psemester]").forEach(function(b){b.classList.remove("selected");});
-            el.classList.add("selected"); PraG.semester = el.dataset.psemester; updatePraUnitButtons();
-        }
-        function selectPraUnit(el) {
-            document.querySelectorAll("#praUnitSelector .selector-unit-btn").forEach(function(b){b.classList.remove("selected");});
-            el.classList.add("selected"); PraG.unit = el.dataset.punit === "all" ? 0 : parseInt(el.dataset.punit);
-        }
-        function updatePraUnitButtons() {
-            var container = document.getElementById("praUnitSelector");
-            var key = PraG.grade + "-" + PraG.semester;
-            var counts = UNIT_COUNTS[key];
-            if (!counts) { container.style.display = "none"; return; }
-            container.style.display = "flex";
-            var html = '<div class="selector-label">📝 选择单元</div><button class="selector-unit-btn selected" data-punit="all" onclick="selectPraUnit(this)">全部</button>';
-            for (var i = 0; i < counts.length; i++) { html += '<button class="selector-unit-btn" data-punit="'+(i+1)+'" onclick="selectPraUnit(this)">U'+(i+1)+'</button>'; }
-            container.innerHTML = html; PraG.unit = 0;
-        }
-
-        function startPraGame() {
-            var words = getVocabByUnits(LOCAL_VOCAB, parseInt(PraG.grade), parseInt(PraG.semester), PraG.unit);
-            if (words.length === 0) { alert("该单元暂无单词，请换其他选择！"); return; }
-            words = shuffle(words.slice());
-            var count = Math.min(50, words.length);
-            words = words.slice(0, count);
-            PraG.words = words; PraG.idx = 0; PraG.total = count; PraG.score = 0; PraG.correct = 0; PraG.wrong = 0; PraG.answered = false; PraG.history = new Array(count);
-            document.getElementById("praSelector").style.display = "none";
-            document.getElementById("praCard").classList.remove("hidden");
-            document.getElementById("praProgVal").textContent = "1";
-            document.getElementById("praScoreVal").textContent = "0";
-            document.getElementById("praTotalVal").textContent = count;
-            document.getElementById("praCorrectVal").textContent = "0";
-            document.getElementById("praWrongVal").textContent = "0";
-            praShowWord();
-        }
-
-        function praShowWord() {
-            var w = PraG.words[PraG.idx];
-            var word = w.en || "--";
-            var cn = w.cn || "";
-            // Check if already answered (for prev navigation)
-            if (PraG.history[PraG.idx] !== undefined) {
-                PraG.answered = true;
-                PraG.currentType = PraG.history[PraG.idx].type;
-                PraG.correctAnswer = PraG.history[PraG.idx].correct;
-                PraG.currentChoices = PraG.history[PraG.idx].choices;
-                PraG.correct = PraG.history[PraG.idx].correctCount;
-                PraG.wrong = PraG.history[PraG.idx].wrongCount;
-                PraG.score = PraG.history[PraG.idx].score;
-            } else {
-                // Randomly decide question type for new word
-                PraG.currentType = Math.random() < 0.5 ? "en2cn" : "cn2en";
-                PraG.answered = false;
-            }
-            var typeLabel = document.getElementById("praTypeLabel");
-            if (PraG.currentType === "en2cn") {
-                document.getElementById("praEnWord").textContent = word;
-                document.getElementById("praPh").textContent = w.ph || "";
-                document.getElementById("praCnWord").textContent = "";
-                typeLabel.textContent = "📖 看英文，选中文释义";
-                PraG.correctAnswer = cn;
-            } else {
-                document.getElementById("praEnWord").textContent = cn;
-                document.getElementById("praPh").textContent = "";
-                document.getElementById("praCnWord").textContent = "";
-                typeLabel.textContent = "🅰️ 看中文，选英文单词";
-                PraG.correctAnswer = word;
-            }
-            document.getElementById("praFeedback").textContent = "";
-            document.getElementById("praFeedback").className = "pra-feedback";
-            // Rebuild choices from history if answered, otherwise generate new
-            if (PraG.history[PraG.idx] !== undefined) {
-                praRebuildChoicesFromHistory();
-            } else {
-                PraG.answered = false;
-                praBuildChoices();
-            }
-            // Update nav buttons
-            document.getElementById("praPrev").disabled = PraG.idx === 0;
-            document.getElementById("praNext").disabled = PraG.idx === PraG.total - 1;
-        }
-
-        function praRebuildChoicesFromHistory() {
-            var hist = PraG.history[PraG.idx];
-            PraG.currentChoices = hist.choices;
-            var container = document.getElementById("praChoices");
-            var html = "";
-            hist.choices.forEach(function(choice, i) {
-                var cls = "pra-choice";
-                if (PraG.answered) cls += " disabled";
-                if (choice === hist.correct) cls += " correct";
-                html += '<div class="' + cls + '">' + choice + '</div>';
-            });
-            container.innerHTML = html;
-            // Show feedback from history
-            document.getElementById("praFeedback").className = "pra-feedback ok";
-            document.getElementById("praFeedback").innerHTML = "<span style='color:var(--success)'>✅ 已完成</span>";
-            document.getElementById("praScoreVal").textContent = hist.score;
-            document.getElementById("praCorrectVal").textContent = hist.correctCount;
-            document.getElementById("praWrongVal").textContent = hist.wrongCount;
-        }
-
-        function praBuildChoices() {
-            var correct = PraG.correctAnswer;
-            var choices = [correct];
-            var key = PraG.grade + "-" + PraG.semester;
-            var semesterWords = LOCAL_VOCAB[key] || [];
-            var pool = semesterWords.filter(function(w) {
-                var enVal = w.en || "";
-                var cnVal = w.cn || "";
-                var v = PraG.currentType === "en2cn" ? cnVal : enVal;
-                return v && v !== correct;
-            });
-            pool = shuffle(pool).slice(0, 3).map(function(w) {
-                return PraG.currentType === "en2cn" ? (w.cn || "") : (w.en || "");
-            });
-            // Supplement from all words if needed
-            while (pool.length < 3) {
-                var allVals = [];
-                for (var vk in LOCAL_VOCAB) {
-                    LOCAL_VOCAB[vk].forEach(function(w) {
-                        var v = PraG.currentType === "en2cn" ? (w.cn || "") : (w.en || "");
-                        if (v && v !== correct && pool.indexOf(v) < 0) allVals.push(v);
-                    });
-                }
-                allVals = shuffle(allVals);
-                if (allVals.length > 0) { pool.push(allVals[0]); }
-                else break;
-            }
-            choices = choices.concat(pool.slice(0, 3));
-            choices = shuffle(choices);
-            PraG.currentChoices = choices;
-
-            var container = document.getElementById("praChoices");
-            var html = "";
-            choices.forEach(function(choice, i) {
-                html += '<div class="pra-choice" onclick="praSelectChoice(' + i + ')">' + choice + '</div>';
-            });
-            container.innerHTML = html;
-        }
-
-        function praSelectChoice(idx) {
-            if (PraG.answered) return;
-            PraG.answered = true;
-            var chosen = PraG.currentChoices[idx];
-            var correct = PraG.correctAnswer;
-            var choices = document.querySelectorAll(".pra-choice");
-            choices.forEach(function(c) { c.classList.add("disabled"); });
-            if (chosen === correct) {
-                choices[idx].classList.add("correct");
-                document.getElementById("praFeedback").innerHTML = "<span style='color:var(--success)'>✅ 正确！+10分</span>";
-                document.getElementById("praFeedback").className = "pra-feedback ok";
-                PraG.correct++; PraG.score += 10;
-                playCorrect && playCorrect();
-            } else {
-                choices[idx].classList.add("wrong");
-                var correctIdx = PraG.currentChoices.indexOf(correct);
-                if (correctIdx >= 0) choices[correctIdx].classList.add("correct");
-                document.getElementById("praFeedback").innerHTML = "<span style='color:var(--danger)'>❌ 正确：" + correct + "</span>";
-                document.getElementById("praFeedback").className = "pra-feedback err";
-                PraG.wrong++; var w = PraG.words[PraG.idx]; WrongWords.add({en: w.en, cn: w.cn, ph: w.ph, grade: PraG.grade, semester: PraG.semester, module: "practice"});
-                playWrong && playWrong();
-            }
-            document.getElementById("praScoreVal").textContent = PraG.score;
-            document.getElementById("praCorrectVal").textContent = PraG.correct;
-            document.getElementById("praWrongVal").textContent = PraG.wrong;
-            // Save to history for prev navigation
-            PraG.history[PraG.idx] = {
-                type: PraG.currentType,
-                correct: PraG.correctAnswer,
-                choices: PraG.currentChoices.slice(),
-                correctCount: PraG.correct,
-                wrongCount: PraG.wrong,
-                score: PraG.score
-            };
-        }
-
-        function praSpeak() {
-            // Always speak the English word (even in cn2en mode, user needs to hear it)
-            var word = PraG.words[PraG.idx].en || "";
-            if (!word) return;
-            var utt = new SpeechSynthesisUtterance(word); utt.lang = "en-US"; utt.rate = 0.9; utt.pitch = 1;
-            speechSynthesis.cancel(); speechSynthesis.speak(utt);
-        }
-
-        function praNext() {
-            if (PraG.idx < PraG.total - 1) {
-                PraG.idx++;
-                document.getElementById("praProgVal").textContent = PraG.idx + 1;
-                praShowWord();
-            } else { praEndGame(); }
-        }
-        function praPrev() {
-            if (PraG.idx > 0) {
-                PraG.idx--;
-                document.getElementById("praProgVal").textContent = PraG.idx + 1;
-                praShowWord();
-            }
-        }
-        function praQuit() {
-            document.getElementById("praCard").classList.add("hidden");
-            document.getElementById("praSelector").style.display = "block";
-        }
-        function praRestart() {
-            document.getElementById("praResultCard").classList.add("hidden");
-            document.getElementById("praSelector").style.display = "block";
-        }
-        function praEndGame() {
-            var answered = PraG.history.filter(function(h){ return h !== undefined; }).length;
-            var acc = PraG.total > 0 ? Math.round(PraG.correct / PraG.total * 100) : 0;
-            document.getElementById("praCard").classList.add("hidden");
-            document.getElementById("praResultCard").classList.remove("hidden");
-            document.getElementById("praResultScore").textContent = PraG.score;
-            document.getElementById("praResultSub").textContent = PraG.grade + "年级 · " + (PraG.semester === "1" ? "上册" : "下册") + " · " + answered + "/" + PraG.total + "题已答";
-            document.getElementById("praResTotal").textContent = PraG.total;
-            document.getElementById("praResCorrect").textContent = PraG.correct;
-            document.getElementById("praResAcc").textContent = acc + "%";
-            if (answered > 0) savePraRecord(PraG.score, PraG.correct, PraG.total, acc, PraG.grade, PraG.semester);
-        }
-
-        // ==================== 记录保存 ====================
-        function saveEchoRecord(score, total, grade, semester) {
-            var rec = { score: score, total: total, grade: grade, semester: semester, date: new Date().toISOString() };
-            var list = JSON.parse(localStorage.getItem("hist_echo") || "[]");
-            list.unshift(rec); list = list.slice(0, 50); localStorage.setItem("hist_echo", JSON.stringify(list));
-            loadHistoryEcho();
-            if (firebaseReady && db) {
-                db.collection("english_echo").add({ uid: currentUid || currentUser?.username || "anonymous", score: score, total: total, grade: grade, semester: semester, ts: firebase.firestore.FieldValue.serverTimestamp() }).catch(function(){});
-            }
-        }
-        function savePraRecord(score, correct, total, acc, grade, semester) {
-            var rec = { score: score, correct: correct, total: total, acc: acc, grade: grade, semester: semester, date: new Date().toISOString() };
-            var list = JSON.parse(localStorage.getItem("hist_pra") || "[]");
-            list.unshift(rec); list = list.slice(0, 50); localStorage.setItem("hist_pra", JSON.stringify(list));
-            loadHistoryPra();
-            if (firebaseReady && db) {
-                db.collection("english_pra").add({ uid: currentUid || currentUser?.username || "anonymous", score: score, correct: correct, total: total, acc: acc, grade: grade, semester: semester, ts: firebase.firestore.FieldValue.serverTimestamp() }).catch(function(){});
-            }
-        }
-        function loadHistoryEcho() {
-            var list = JSON.parse(localStorage.getItem("hist_echo") || "[]");
-            var html = "";
-            list.slice(0, 20).forEach(function(r) {
-                var d = new Date(r.date); var ds = (d.getMonth()+1)+"/"+d.getDate()+" "+d.getHours()+":"+(d.getMinutes()+"").padStart(2,"0");
-                html += '<div class="hist-item"><div class="hist-score" style="color:var(--primary-light)">'+r.score+'</div><div class="hist-meta">'+r.grade+'年级 · '+(r.semester==="1"?"上":"下")+'册 · '+r.total+'词</div><div class="hist-date">'+ds+'</div></div>';
-            });
-            document.getElementById("history-echo").innerHTML = html || '<div style="color:var(--text-muted);font-size:13px;padding:8px;">暂无记录</div>';
-        }
-        function loadHistoryPra() {
-            var list = JSON.parse(localStorage.getItem("hist_pra") || "[]");
-            var html = "";
-            list.slice(0, 20).forEach(function(r) {
-                var d = new Date(r.date); var ds = (d.getMonth()+1)+"/"+d.getDate()+" "+d.getHours()+":"+(d.getMinutes()+"").padStart(2,"0");
-                html += '<div class="hist-item"><div class="hist-score" style="color:var(--accent)">'+r.score+'</div><div class="hist-meta">'+r.correct+'/'+r.total+' · '+r.acc+'%</div><div class="hist-date">'+ds+'</div></div>';
-            });
-            document.getElementById("history-pra").innerHTML = html || '<div style="color:var(--text-muted);font-size:13px;padding:8px;">暂无记录</div>';
-        }
-
-        // ==================== Tab 加载 ====================
-        document.getElementById("tab-nav") || null;
-
-
-        // 越南语模块调用此函数设置语言标识（防止英越错词混淆）
-        function setWrongWordsLang(lang) {
-            WrongWords.lang = lang || "en";
-        }
     </script>
 </body>
 </html>

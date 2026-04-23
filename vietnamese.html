@@ -441,6 +441,36 @@ async function loadFromFirebase() {
             snapshot.forEach(doc => {
                 dialogues.push({ id: doc.id, ...doc.data() });
             });
+            
+            // 按 topic 去重（保留最新的 created）
+            var topicMap = {};
+            var duplicates = [];
+            for (var i = 0; i < dialogues.length; i++) {
+                var d = dialogues[i];
+                var t = d.topic || '(无主题)';
+                if (!topicMap[t] || (d.created && d.created > topicMap[t].created)) {
+                    if (topicMap[t]) duplicates.push(topicMap[t].id);
+                    topicMap[t] = d;
+                } else {
+                    duplicates.push(d.id);
+                }
+            }
+            
+            // 删除云端重复数据
+            if (duplicates.length > 0) {
+                console.log('发现 ' + duplicates.length + ' 条重复对话，正在清理...');
+                for (var dupId of duplicates) {
+                    if (dupId) {
+                        try { await db.collection('dialogues').doc(dupId).delete(); }
+                        catch(e) { console.log('删除失败:', dupId, e.message); }
+                    }
+                }
+                // 更新 dialogues 为去重后的数据
+                dialogues = Object.values(topicMap);
+                dialogues.sort(function(a, b) { return (b.created || 0) - (a.created || 0); });
+                console.log('清理完成，剩余 ' + dialogues.length + ' 条对话');
+            }
+            
             // 同步到 localStorage 作为备份
             localStorage.setItem('vnDialogues', JSON.stringify(dialogues.map(d => {
                 // 移除 id 字段（Firebase 特有）
