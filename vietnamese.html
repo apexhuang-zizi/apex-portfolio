@@ -265,8 +265,28 @@ function buildFilter() {
     catCount[cat] = (catCount[cat] || 0) + 1;
   }
   
-  // 生成标签
+  // 固定分类（手动标签）
+  var sourceCategories = ['VSL2']; // 可扩展：['VSL1', 'VSL2', '基础词汇', ...]
+  
+  // 统计手动分类
+  var sourceCount = {};
+  for (var i = 0; i < dialogues.length; i++) {
+    var src = dialogues[i].source || '';
+    if (src) sourceCount[src] = (sourceCount[src] || 0) + 1;
+  }
+  
+  // 生成标签：全部 + 手动分类(VSL2等) + 自动分类
   var html = '<span class="filter-tag active" onclick="filterBy(\'all\')">全部</span>';
+  
+  // 手动分类按钮（放在全部后面）
+  for (var s = 0; s < sourceCategories.length; s++) {
+    var srcCat = sourceCategories[s];
+    var cnt = sourceCount[srcCat] || 0;
+    html += '<span class="filter-tag" onclick="filterBySource(\'' + srcCat + '\')">' +
+      escHtml(srcCat) + '<span class="tag-count">(' + cnt + ')</span></span>';
+  }
+  
+  // 自动分类按钮
   var sortedCats = Object.keys(catCount).sort();
   for (var j = 0; j < sortedCats.length; j++) {
     var c = sortedCats[j];
@@ -278,6 +298,40 @@ function buildFilter() {
   // 重置筛选
   currentFilter = 'all';
   document.getElementById('filterInfo').style.display = 'none';
+}
+
+// 按 source 字段筛选（手动分类）
+function filterBySource(source) {
+  currentFilter = 'source:' + source;
+  
+  // 更新标签高亮
+  var tags = document.querySelectorAll('.filter-tag');
+  for (var t = 0; t < tags.length; t++) {
+    tags[t].classList.remove('active');
+    if (tags[t].textContent.startsWith(source)) {
+      tags[t].classList.add('active');
+    }
+  }
+  
+  // 更新筛选信息
+  var info = document.getElementById('filterInfo');
+  var visibleCount = 0;
+  for (var i = 0; i < dialogues.length; i++) {
+    if (dialogues[i].source === source) visibleCount++;
+  }
+  info.style.display = 'inline';
+  document.getElementById('filterLabel').textContent = source + '（' + visibleCount + '篇）';
+  
+  // 显示/隐藏对话
+  for (var i = 0; i < dialogues.length; i++) {
+    var item = document.getElementById('item_' + i);
+    if (!item) continue;
+    if (dialogues[i].source === source) {
+      item.style.display = '';
+    } else {
+      item.style.display = 'none';
+    }
+  }
 }
 
 // 按分类筛选
