@@ -1031,7 +1031,9 @@ function downloadWord() {
     for (var i = 0; i < dialogues.length; i++) {
         var d = dialogues[i];
         // 跳过被筛选隐藏的对话
-        var cat = categorizeDialogue(d);
+        // VSL2特殊逻辑：按标题筛选（标题包含"VSL2"）
+        var isVSL2 = d.topic && d.topic.includes('VSL2');
+        var cat = isVSL2 ? 'VSL2' : categorizeDialogue(d);
         if (currentFilter !== 'all' && cat !== currentFilter) continue;
         content += '<p class="date">📅 ' + escHtml(d.date) + '</p>';
         content += '<p class="topic">📌 ' + escHtml(d.topic) + '</p>';
