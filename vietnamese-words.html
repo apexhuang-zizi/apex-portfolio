@@ -261,6 +261,7 @@
                 <!-- 单词听写 -->
                 <div id="ga">
                     <div class="gtb">
+                        <button class="btn-back-sm" onclick="backToMain()" style="background:none;border:none;color:var(--tx-m);cursor:pointer;font-size:.85rem;padding:.2rem .6rem;border-radius:8px">← 返回</button>
                         <div class="gtm" id="gtm">⏱ 5:00</div>
                         <div class="gco" id="gco">🔥 0连击</div>
                         <div class="gpg" id="gpg">0 / 120</div>
@@ -311,6 +312,7 @@
                 <!-- 单词跟读 -->
                 <div id="pa" style="display:none">
                     <div class="gtb">
+                        <button class="btn-back-sm" onclick="backToMain()" style="background:none;border:none;color:var(--tx-m);cursor:pointer;font-size:.85rem;padding:.2rem .6rem;border-radius:8px">← 返回</button>
                         <div class="gtm">🎤 单词跟读</div>
                         <div class="gpg" id="p-pg">1 / 50</div>
                         <div class="gsc" id="p-score">0 分</div>
@@ -344,6 +346,7 @@
                 <!-- 错词练习 -->
                 <div id="wp" style="display:none">
                     <div class="gtb">
+                        <button class="btn-back-sm" onclick="backToMain()" style="background:none;border:none;color:var(--tx-m);cursor:pointer;font-size:.85rem;padding:.2rem .6rem;border-radius:8px">← 返回</button>
                         <div class="gtm">🔁 错词练习</div>
                         <div class="gpg" id="wp-pg">0 / 0</div>
                         <div class="gsc" id="wp-cnt">错 0 / 对 0</div>
@@ -377,6 +380,7 @@
                 <!-- 按词造句 -->
                 <div id="sm" style="display:none">
                     <div class="gtb">
+                        <button class="btn-back-sm" onclick="backToMain()" style="background:none;border:none;color:var(--tx-m);cursor:pointer;font-size:.85rem;padding:.2rem .6rem;border-radius:8px">← 返回</button>
                         <div class="gtm">📝 按词造句</div>
                         <div class="gpg" id="sm-pg">0 / 0</div>
                         <div class="gsc" id="sm-cnt">已造 0 句</div>
@@ -412,9 +416,7 @@
                         <button class="btn-o" onclick="smSkip()">跳过此词</button>
                         <button class="btn-p" onclick="confirmQuit()">⏹ 结束练习</button>
                     </div>
-                    <div style="display:flex;justify-content:center;margin-top:.5rem">
-                        <button class="btn-back-sm" onclick="goBack()" style="background:none;border:none;color:var(--tx-m);cursor:pointer;font-size:.85rem;padding:.4rem 1rem;border-radius:8px">← 返回主页</button>
-                    </div>
+
                 </div>
 
             </div>
@@ -471,6 +473,7 @@
     var currentVocab = null;  // 当前选中的词库ID
     var fullPool = [];        // 当前词库的完整词集
     var currentUnitFilter = 'all';  // 当前单元筛选
+    var currentGame = null;  // 当前游戏类型: 'dictation'|'pron'|'wrong'|'sentence'
     
     /* 用户 */
     var CU = sessionStorage.getItem('apex_username') || localStorage.getItem('vn_user') || '游客';
@@ -939,12 +942,23 @@
     function renderHistory(){
         var h = JSON.parse(localStorage.getItem('vn_hist') || '[]');
         var el = document.getElementById('hist-list');
-        if (!h.length){
+        var headerEl = document.querySelector('.side-l .side-h');
+        // Update header based on current game
+        var headerMap = {dictation:'✍️ 听写历史', pron:'🎤 跟读历史', wrong:'🔁 错词历史', sentence:'📝 造句历史'};
+        if (headerEl && currentGame && headerMap[currentGame]){
+            headerEl.textContent = headerMap[currentGame];
+        } else if (headerEl){
+            headerEl.textContent = '📊 历史成绩';
+        }
+        // Filter by current game type
+        var typeMap = {dictation:'dictation', pron:'pronunciation_round', wrong:'wrong_practice', sentence:'sentence_making'};
+        var filterType = currentGame ? typeMap[currentGame] : null;
+        var filtered = filterType ? h.filter(function(x){return x.type === filterType;}) : h.filter(function(x){return x.type === 'dictation' || x.type === 'pronunciation_round' || x.type === 'wrong_practice' || x.type === 'sentence_making';});
+        if (!filtered.length){
             el.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:1rem">暂无记录</div>';
             return;
         }
         var html = '';
-        var filtered = h.filter(function(x){return x.type === 'dictation' || x.type === 'pronunciation_round';});
         var show = filtered.slice(0, 20);
         show.forEach(function(r){
             var d = new Date(r.date);
@@ -1002,10 +1016,12 @@
             document.querySelector('.mc').classList.add('wide');
             document.getElementById('gr').style.display = 'none';
             document.getElementById('pa').style.display = 'none';
+            currentGame = 'dictation';
             document.getElementById('ga').style.display = 'block';
             document.getElementById('ga').classList.add('on');
 
             showRules('dictation');
+            renderHistory();
             showWord();
             startTimer();
         } else if (type === 'wrong'){
@@ -1023,9 +1039,11 @@
             document.querySelector('.mc').classList.add('wide');
             document.getElementById('ga').style.display = 'none';
             document.getElementById('gr').style.display = 'none';
+            currentGame = 'pron';
             document.getElementById('pa').style.display = 'block';
 
             showRules('pron');
+            renderHistory();
             requestMicPermission().then(function(granted){
                 if (!granted){
                     document.getElementById('pf').className = 'pf wait';
@@ -1272,7 +1290,21 @@
         if (!confirm('确定结束游戏？当前成绩将保存。')) return;
         if (G.timer) clearInterval(G.timer);
         G.playing = false;
-        if (document.getElementById('wp').style.display !== 'none'){
+        if (P.activeRec){try{P.activeRec.abort();}catch(e){}}
+        var wpEl = document.getElementById('wp');
+        var smEl = document.getElementById('sm');
+        if (wpEl.style.display !== 'none' || smEl.style.display !== 'none'){
+            // wp or sm: save record and go back
+            if (wpEl.style.display !== 'none' && WP.words.length > 0){
+                saveWpRecord();
+            }
+            if (smEl.style.display !== 'none' && SM.totalSentences > 0){
+                saveSmRecord();
+            }
+            backToMain();
+        } else if (document.getElementById('pa').style.display !== 'none'){
+            // pronunciation round
+            savePronRound();
             backToMain();
         } else {
             endGame();
@@ -1292,9 +1324,14 @@
         document.getElementById('gr').style.display = 'none';
         document.getElementById('pa').style.display = 'none';
         document.getElementById('wp').style.display = 'none';
+        document.getElementById('sm').style.display = 'none';
         document.getElementById('sub-layout').classList.remove('on');
         document.querySelector('.mc').classList.remove('wide');
         document.getElementById('main-page').style.display = 'block';
+        currentGame = null;
+        // Reset sidebar header
+        var headerEl = document.querySelector('.side-l .side-h');
+        if (headerEl) headerEl.textContent = '📊 历史成绩';
         renderHistory();
     }
 
@@ -1901,10 +1938,29 @@
         document.getElementById('ga').style.display = 'none';
         document.getElementById('gr').style.display = 'none';
         document.getElementById('pa').style.display = 'none';
+        currentGame = 'wrong';
         document.getElementById('wp').style.display = 'block';
 
         showRules('wrong');
+        renderHistory();
         wpShowWord();
+    }
+
+    function saveWpRecord(){
+        var rec = {
+            type: 'wrong_practice', level: currentVocab,
+            correct: WP.totalOk, wrong: WP.totalErr, total: WP.totalOk + WP.totalErr,
+            score: WP.totalOk > 0 ? Math.round(WP.totalOk / (WP.totalOk + WP.totalErr) * 100) : 0,
+            date: new Date().toISOString(), user: CU
+        };
+        var h = JSON.parse(localStorage.getItem('vn_hist') || '[]');
+        h.unshift(rec); if (h.length > 200) h = h.slice(0, 200);
+        localStorage.setItem('vn_hist', JSON.stringify(h));
+        if (typeof db !== 'undefined' && db){
+            db.collection('vietnamese_word_records').add(Object.assign({}, rec, {
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            })).catch(function(){});
+        }
     }
 
     function wpShowWord(){
@@ -2023,8 +2079,10 @@
         document.getElementById('gr').style.display='none';
         document.getElementById('pa').style.display='none';
         document.getElementById('wp').style.display='none';
+        currentGame='sentence';
         document.getElementById('sm').style.display='block';
         showRules('sentence');
+        renderHistory();
         loadSentenceHistoryFromFirebase().then(function(){showSmWord();});
     }
     
