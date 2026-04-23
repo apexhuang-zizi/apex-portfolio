@@ -272,7 +272,7 @@ function buildFilter() {
   var sourceCount = {};
   for (var i = 0; i < dialogues.length; i++) {
     // VSL2特殊逻辑：统计标题包含"VSL2"的对话
-    if (dialogues[i].title && dialogues[i].title.includes('VSL2')) {
+    if (dialogues[i].topic && dialogues[i].topic.includes('VSL2')) {
       sourceCount['VSL2'] = (sourceCount['VSL2'] || 0) + 1;
     }
     // 其他手动分类仍按source字段统计
@@ -324,7 +324,7 @@ function filterBySource(source) {
   for (var i = 0; i < dialogues.length; i++) {
     // VSL2特殊逻辑：按标题筛选（标题包含"VSL2"）
     if (source === 'VSL2') {
-      if (dialogues[i].title && dialogues[i].title.includes('VSL2')) visibleCount++;
+      if (dialogues[i].topic && dialogues[i].topic.includes('VSL2')) visibleCount++;
     } else {
       if (dialogues[i].source === source) visibleCount++;
     }
@@ -338,7 +338,7 @@ function filterBySource(source) {
     if (!item) continue;
     // VSL2特殊逻辑：按标题筛选（标题包含"VSL2"）
     if (source === 'VSL2') {
-      if (dialogues[i].title && dialogues[i].title.includes('VSL2')) {
+      if (dialogues[i].topic && dialogues[i].topic.includes('VSL2')) {
         item.style.display = '';
       } else {
         item.style.display = 'none';
@@ -416,20 +416,24 @@ async function loadFromFirebase() {
             if (stored) {
                 try { 
                     dialogues = JSON.parse(stored); 
-                    // 迁移到 Firebase
+                    // 迁移到 Firebase（去重：只添加不存在于云端的数据）
+                    var existingTopics = [];
                     for (var d of dialogues) {
-                        await db.collection('dialogues').add(d);
+                        if (d.topic && !existingTopics.includes(d.topic)) {
+                            await db.collection('dialogues').add(d);
+                            existingTopics.push(d.topic);
+                        }
                     }
                     console.log('已将本地数据迁移到云端');
                 } catch(e) { 
                     dialogues = []; 
                 }
             } else {
-                // 使用预置数据
+                // 使用预置数据（添加到云端前先检查是否已存在）
                 dialogues = defaultDialogues.slice();
-                for (var d of dialogues) {
-                    await db.collection('dialogues').add(d);
-                }
+                // 不再自动添加到云端，避免重复
+                // 用户手动添加的对话才会保存到云端
+                console.log('使用预置数据，共 ' + dialogues.length + ' 条对话');
             }
         } else {
             // 从 Firebase 加载数据
@@ -437,6 +441,13 @@ async function loadFromFirebase() {
             snapshot.forEach(doc => {
                 dialogues.push({ id: doc.id, ...doc.data() });
             });
+            // 同步到 localStorage 作为备份
+            localStorage.setItem('vnDialogues', JSON.stringify(dialogues.map(d => {
+                // 移除 id 字段（Firebase 特有）
+                var copy = {};
+                for (var k in d) if (k !== 'id') copy[k] = d[k];
+                return copy;
+            })));
         }
         renderList();
     } catch (e) {
