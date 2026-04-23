@@ -799,97 +799,138 @@ function closeLearningDataPanel() {
 
 function loadUserLearningData(username) {
     var container = document.getElementById("uldContent");
-    container.innerHTML = '<p style="color:var(--text-muted);">⏳ 正在加载...</p>';
-    
-    var html = '';
-    
-    // 1. 英语学习数据（Firebase CloudBase）
-    var engKey = 'apex_eng_scores_' + username;
-    var engData = localStorage.getItem(engKey);
-    if (engData) {
-        try {
-            var scores = JSON.parse(engData);
-            html += buildScoreCard('🇬🇧 英语学习', scores);
-        } catch(e) {
-            html += '<div style="padding:12px;background:#f8fafc;border-radius:8px;margin-bottom:12px;"><strong>🇬🇧 英语学习</strong><br><span style="color:var(--text-muted);font-size:0.85rem;">数据解析失败</span></div>';
-        }
-    } else {
-        html += '<div style="padding:12px;background:#f8fafc;border-radius:8px;margin-bottom:12px;"><strong>🇬🇧 英语学习</strong><br><span style="color:var(--text-muted);font-size:0.85rem;">暂无本地数据</span></div>';
-    }
-    
-    // 2. 越南语学习数据
-    var viKey = 'apex_vi_scores_' + username;
-    var viData = localStorage.getItem(viKey);
-    if (viData) {
-        try {
-            var viScores = JSON.parse(viData);
-            html += buildScoreCard('🇻🇳 越南语学习', viScores);
-        } catch(e) {
-            html += '<div style="padding:12px;background:#f8fafc;border-radius:8px;margin-bottom:12px;"><strong>🇻🇳 越南语学习</strong><br><span style="color:var(--text-muted);font-size:0.85rem;">数据解析失败</span></div>';
-        }
-    } else {
-        html += '<div style="padding:12px;background:#f8fafc;border-radius:8px;margin-bottom:12px;"><strong>🇻🇳 越南语学习</strong><br><span style="color:var(--text-muted);font-size:0.85rem;">暂无本地数据</span></div>';
-    }
-    
-    // 3. 错词记录
-    var wrongKey = 'apex_wrong_words_' + username;
-    var wrongData = localStorage.getItem(wrongKey);
-    if (wrongData) {
-        try {
-            var wrongWords = JSON.parse(wrongData);
-            var wrongCount = Array.isArray(wrongWords) ? wrongWords.length : Object.keys(wrongWords).length;
-            html += '<div style="padding:12px;background:#fef2f2;border-radius:8px;margin-bottom:12px;">' +
-                '<strong>❌ 错词记录</strong><br>' +
-                '<span style="font-size:0.85rem;">累计错词：<strong>' + wrongCount + '</strong> 个</span>' +
-            '</div>';
-        } catch(e) {}
-    } else {
-        html += '<div style="padding:12px;background:#f8fafc;border-radius:8px;margin-bottom:12px;"><strong>❌ 错词记录</strong><br><span style="color:var(--text-muted);font-size:0.85rem;">暂无错词</span></div>';
-    }
-    
-    // 4. 造句记录
-    var smKey = 'apex_sm_records_' + username;
-    var smData = localStorage.getItem(smKey);
-    if (smData) {
-        try {
-            var smRecords = JSON.parse(smData);
-            var smCount = Array.isArray(smRecords) ? smRecords.length : 0;
-            var smAvg = 0;
-            if (smCount > 0) {
-                var total = smRecords.reduce(function(s, r) { return s + (r.score || 0); }, 0);
-                smAvg = Math.round(total / smCount);
-            }
-            html += '<div style="padding:12px;background:#f0fdf4;border-radius:8px;margin-bottom:12px;">' +
-                '<strong>📝 造句记录</strong><br>' +
-                '<span style="font-size:0.85rem;">累计造句：<strong>' + smCount + '</strong> 次' +
-                (smCount > 0 ? '｜平均分：<strong>' + smAvg + '</strong>' : '') + '</span>' +
-            '</div>';
-        } catch(e) {}
-    } else {
-        html += '<div style="padding:12px;background:#f8fafc;border-radius:8px;margin-bottom:12px;"><strong>📝 造句记录</strong><br><span style="color:var(--text-muted);font-size:0.85rem;">暂无造句记录</span></div>';
-    }
-    
-    if (!html) {
-        html = '<p style="color:var(--text-muted);text-align:center;padding:20px;">该用户暂无学习数据</p>';
-    }
-    
-    container.innerHTML = html;
-}
+    container.innerHTML = '<p style="color:var(--text-muted);">⏳ 正在从云端加载...</p>';
 
-function buildScoreCard(title, data) {
-    var html = '<div style="padding:12px;background:#f8fafc;border-radius:8px;margin-bottom:12px;">';
-    html += '<strong>' + title + '</strong>';
-    if (Array.isArray(data)) {
-        var count = data.length;
-        var avg = 0;
-        var best = 0;
-        if (count > 0) {
-            var total = data.reduce(function(s, r) { return s + (r.score || 0); }, 0);
-            avg = Math.round(total / count);
-            best = Math.max.apply(null, data.map(function(r) { return r.score || 0; }));
+    if (!learningDb) {
+        container.innerHTML = '<p style="color:#ef4444;">❌ 云端数据库未连接</p>';
+        return;
+    }
+
+    var html = '';
+    var pending = 2;  // 2 queries: english + vietnamese
+
+    function checkDone() {
+        pending--;
+        if (pending <= 0) {
+            if (!html) {
+                html = '<p style="color:var(--text-muted);text-align:center;padding:20px;">该用户暂无学习数据</p>';
+            }
+            container.innerHTML = html;
         }
-        html += '<br><span style="font-size:0.85rem;">练习次数：<strong>' + count + '</strong>｜平均分：<strong>' + avg + '</strong>｜最高分：<strong>' + best + '</strong></span>';
-    } else if (typeof data === 'object') {
+    }
+
+    // 1. 英语学习数据 — english_records
+    learningDb.collection("english_records")
+        .where("user", "==", username)
+        .limit(200)
+        .get()
+        .then(function(snapshot) {
+            if (!snapshot.empty) {
+                var records = [];
+                snapshot.forEach(function(doc) { records.push(doc.data()); });
+                // 按日期排序
+                records.sort(function(a, b) {
+                    return new Date(b.timestamp || b.date || 0) - new Date(a.timestamp || a.date || 0);
+                });
+                // 统计
+                var count = records.length;
+                var scores = records.map(function(r) { return r.score || 0; });
+                var avg = count > 0 ? Math.round(scores.reduce(function(s, v) { return s + v; }, 0) / count) : 0;
+                var best = count > 0 ? Math.max.apply(null, scores) : 0;
+                // 错词统计
+                var wrongTotal = records.reduce(function(s, r) { return s + (r.wrongCount || 0); }, 0);
+
+                html += '<div style="padding:12px;background:#f8fafc;border-radius:8px;margin-bottom:12px;">';
+                html += '<strong>🇬🇧 英语学习</strong>';
+                html += '<br><span style="font-size:0.85rem;">练习次数：<strong>' + count + '</strong>｜平均分：<strong>' + avg + '</strong>｜最高分：<strong>' + best + '</strong>';
+                if (wrongTotal > 0) html += '｜累计错词：<strong>' + wrongTotal + '</strong>';
+                html += '</span></div>';
+            } else {
+                html += '<div style="padding:12px;background:#f8fafc;border-radius:8px;margin-bottom:12px;"><strong>🇬🇧 英语学习</strong><br><span style="color:var(--text-muted);font-size:0.85rem;">暂无云端数据</span></div>';
+            }
+            checkDone();
+        })
+        .catch(function(err) {
+            console.warn("英语数据加载失败:", err);
+            html += '<div style="padding:12px;background:#f8fafc;border-radius:8px;margin-bottom:12px;"><strong>🇬🇧 英语学习</strong><br><span style="color:#ef4444;font-size:0.85rem;">加载失败: ' + err.message + '</span></div>';
+            checkDone();
+        });
+
+    // 2. 越南语学习数据 — vietnamese_word_records
+    learningDb.collection("vietnamese_word_records")
+        .where("user", "==", username)
+        .limit(200)
+        .get()
+        .then(function(snapshot) {
+            if (!snapshot.empty) {
+                var records = [];
+                snapshot.forEach(function(doc) { records.push(doc.data()); });
+                // 按类型分组
+                var byType = {};
+                records.forEach(function(r) {
+                    var t = r.type || 'unknown';
+                    if (!byType[t]) byType[t] = [];
+                    byType[t].push(r);
+                });
+
+                // 听写
+                var dictList = byType['dictation'] || [];
+                if (dictList.length > 0) {
+                    var scores = dictList.map(function(r) { return r.score || 0; });
+                    var avg = Math.round(scores.reduce(function(s, v) { return s + v; }, 0) / scores.length);
+                    var best = Math.max.apply(null, scores);
+                    html += '<div style="padding:12px;background:#f8fafc;border-radius:8px;margin-bottom:12px;">';
+                    html += '<strong>🇻🇳 越南语听写</strong>';
+                    html += '<br><span style="font-size:0.85rem;">练习次数：<strong>' + dictList.length + '</strong>｜平均分：<strong>' + avg + '</strong>｜最高分：<strong>' + best + '</strong></span></div>';
+                } else {
+                    html += '<div style="padding:12px;background:#f8fafc;border-radius:8px;margin-bottom:12px;"><strong>🇻🇳 越南语听写</strong><br><span style="color:var(--text-muted);font-size:0.85rem;">暂无数据</span></div>';
+                }
+
+                // 跟读
+                var pronList = (byType['pronunciation'] || []).concat(byType['pronunciation_round'] || []);
+                if (pronList.length > 0) {
+                    var pronScores = pronList.map(function(r) { return r.score || 0; });
+                    var pronAvg = Math.round(pronScores.reduce(function(s, v) { return s + v; }, 0) / pronScores.length);
+                    var pronBest = Math.max.apply(null, pronScores);
+                    html += '<div style="padding:12px;background:#f8fafc;border-radius:8px;margin-bottom:12px;">';
+                    html += '<strong>🎤 越南语跟读</strong>';
+                    html += '<br><span style="font-size:0.85rem;">练习次数：<strong>' + pronList.length + '</strong>｜平均分：<strong>' + pronAvg + '</strong>｜最高分：<strong>' + pronBest + '</strong></span></div>';
+                }
+
+                // 错词练习
+                var wpList = byType['wrong_practice'] || [];
+                if (wpList.length > 0) {
+                    var wpOk = wpList.reduce(function(s, r) { return s + (r.correct || 0); }, 0);
+                    var wpErr = wpList.reduce(function(s, r) { return s + (r.wrong || 0); }, 0);
+                    html += '<div style="padding:12px;background:#fef2f2;border-radius:8px;margin-bottom:12px;">';
+                    html += '<strong>🔁 错词练习</strong>';
+                    html += '<br><span style="font-size:0.85rem;">练习次数：<strong>' + wpList.length + '</strong>｜答对：<strong>' + wpOk + '</strong>｜答错：<strong>' + wpErr + '</strong></span></div>';
+                } else {
+                    html += '<div style="padding:12px;background:#f8fafc;border-radius:8px;margin-bottom:12px;"><strong>🔁 错词练习</strong><br><span style="color:var(--text-muted);font-size:0.85rem;">暂无数据</span></div>';
+                }
+
+                // 造句
+                var smList = byType['sentence_making'] || [];
+                if (smList.length > 0) {
+                    var smTotal = smList.reduce(function(s, r) { return s + (r.totalSentences || 0); }, 0);
+                    html += '<div style="padding:12px;background:#f0fdf4;border-radius:8px;margin-bottom:12px;">';
+                    html += '<strong>📝 造句记录</strong>';
+                    html += '<br><span style="font-size:0.85rem;">练习次数：<strong>' + smList.length + '</strong>｜累计造句：<strong>' + smTotal + '</strong> 句</span></div>';
+                } else {
+                    html += '<div style="padding:12px;background:#f8fafc;border-radius:8px;margin-bottom:12px;"><strong>📝 造句记录</strong><br><span style="color:var(--text-muted);font-size:0.85rem;">暂无数据</span></div>';
+                }
+            } else {
+                html += '<div style="padding:12px;background:#f8fafc;border-radius:8px;margin-bottom:12px;"><strong>🇻🇳 越南语学习</strong><br><span style="color:var(--text-muted);font-size:0.85rem;">暂无云端数据</span></div>';
+            }
+            checkDone();
+        })
+        .catch(function(err) {
+            console.warn("越南语数据加载失败:", err);
+            html += '<div style="padding:12px;background:#f8fafc;border-radius:8px;margin-bottom:12px;"><strong>🇻🇳 越南语学习</strong><br><span style="color:#ef4444;font-size:0.85rem;">加载失败: ' + err.message + '</span></div>';
+            checkDone();
+        });
+}
+eof data === 'object') {
         var keys = Object.keys(data);
         html += '<br><span style="font-size:0.85rem;">数据条目：<strong>' + keys.length + '</strong></span>';
     }
@@ -1065,6 +1106,25 @@ try {
 } catch(e) {
     console.log('Firebase initialization failed:', e.message);
     var db = null;
+}
+
+// ==================== 学习数据 Firebase（vietnames-data 项目） ====================
+var learningDb = null;
+try {
+    var learningConfig = {
+        apiKey: "AIzaSyCMPFTNEBWXA_EnkF7Yk__F1gdHYfPg8kM",
+        authDomain: "vietnames-data.firebaseapp.com",
+        projectId: "vietnames-data",
+        storageBucket: "vietnames-data.firebasestorage.app",
+        messagingSenderId: "474396114838",
+        appId: "1:474396114838:web:0fc28fb08bfbd4b6bee7b7"
+    };
+    firebase.initializeApp(learningConfig, "learningData");
+    learningDb = firebase.app("learningData").firestore();
+    console.log('Learning data Firebase initialized');
+} catch(e) {
+    console.warn('Learning data Firebase init failed:', e.message);
+    learningDb = null;
 }
 
 // ==================== 云端日志同步 ====================
