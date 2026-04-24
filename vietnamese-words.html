@@ -2428,25 +2428,38 @@ function scoreSentenceLocal(sentence,targetWord){
             });
         }
         if(data.length===0){alert('当前单元暂无造句记录');return;}
-        data.sort(function(a,b){return new Date(b.date)-new Date(a.date);});
+        // Count unique words with sentences and total words in unit
+        var wordsWithSentences={};
+        data.forEach(function(s){wordsWithSentences[s.word]=true;});
+        var uniqueWordCount=Object.keys(wordsWithSentences).length;
+        var pool=currentUnit?fullPool.filter(function(w){return w.unit===currentUnit;}):fullPool;
+        var totalWordCount=pool.length;
         var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>造句记录-'+CU+'</title>';
-        html+='<style>body{font-family:Arial,sans-serif;padding:20px;}h1{color:#7c3aed;}.word{font-size:18px;font-weight:bold;color:#7c3aed;margin:15px 0 5px 0;}';
+        html+='<style>body{font-family:Arial,sans-serif;padding:20px;}h1{color:#7c3aed;}.word{font-size:18px;font-weight:bold;color:#7c3aed;margin:15px 0 5px 0;padding-top:10px;}';
         html+='.sentence{background:#f5f5f5;padding:10px;margin:5px 0;border-radius:5px;border-left:3px solid #7c3aed;}.meta{font-size:12px;color:#666;margin-top:5px;}';
-        html+='.score{font-weight:bold;}.s5,.s4{color:#10b981;}.s3{color:#f59e0b;}.s2,.s1,.s0{color:#ef4444;}.sm-del-btn{background:#fee2e2;color:#991b1b;border:none;border-radius:4px;width:22px;height:22px;cursor:pointer;font-size:14px;line-height:1;margin-left:8px;transition:all .15s;}.sm-del-btn:hover{background:#fecaca;}</style></head><body>';
-        html+='<h1>越南语造句记录</h1><p>用户:<b>'+CU+'</b> | 词库:<b>'+currentVocab+'</b>';
-        if(currentUnit)html+=' | 单元:<b>第'+currentUnit+'单元</b>';
-        html+='</p><hr>';
+        html+='.score{font-weight:bold;}.s5,.s4{color:#10b981;}.s3{color:#f59e0b;}.s2,.s1,.s0{color:#ef4444;}';
+        html+='.stats{background:#f0fdf4;padding:12px 15px;border-radius:6px;margin:15px 0;border:1px solid #86efac;font-size:14px;}';
+        html+='.word-sep{border:none;border-top:2px dashed #d1d5db;margin:18px 0 12px 0;}</style></head><body>';
+        html+='<h1>越南语造句记录</h1>';
+        html+='<div class="stats">用户: <b>'+CU+'</b> | 词库: <b>'+currentVocab+'</b>';
+        if(currentUnit)html+=' | 单元: <b>第'+currentUnit+'单元</b>';
+        html+='<br>单元总词数: <b>'+totalWordCount+'</b> | 已造句词数: <b>'+uniqueWordCount+'</b> | 造句完成率: <b>'+Math.round(uniqueWordCount/totalWordCount*100)+'%</b></div>';
         var currentWord='';
+        var wordIndex=0;
         data.forEach(function(s){
-            if(s.word!==currentWord){currentWord=s.word;html+='<div class="word">'+currentWord+'</div>';}
+            if(s.word!==currentWord){
+                if(currentWord!==''){html+='<hr class="word-sep">';}
+                currentWord=s.word;wordIndex++;
+                html+='<div class="word">'+wordIndex+'. '+currentWord+'</div>';
+            }
             html+='<div class="sentence"><div>'+escapeHtml(s.text)+'</div><div class="meta"><span class="score s'+s.score+'">'+s.score+'分</span> - '+s.feedback+' - '+new Date(s.date).toLocaleString('vi-VN')+'</div></div>';
         });
         html+='</body></html>';
         var blob=new Blob([html],{type:'text/html'});
         var url=URL.createObjectURL(blob);
-        var a=document.createElement('a');a.href=url;a.download='造句记录_'+CU+'_'+(currentUnit||'全部')+'.html';a.click();
+        var a=document.createElement('a');a.href=url;a.download='造句记录_'+CU+'_'+(currentUnit||'全部')+'_.html';a.click();
         URL.revokeObjectURL(url);
-        alert('已导出 '+data.length+' 条造句记录');
+        alert('已导出 '+data.length+' 条造句记录（'+uniqueWordCount+'/'+totalWordCount+' 词）');
     }
     
     // 导出全部造句记录（按词库+单元分组）—— Word格式
@@ -2491,9 +2504,21 @@ function scoreSentenceLocal(sentence,targetWord){
             var units = Object.keys(byVocab[vocab]).map(Number).sort(function(a,b){return a-b;});
             units.forEach(function(unit) {
                 var sentences = byVocab[vocab][unit];
-                html += '<h3>' + (unit > 0 ? '第 ' + unit + ' 单元' : '未分类') + ' (' + sentences.length + '句)</h3>';
+                var unitWordsWithSentences = {};
+                sentences.forEach(function(s){unitWordsWithSentences[s.word]=true;});
+                var unitUniqueWords = Object.keys(unitWordsWithSentences).length;
+                var unitTotalWords = fullPool.filter(function(w){return w.unit===unit;}).length;
+                if(unit===0) unitTotalWords = fullPool.length;
+                var unitRate = unitTotalWords>0?Math.round(unitUniqueWords/unitTotalWords*100):0;
+                html += '<h3>' + (unit > 0 ? '第 ' + unit + ' 单元' : '未分类') + '</h3>';
+                html += '<div class="stats" style="margin-bottom:10px;">单元总词数: <b>' + unitTotalWords + '</b> | 已造句词数: <b>' + unitUniqueWords + '</b> | 完成率: <b>' + unitRate + '%</b></div>';
                 html += '<table><tr><th style="width:22%">单词</th><th style="width:48%">造句</th><th style="width:15%">评分</th><th style="width:15%">日期</th></tr>';
+                var lastWord = '';
                 sentences.forEach(function(s) {
+                    if(s.word !== lastWord && lastWord !== ''){
+                        html += '<tr><td colspan="4" style="padding:0;"><hr style="border:none;border-top:2px dashed #d1d5db;margin:8px 0;"></td></tr>';
+                    }
+                    lastWord = s.word;
                     var scoreLabel = s.score >= 4 ? '🌟' : (s.score >= 3 ? '👍' : '📝');
                     html += '<tr>';
                     html += '<td><b>' + escHtml(s.word) + '</b></td>';
@@ -2546,13 +2571,25 @@ function scoreSentenceLocal(sentence,targetWord){
             var units = Object.keys(byVocab[vocab]).map(Number).sort(function(a,b){return a-b;});
             units.forEach(function(unit) {
                 var sentences = byVocab[vocab][unit];
-                printHtml += '<h3 style="color:#4b5563;margin:12px 0 8px 0;font-size:12pt;">' + (unit > 0 ? '\u7B2C ' + unit + ' \u5355\u5143' : '\u672A\u5206\u7C7B') + ' (' + sentences.length + '\u53E5)</h3>';
+                var unitWordsWithSentences = {};
+                sentences.forEach(function(s){unitWordsWithSentences[s.word]=true;});
+                var unitUniqueWords = Object.keys(unitWordsWithSentences).length;
+                var unitTotalWords = fullPool.filter(function(w){return w.unit===unit;}).length;
+                if(unit===0) unitTotalWords = fullPool.length;
+                var unitRate = unitTotalWords>0?Math.round(unitUniqueWords/unitTotalWords*100):0;
+                printHtml += '<h3 style="color:#4b5563;margin:12px 0 8px 0;font-size:12pt;">' + (unit > 0 ? '第 ' + unit + ' 单元' : '未分类') + '</h3>';
+                printHtml += '<div style="background:#f0fdf4;padding:8px 12px;border-radius:4px;margin-bottom:10px;font-size:10pt;border:1px solid #86efac;">单元总词数: <b>' + unitTotalWords + '</b> | 已造句词数: <b>' + unitUniqueWords + '</b> | 完成率: <b>' + unitRate + '%</b></div>';
+                var lastWord = '';
                 sentences.forEach(function(s) {
+                    if(s.word !== lastWord && lastWord !== ''){
+                        printHtml += '<hr style="border:none;border-top:2px dashed #d1d5db;margin:12px 0;">';
+                    }
+                    lastWord = s.word;
                     printHtml += '<div style="background:#f9fafb;padding:10px 12px;margin:6px 0;border-radius:4px;border-left:4px solid #10b981;">';
                     printHtml += '<span style="display:inline-block;background:#ede9fe;color:#5b21b6;padding:1px 8px;border-radius:10px;font-size:10pt;margin-right:8px;">' + escHtml(s.word) + '</span> ';
                     printHtml += '<span style="font-size:11pt;">' + escHtml(s.text) + '</span>';
                     printHtml += '<div style="font-size:9pt;color:#6b7280;margin-top:4px;">';
-                    printHtml += '\u8BC4\u5206: <b>' + s.score + '</b> \u5206' + (s.feedback ? ' | ' + s.feedback : '') + ' | ' + new Date(s.date).toLocaleDateString('zh-CN');
+                    printHtml += '评分: <b>' + s.score + '</b> 分' + (s.feedback ? ' | ' + s.feedback : '') + ' | ' + new Date(s.date).toLocaleDateString('zh-CN');
                     printHtml += '</div></div>';
                 });
             });
