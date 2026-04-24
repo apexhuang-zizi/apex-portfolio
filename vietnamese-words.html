@@ -2368,9 +2368,7 @@
         var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>造句记录-'+CU+'</title>';
         html+='<style>body{font-family:Arial,sans-serif;padding:20px;}h1{color:#7c3aed;}.word{font-size:18px;font-weight:bold;color:#7c3aed;margin:15px 0 5px 0;}';
         html+='.sentence{background:#f5f5f5;padding:10px;margin:5px 0;border-radius:5px;border-left:3px solid #7c3aed;}.meta{font-size:12px;color:#666;margin-top:5px;}';
-        html+='.score{font-weight:bold;}.s5,.s4{color:#10b981;}.s3{color:#f59e0b;}.s2,.s1,.s0{color:#ef4444;}.sm-del-btn{background:#fee2e2;color:#991b1b;border:none;border-radius:4px;width:22px;height:22px;cursor:pointer;font-size:14px;line-height:1;margin-left:8px;transition:all .15s;}
-.sm-del-btn:hover{background:#fecaca;}
-</style></head><body>';
+        html+='.score{font-weight:bold;}.s5,.s4{color:#10b981;}.s3{color:#f59e0b;}.s2,.s1,.s0{color:#ef4444;}.sm-del-btn{background:#fee2e2;color:#991b1b;border:none;border-radius:4px;width:22px;height:22px;cursor:pointer;font-size:14px;line-height:1;margin-left:8px;transition:all .15s;}.sm-del-btn:hover{background:#fecaca;}</style></head><body>';
         html+='<h1>越南语造句记录</h1><p>用户:<b>'+CU+'</b> | 词库:<b>'+currentVocab+'</b>';
         if(currentUnit)html+=' | 单元:<b>第'+currentUnit+'单元</b>';
         html+='</p><hr>';
@@ -2418,9 +2416,7 @@
         html += '.s5,.s4{background:#d1fae5;color:#065f46;}.s3{background:#fef3c7;color:#92400e;}.s2,.s1,.s0{background:#fee2e2;color:#991b1b;}';
         html += '.word-tag{display:inline-block;background:#ede9fe;color:#5b21b6;padding:1px 7px;border-radius:10px;font-size:10pt;margin-right:5px;font-weight:bold;}';
         html += 'table{border-collapse:collapse;width:100%;}td,th{border:1px solid #d1d5db;padding:8px 10px;}th{background:#f3f4f6;font-weight:bold;}';
-        html += '.sm-del-btn{background:#fee2e2;color:#991b1b;border:none;border-radius:4px;width:22px;height:22px;cursor:pointer;font-size:14px;line-height:1;margin-left:8px;transition:all .15s;}
-.sm-del-btn:hover{background:#fecaca;}
-</style></head><body>';
+        html += '.sm-del-btn{background:#fee2e2;color:#991b1b;border:none;border-radius:4px;width:22px;height:22px;cursor:pointer;font-size:14px;line-height:1;margin-left:8px;transition:all .15s;}.sm-del-btn:hover{background:#fecaca;}</style></head><body>';
         
         html += '<h1>📝 越南语造句清单</h1>';
         html += '<div class="stats"><b>用户：</b>' + escHtml(CU) + '　|　<b>导出时间：</b>' + new Date().toLocaleString('zh-CN') + '　|　<b>总计：</b>' + totalCount + ' 句</div>';
@@ -2503,9 +2499,7 @@
         var printWin = window.open('', '_blank', 'width=900,height=700');
         printWin.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>\u9020\u53E5\u6E05\u5355-' + escHtml(CU) + '</title>');
         printWin.document.write('<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">');
-        printWin.document.write('<style>@media print{body{padding:0 !important;} h1,h2,h3{page-break-after:auto;} div{page-break-inside:avoid;}}.sm-del-btn{background:#fee2e2;color:#991b1b;border:none;border-radius:4px;width:22px;height:22px;cursor:pointer;font-size:14px;line-height:1;margin-left:8px;transition:all .15s;}
-.sm-del-btn:hover{background:#fecaca;}
-</style>');
+        printWin.document.write('<style>@media print{body{padding:0 !important;} h1,h2,h3{page-break-after:auto;} div{page-break-inside:avoid;}}.sm-del-btn{background:#fee2e2;color:#991b1b;border:none;border-radius:4px;width:22px;height:22px;cursor:pointer;font-size:14px;line-height:1;margin-left:8px;transition:all .15s;}.sm-del-btn:hover{background:#fecaca;}</style>');
         printWin.document.write('</head><body>');
         printWin.document.write(printHtml);
         printWin.document.write('</body></html>');
