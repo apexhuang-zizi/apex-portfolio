@@ -393,7 +393,8 @@
                     <div class="gtb">
                         <button class="btn-back-sm" onclick="smBack()" style="background:none;border:none;color:var(--tx-m);cursor:pointer;font-size:.85rem;padding:.2rem .6rem;border-radius:8px">← 返回</button>
                         <div class="gtm">📝 按词造句</div>
-                        <button class="btn-back-sm" onclick="exportAllSentences()" style="background:var(--sf);border:1px solid var(--bd);color:var(--tx);cursor:pointer;font-size:.8rem;padding:.2rem .6rem;border-radius:8px;margin-left:auto">📥 导出全部</button>
+                        <button class="btn-back-sm" onclick="exportSentencesDoc()" style="background:var(--sf);border:1px solid var(--bd);color:var(--tx);cursor:pointer;font-size:.8rem;padding:.2rem .6rem;border-radius:8px;margin-left:auto">📄 Word导出</button>
+                        <button class="btn-back-sm" onclick="exportSentencesPdf()" style="background:var(--sf);border:1px solid var(--bd);color:var(--tx);cursor:pointer;font-size:.8rem;padding:.2rem .6rem;border-radius:8px">📥 PDF导出</button>
                         <div class="gpg" id="sm-pg">0 / 0</div>
                         <div class="gsc" id="sm-cnt">已造 0 句</div>
                     </div>
@@ -2364,11 +2365,9 @@
         alert('已导出 '+data.length+' 条造句记录');
     }
     
-    // 导出全部造句记录（按词库+单元分组）
-    function exportAllSentences(){
-        // 收集所有数据，按词库和单元分组
-        var byVocab = {};
-        var totalCount = 0;
+    // 导出全部造句记录（按词库+单元分组）—— Word格式
+    function exportSentencesDoc(){
+        var byVocab = {}, totalCount = 0;
         for (var word in SM.history) {
             SM.history[word].forEach(function(s) {
                 var vocab = s.vocab || 'unknown';
@@ -2381,72 +2380,117 @@
         }
         if (totalCount === 0) { alert('暂无造句记录'); return; }
         
-        // 生成HTML
-        var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>造句清单-'+CU+'</title>';
+        // Word兼容HTML（UTF-8+BOM，mso命名空间）
+        var html = '<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>越南语造句清单</title>';
         html += '<style>';
-        html += 'body{font-family:Arial,sans-serif;padding:20px;max-width:900px;margin:0 auto;}';
-        html += 'h1{color:#10b981;border-bottom:2px solid #10b981;padding-bottom:10px;}';
-        html += 'h2{color:#7c3aed;margin:25px 0 10px 0;font-size:20px;}';
-        html += 'h3{color:#6b7280;margin:15px 0 8px 0;font-size:16px;background:#f3f4f6;padding:5px 10px;border-radius:4px;display:inline-block;}';
-        html += '.vocab-section{margin-bottom:30px;}';
-        html += '.unit-block{margin:15px 0;padding-left:15px;border-left:3px solid #d1d5db;}';
-        html += '.sentence-item{background:#f9fafb;padding:12px;margin:8px 0;border-radius:6px;border-left:3px solid #10b981;}';
-        html += '.sentence-text{font-size:15px;color:#1f2937;margin-bottom:5px;}';
-        html += '.sentence-meta{font-size:12px;color:#6b7280;}';
-        html += '.score{font-weight:bold;padding:2px 6px;border-radius:3px;}';
+        html += 'body{font-family:Calibri,Arial,sans-serif;font-size:11pt;padding:30px;max-width:800px;margin:0 auto;color:#1f2937;}';
+        html += 'h1{color:#10b981;border-bottom:2px solid #10b981;padding-bottom:8px;font-size:20pt;margin-bottom:20px;}';
+        html += 'h2{color:#7c3aed;margin:25px 0 10px 0;font-size:14pt;border-bottom:1px solid #e5e7eb;padding-bottom:5px;}';
+        html += 'h3{color:#4b5563;margin:12px 0 6px 0;font-size:12pt;}';
+        html += '.stats{background:#f0fdf4;padding:12px 15px;border-radius:6px;margin:15px 0;border:1px solid #86efac;font-size:10pt;}';
+        html += '.unit-block{margin:10px 0 15px 0;padding-left:15px;}';
+        html += '.sentence-item{background:#f9fafb;padding:10px 12px;margin:6px 0;border-radius:4px;border-left:4px solid #10b981;}';
+        html += '.sentence-text{font-size:11pt;color:#1f2937;margin-bottom:4px;line-height:1.5;}';
+        html += '.sentence-meta{font-size:9pt;color:#6b7280;}';
+        html += '.score{font-weight:bold;padding:1px 5px;border-radius:3px;}';
         html += '.s5,.s4{background:#d1fae5;color:#065f46;}.s3{background:#fef3c7;color:#92400e;}.s2,.s1,.s0{background:#fee2e2;color:#991b1b;}';
-        html += '.word-tag{display:inline-block;background:#ddd6fe;color:#5b21b6;padding:2px 8px;border-radius:12px;font-size:12px;margin-right:5px;font-weight:600;}';
-        html += '.stats{background:#f0fdf4;padding:15px;border-radius:8px;margin:15px 0;border:1px solid #86efac;}';
+        html += '.word-tag{display:inline-block;background:#ede9fe;color:#5b21b6;padding:1px 7px;border-radius:10px;font-size:10pt;margin-right:5px;font-weight:bold;}';
+        html += 'table{border-collapse:collapse;width:100%;}td,th{border:1px solid #d1d5db;padding:8px 10px;}th{background:#f3f4f6;font-weight:bold;}';
         html += '</style></head><body>';
         
-        // 标题
         html += '<h1>📝 越南语造句清单</h1>';
-        html += '<div class="stats">';
-        html += '<p><b>用户：</b>' + escapeHtml(CU) + '</p>';
-        html += '<p><b>导出时间：</b>' + new Date().toLocaleString('zh-CN') + '</p>';
-        html += '<p><b>总计：</b>' + totalCount + ' 句</p>';
-        html += '</div>';
+        html += '<div class="stats"><b>用户：</b>' + escHtml(CU) + '　|　<b>导出时间：</b>' + new Date().toLocaleString('zh-CN') + '　|　<b>总计：</b>' + totalCount + ' 句</div>';
         
-        // 按词库遍历
-        var vocabNames = {vsl2: 'VSL2词汇', hanviet: '汉越词', default: '默认词库'};
+        var vocabNames = {vsl2: '📚 VSL2 词汇', hanviet: '📚 汉越词', default: '📚 默认词库'};
         for (var vocab in byVocab) {
-            var vocabName = vocabNames[vocab] || vocab;
-            html += '<div class="vocab-section"><h2>📚 ' + escapeHtml(vocabName) + '</h2>';
-            
-            // 按单元遍历（排序）
+            html += '<h2>' + (vocabNames[vocab] || vocab) + '</h2>';
             var units = Object.keys(byVocab[vocab]).map(Number).sort(function(a,b){return a-b;});
             units.forEach(function(unit) {
                 var sentences = byVocab[vocab][unit];
-                html += '<div class="unit-block"><h3>📋 ';
-                html += unit > 0 ? '第' + unit + '单元' : '未分类';
-                html += ' (' + sentences.length + '句)</h3>';
-                
-                // 每个句子
+                html += '<h3>' + (unit > 0 ? '第 ' + unit + ' 单元' : '未分类') + ' (' + sentences.length + '句)</h3>';
+                html += '<table><tr><th style="width:22%">单词</th><th style="width:48%">造句</th><th style="width:15%">评分</th><th style="width:15%">日期</th></tr>';
                 sentences.forEach(function(s) {
-                    html += '<div class="sentence-item">';
-                    html += '<span class="word-tag">' + escapeHtml(s.word) + '</span>';
-                    html += '<div class="sentence-text">' + escapeHtml(s.text) + '</div>';
-                    html += '<div class="sentence-meta">';
-                    html += '<span class="score s' + s.score + '">' + s.score + '分</span>';
-                    html += ' ' + (s.feedback || '') + ' · ' + new Date(s.date).toLocaleString('zh-CN');
-                    html += '</div></div>';
+                    var scoreLabel = s.score >= 4 ? '🌟' : (s.score >= 3 ? '👍' : '📝');
+                    html += '<tr>';
+                    html += '<td><b>' + escHtml(s.word) + '</b></td>';
+                    html += '<td><span class="word-tag">' + escHtml(s.word) + '</span> ' + escHtml(s.text) + '</td>';
+                    html += '<td><span class="score s' + s.score + '">' + scoreLabel + ' ' + s.score + '分</span><br><small>' + (s.feedback || '') + '</small></td>';
+                    html += '<td><small>' + new Date(s.date).toLocaleDateString('zh-CN') + '</small></td>';
+                    html += '</tr>';
                 });
-                html += '</div>'; // unit-block
+                html += '</table>';
             });
-            html += '</div>'; // vocab-section
         }
         html += '</body></html>';
         
-        // 下载
-        var blob = new Blob([html], {type: 'text/html'});
+        // 添加BOM头以确保Word正确识别UTF-8
+        var blob = new Blob(['\uFEFF', html], {type: 'application/msword'});
         var url = URL.createObjectURL(blob);
         var a = document.createElement('a');
         a.href = url;
-        a.download = '造句清单_' + CU + '_' + new Date().toISOString().slice(0,10) + '.html';
+        a.download = '\u9020\u53E5\u6E05\u5355_' + CU + '_' + new Date().toISOString().slice(0,10) + '.doc';
         a.click();
         URL.revokeObjectURL(url);
-        alert('已导出全部 ' + totalCount + ' 条造句记录');
+        alert('\u5DF2\u5BFC\u51FAWord\u6587\u6863\uFF1A' + totalCount + '\u53E5');
     }
+    
+    // PDF导出（调用浏览器打印）
+    function exportSentencesPdf(){
+        var byVocab = {}, totalCount = 0;
+        for (var word in SM.history) {
+            SM.history[word].forEach(function(s) {
+                var vocab = s.vocab || 'unknown';
+                var unit = s.unit || 0;
+                if (!byVocab[vocab]) byVocab[vocab] = {};
+                if (!byVocab[vocab][unit]) byVocab[vocab][unit] = [];
+                byVocab[vocab][unit].push({word: word, text: s.text, score: s.score, feedback: s.feedback, date: s.date});
+                totalCount++;
+            });
+        }
+        if (totalCount === 0) { alert('\u6682\u65E0\u9020\u53E5\u8BB0\u5F55'); return; }
+        
+        // 构建打印区域的HTML
+        var printHtml = '<div id="print-area" style="font-family:Calibri,Arial,sans-serif;font-size:12pt;padding:20px;max-width:800px;margin:0 auto;color:#1f2937;">';
+        printHtml += '<h1 style="color:#10b981;border-bottom:2px solid #10b981;padding-bottom:8px;margin-bottom:15px;">\u270D\uF8FF \u8D8A\u5357\u8BED\u9020\u53E5\u6E05\u5355</h1>';
+        printHtml += '<div style="background:#f0fdf4;padding:10px 15px;border-radius:6px;margin-bottom:20px;font-size:10pt;">';
+        printHtml += '<b>\u7528\u6237\uFF1A</b>' + escHtml(CU) + '　|　<b>\u5BFC\u51FA\u65F6\u95F4\uFF1A</b>' + new Date().toLocaleString('zh-CN') + '　|　<b>\u603B\u8BA1\uFF1A</b>' + totalCount + ' \u53E5';
+        printHtml += '</div>';
+        
+        var vocabNames = {vsl2: '\u2702\uFE0F VSL2 \u8BCD\u6C47', hanviet: '\u2702\uFE0F \u6C49\u8D8A\u8BCD', default: '\u2702\uFE0F \u9ED8\u8BA4\u8BCD\u5E93'};
+        for (var vocab in byVocab) {
+            printHtml += '<h2 style="color:#7c3aed;margin:20px 0 10px 0;font-size:14pt;border-bottom:1px solid #e5e7eb;padding-bottom:5px;">' + (vocabNames[vocab] || vocab) + '</h2>';
+            var units = Object.keys(byVocab[vocab]).map(Number).sort(function(a,b){return a-b;});
+            units.forEach(function(unit) {
+                var sentences = byVocab[vocab][unit];
+                printHtml += '<h3 style="color:#4b5563;margin:12px 0 8px 0;font-size:12pt;">' + (unit > 0 ? '\u7B2C ' + unit + ' \u5355\u5143' : '\u672A\u5206\u7C7B') + ' (' + sentences.length + '\u53E5)</h3>';
+                sentences.forEach(function(s) {
+                    printHtml += '<div style="background:#f9fafb;padding:10px 12px;margin:6px 0;border-radius:4px;border-left:4px solid #10b981;">';
+                    printHtml += '<span style="display:inline-block;background:#ede9fe;color:#5b21b6;padding:1px 8px;border-radius:10px;font-size:10pt;margin-right:8px;">' + escHtml(s.word) + '</span> ';
+                    printHtml += '<span style="font-size:11pt;">' + escHtml(s.text) + '</span>';
+                    printHtml += '<div style="font-size:9pt;color:#6b7280;margin-top:4px;">';
+                    printHtml += '\u8BC4\u5206: <b>' + s.score + '</b> \u5206' + (s.feedback ? ' | ' + s.feedback : '') + ' | ' + new Date(s.date).toLocaleDateString('zh-CN');
+                    printHtml += '</div></div>';
+                });
+            });
+        }
+        printHtml += '</div>';
+        
+        // 打开新窗口并触发打印
+        var printWin = window.open('', '_blank', 'width=900,height=700');
+        printWin.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>\u9020\u53E5\u6E05\u5355-' + escHtml(CU) + '</title>');
+        printWin.document.write('<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">');
+        printWin.document.write('<style>@media print{body{padding:0 !important;} h1,h2,h3{page-break-after:auto;} div{page-break-inside:avoid;}}</style>');
+        printWin.document.write('</head><body>');
+        printWin.document.write(printHtml);
+        printWin.document.write('</body></html>');
+        printWin.document.close();
+        printWin.focus();
+        printWin.print();
+        alert('\u5DF2\u6253\u5F00\u6253\u5370\u7A97\u53E3\uFF0C\u8BF7\u5728\u6253\u5370\u5BF9\u8BDD\u6846\u9009\u62E9\u201C\u4FDD\u5B58\u4E3APDF\u201D');
+    }
+    
+    // HTML转义（简写）
+    function escHtml(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
     /* ========== 权限系统 ========== */
     var USER_ROLES={
