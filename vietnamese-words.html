@@ -393,6 +393,7 @@
                     <div class="gtb">
                         <button class="btn-back-sm" onclick="smBack()" style="background:none;border:none;color:var(--tx-m);cursor:pointer;font-size:.85rem;padding:.2rem .6rem;border-radius:8px">← 返回</button>
                         <div class="gtm">📝 按词造句</div>
+                        <button class="btn-back-sm" onclick="exportAllSentences()" style="background:var(--sf);border:1px solid var(--bd);color:var(--tx);cursor:pointer;font-size:.8rem;padding:.2rem .6rem;border-radius:8px;margin-left:auto">📥 导出全部</button>
                         <div class="gpg" id="sm-pg">0 / 0</div>
                         <div class="gsc" id="sm-cnt">已造 0 句</div>
                     </div>
@@ -2109,6 +2110,8 @@
             fb.textContent = '🎉 正确！太棒了！';
             fb.className = 'g-feedback ok-fb';
             inp.className = 'g-inp';
+            // 正确时播放读音
+            playWrongWord('normal');
         } else {
             WP.totalErr++;
             recordWrong(w.word, w.translation, w.translation_en);
@@ -2359,6 +2362,90 @@
         var a=document.createElement('a');a.href=url;a.download='造句记录_'+CU+'_'+(currentUnit||'全部')+'.html';a.click();
         URL.revokeObjectURL(url);
         alert('已导出 '+data.length+' 条造句记录');
+    }
+    
+    // 导出全部造句记录（按词库+单元分组）
+    function exportAllSentences(){
+        // 收集所有数据，按词库和单元分组
+        var byVocab = {};
+        var totalCount = 0;
+        for (var word in SM.history) {
+            SM.history[word].forEach(function(s) {
+                var vocab = s.vocab || 'unknown';
+                var unit = s.unit || 0;
+                if (!byVocab[vocab]) byVocab[vocab] = {};
+                if (!byVocab[vocab][unit]) byVocab[vocab][unit] = [];
+                byVocab[vocab][unit].push({word: word, text: s.text, score: s.score, feedback: s.feedback, date: s.date});
+                totalCount++;
+            });
+        }
+        if (totalCount === 0) { alert('暂无造句记录'); return; }
+        
+        // 生成HTML
+        var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>造句清单-'+CU+'</title>';
+        html += '<style>';
+        html += 'body{font-family:Arial,sans-serif;padding:20px;max-width:900px;margin:0 auto;}';
+        html += 'h1{color:#10b981;border-bottom:2px solid #10b981;padding-bottom:10px;}';
+        html += 'h2{color:#7c3aed;margin:25px 0 10px 0;font-size:20px;}';
+        html += 'h3{color:#6b7280;margin:15px 0 8px 0;font-size:16px;background:#f3f4f6;padding:5px 10px;border-radius:4px;display:inline-block;}';
+        html += '.vocab-section{margin-bottom:30px;}';
+        html += '.unit-block{margin:15px 0;padding-left:15px;border-left:3px solid #d1d5db;}';
+        html += '.sentence-item{background:#f9fafb;padding:12px;margin:8px 0;border-radius:6px;border-left:3px solid #10b981;}';
+        html += '.sentence-text{font-size:15px;color:#1f2937;margin-bottom:5px;}';
+        html += '.sentence-meta{font-size:12px;color:#6b7280;}';
+        html += '.score{font-weight:bold;padding:2px 6px;border-radius:3px;}';
+        html += '.s5,.s4{background:#d1fae5;color:#065f46;}.s3{background:#fef3c7;color:#92400e;}.s2,.s1,.s0{background:#fee2e2;color:#991b1b;}';
+        html += '.word-tag{display:inline-block;background:#ddd6fe;color:#5b21b6;padding:2px 8px;border-radius:12px;font-size:12px;margin-right:5px;font-weight:600;}';
+        html += '.stats{background:#f0fdf4;padding:15px;border-radius:8px;margin:15px 0;border:1px solid #86efac;}';
+        html += '</style></head><body>';
+        
+        // 标题
+        html += '<h1>📝 越南语造句清单</h1>';
+        html += '<div class="stats">';
+        html += '<p><b>用户：</b>' + escapeHtml(CU) + '</p>';
+        html += '<p><b>导出时间：</b>' + new Date().toLocaleString('zh-CN') + '</p>';
+        html += '<p><b>总计：</b>' + totalCount + ' 句</p>';
+        html += '</div>';
+        
+        // 按词库遍历
+        var vocabNames = {vsl2: 'VSL2词汇', hanviet: '汉越词', default: '默认词库'};
+        for (var vocab in byVocab) {
+            var vocabName = vocabNames[vocab] || vocab;
+            html += '<div class="vocab-section"><h2>📚 ' + escapeHtml(vocabName) + '</h2>';
+            
+            // 按单元遍历（排序）
+            var units = Object.keys(byVocab[vocab]).map(Number).sort(function(a,b){return a-b;});
+            units.forEach(function(unit) {
+                var sentences = byVocab[vocab][unit];
+                html += '<div class="unit-block"><h3>📋 ';
+                html += unit > 0 ? '第' + unit + '单元' : '未分类';
+                html += ' (' + sentences.length + '句)</h3>';
+                
+                // 每个句子
+                sentences.forEach(function(s) {
+                    html += '<div class="sentence-item">';
+                    html += '<span class="word-tag">' + escapeHtml(s.word) + '</span>';
+                    html += '<div class="sentence-text">' + escapeHtml(s.text) + '</div>';
+                    html += '<div class="sentence-meta">';
+                    html += '<span class="score s' + s.score + '">' + s.score + '分</span>';
+                    html += ' ' + (s.feedback || '') + ' · ' + new Date(s.date).toLocaleString('zh-CN');
+                    html += '</div></div>';
+                });
+                html += '</div>'; // unit-block
+            });
+            html += '</div>'; // vocab-section
+        }
+        html += '</body></html>';
+        
+        // 下载
+        var blob = new Blob([html], {type: 'text/html'});
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = '造句清单_' + CU + '_' + new Date().toISOString().slice(0,10) + '.html';
+        a.click();
+        URL.revokeObjectURL(url);
+        alert('已导出全部 ' + totalCount + ' 条造句记录');
     }
 
     /* ========== 权限系统 ========== */
