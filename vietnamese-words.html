@@ -2288,40 +2288,67 @@
         if(!input){fb.textContent='请输入句子';fb.className='g-feedback err-fb';fb.style.display='block';return;}
         var word=SM.currentWord.word.toLowerCase();
         var sentence=input.toLowerCase();
-        var result=scoreSentence(sentence,word);
-        fb.style.display='block';
-        if(result.score===0){fb.className='g-feedback err-fb';fb.innerHTML='0分 - 句子中未包含目标单词 "'+SM.currentWord.word+'"';}
-        else if(result.score>=4){fb.className='g-feedback ok-fb';fb.innerHTML=result.score+'分 - '+result.feedback;}
-        else{fb.className='g-feedback';fb.style.background='#fef3c7';fb.style.color='#92400e';fb.innerHTML=result.score+'分 - '+result.feedback;}
-        var historyEntry={text:input,score:result.score,feedback:result.feedback,date:new Date().toISOString(),word:SM.currentWord.word,unit:SM.currentWord.unit,vocab:currentVocab};
-        if(!SM.history[SM.currentWord.word])SM.history[SM.currentWord.word]=[];
-        SM.history[SM.currentWord.word].push(historyEntry);
-        saveSentenceHistoryToFirebase();
-        SM.totalSentences++;
-        document.getElementById('sm-cnt').textContent='已造 '+SM.totalSentences+' 句';
-        document.getElementById('sm-count').textContent=SM.history[SM.currentWord.word].length;
-        showSmHistory(SM.currentWord.word);
+        var wordNoTone=stripVietTones(word), sentNoTone=stripVietTones(sentence);
+        var hasWord=sentence.indexOf(word)!==-1||sentNoTone.indexOf(wordNoTone)!==-1;
+        if(!hasWord){
+            fb.className='g-feedback err-fb';fb.innerHTML='0分 - 句子中未包含目标单词 "'+SM.currentWord.word+'"';fb.style.display='block';return;
+        }
+        fb.className='g-feedback';fb.style.background='#e0e7ff';fb.style.color='#3730a3';fb.innerHTML='⏳ AI 评分中...';fb.style.display='block';
+        scoreWithGemini(input,SM.currentWord.word).then(function(result){
+            fb.style.display='block';
+            if(result.score===0){fb.className='g-feedback err-fb';fb.innerHTML='0分 - '+result.feedback;}
+            else if(result.score>=4){fb.className='g-feedback ok-fb';fb.innerHTML=result.score+'分 - '+result.feedback;}
+            else{fb.className='g-feedback';fb.style.background='#fef3c7';fb.style.color='#92400e';fb.innerHTML=result.score+'分 - '+result.feedback;}
+            var historyEntry={text:input,score:result.score,feedback:result.feedback,date:new Date().toISOString(),word:SM.currentWord.word,unit:SM.currentWord.unit,vocab:currentVocab};
+            if(!SM.history[SM.currentWord.word])SM.history[SM.currentWord.word]=[];
+            SM.history[SM.currentWord.word].push(historyEntry);
+            saveSentenceHistoryToFirebase();
+            SM.totalSentences++;
+            document.getElementById('sm-cnt').textContent='已造 '+SM.totalSentences+' 句';
+            document.getElementById('sm-count').textContent=SM.history[SM.currentWord.word].length;
+            showSmHistory(SM.currentWord.word);
+        }).catch(function(err){
+            console.warn('[SM] Gemini error, using local fallback:',err.message);
+            var result=scoreSentenceLocal(sentence,word);
+            fb.style.display='block';
+            if(result.score===0){fb.className='g-feedback err-fb';fb.innerHTML=result.score+'分 - '+result.feedback;}
+            else if(result.score>=4){fb.className='g-feedback ok-fb';fb.innerHTML=result.score+'分 - '+result.feedback;}
+            else{fb.className='g-feedback';fb.style.background='#fef3c7';fb.style.color='#92400e';fb.innerHTML=result.score+'分 - '+result.feedback;}
+            var historyEntry={text:input,score:result.score,feedback:result.feedback+'(本地评分)',date:new Date().toISOString(),word:SM.currentWord.word,unit:SM.currentWord.unit,vocab:currentVocab};
+            if(!SM.history[SM.currentWord.word])SM.history[SM.currentWord.word]=[];
+            SM.history[SM.currentWord.word].push(historyEntry);
+            saveSentenceHistoryToFirebase();
+            SM.totalSentences++;
+            document.getElementById('sm-cnt').textContent='已造 '+SM.totalSentences+' 句';
+            document.getElementById('sm-count').textContent=SM.history[SM.currentWord.word].length;
+            showSmHistory(SM.currentWord.word);
+        });
     }
     
-    function scoreSentence(sentence,targetWord){
+    var _GEMINI_KEY='AIzaSyA9i-XTBOieWVYSGrWOoXbCnGT0h-Le1fQ';
+    function scoreWithGemini(sentence,targetWord){
+        var prompt='你是一个越南语语法老师。请评估以下越南语造句练习。\n\n目标单词：'+targetWord+'\n学生造句：'+sentence+'\n\n评分标准（0-5分）：\n0分=句子中未包含目标单词或完全不通顺\n1分=包含目标单词但语法有明显错误或意思不清\n2分=包含目标单词，基本能理解，但语法有小错误或不自然\n3分=包含目标单词，语法基本正确，表达清楚\n4分=包含目标单词，语法正确，表达自然流畅\n5分=包含目标单词，语法完美，表达地道优美\n\n请严格按以下JSON格式回复（不要加其他文字）：\n{"score":0,"feedback":"简短的中文反馈，指出优点和不足"}';
+        var url='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+_GEMINI_KEY;
+        return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.3,maxOutputTokens:200}})}).then(function(r){if(!r.ok)throw new Error('API '+r.status);return r.json();}).then(function(data){
+            var text=data.candidates&&data.candidates[0]&&data.candidates[0].content&&data.candidates[0].content.parts&&data.candidates[0].content.parts[0].text;
+            if(!text)throw new Error('Empty response');
+            text=text.replace(/```json?\n?/g,'').replace(/```/g,'').trim();
+            var m=text.match(/\{[\s\S]*\}/);
+            if(!m)throw new Error('No JSON found');
+            var obj=JSON.parse(m[0]);
+            return{score:Math.max(0,Math.min(5,parseInt(obj.score)||0)),feedback:obj.feedback||'评分完成'};
+        });
+    }
+    function scoreSentenceLocal(sentence,targetWord){
         var score=0,feedback='';
         var sentenceNoTone=stripVietTones(sentence);
         var targetNoTone=stripVietTones(targetWord);
         var hasWord=sentence.indexOf(targetWord)!==-1||sentenceNoTone.indexOf(targetNoTone)!==-1;
         if(!hasWord)return{score:0,feedback:'句子必须包含目标单词'};
-        score=1;
-        var words=sentence.split(/\s+/).filter(function(w){return w.length>0;});
-        if(words.length>=5){score++;feedback='句子长度合适';}else{feedback='句子太短，建议至少5个词';}
-        var hasCapital=sentence.charAt(0)!==sentence.charAt(0).toLowerCase();
-        var hasPunctuation=/[.!?]$/.test(sentence.trim());
-        if(hasCapital&&hasPunctuation){score++;feedback+='，格式正确';}
-        else{if(!hasCapital)feedback+='，首字母应大写';if(!hasPunctuation)feedback+='，应有结尾标点';}
-        var hasVerb=/\b(la|co|di|an|uong|hoc|lam|nghe|nhin|noi|viet|doc|thich|muon|can|biet|hieu)\b/.test(sentenceNoTone);
-        var hasSubject=/\b(toi|tao|may|han|no|anh|chi|em|ho|co|thay)\b/.test(sentenceNoTone);
-        if(hasVerb&&hasSubject){score++;feedback+='，语法结构良好';}
-        else if(!hasVerb)feedback+='，缺少动词';else if(!hasSubject)feedback+='，缺少主语';
-        if(words.length>=8&&hasVerb&&hasSubject&&hasCapital&&hasPunctuation){score++;feedback='句子完整且结构丰富';}
-        return{score:Math.min(score,5),feedback:feedback};
+        score=1;var words=sentence.split(/\s+/).filter(function(w){return w.length>0;});
+        if(words.length>=5){score++;feedback='句子长度合适';}else{feedback='句子太短';}
+        if(words.length>=8){score++;feedback+='，内容较丰富';}
+        return{score:Math.min(score,5),feedback:feedback||'完成造句'};
     }
     
     function smPrev(){if(SM.index>0){SM.index--;showSmWord();}}
