@@ -2215,7 +2215,11 @@
         document.getElementById('sm').style.display='block';
         showRules('sentence');
         renderHistory();
-        loadSentenceHistoryFromFirebase().then(function(){showSmWord();});
+        loadSentenceHistoryFromFirebase().then(function(){
+            // auto-skip to first word without sentence history
+            for(var _si=0;_si<SM.words.length;_si++){if(!SM.history[SM.words[_si].word]||!SM.history[SM.words[_si].word].length){SM.index=_si;break;}}
+            showSmWord();
+        });
     }
     
     function showSmWord(){
