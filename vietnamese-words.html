@@ -890,7 +890,7 @@
     /* ========== 单元筛选 ========== */
     function updateUnitDropdown(words){
         var sel = document.getElementById('unitFilter');
-        if (words && words.length > 0)        if (!words || !words.length) { sel.style.display = 'none'; return; }
+        if (!words || !words.length) { sel.style.display = 'none'; return; }
         
         var hasUnit = words.some(function(w){ return w.unit !== undefined && w.unit !== null; });
         if (!hasUnit) { console.log('[unitFilter] no unit field found, hiding dropdown'); sel.style.display = 'none'; return; }
