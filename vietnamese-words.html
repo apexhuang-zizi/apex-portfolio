@@ -2178,6 +2178,7 @@
 
     /* ========== 按词造句模块 ========== */
     var SM = {words:[],index:0,totalSentences:0,currentWord:null,showTrans:false,history:{}};
+var _smDirty = false;
     
     function loadSentenceHistoryFromFirebase(){
         if(typeof db==='undefined'||!db)return Promise.resolve();
@@ -2187,7 +2188,7 @@
     }
     
     function saveSentenceHistoryToFirebase(){
-        var _smDirty = true; // mark dirty, write to Firebase on module exit
+        _smDirty = true; // mark dirty, write to Firebase on module exit
     }
     function flushSmHistoryToFirebase(){
         if(!_smDirty) return;
