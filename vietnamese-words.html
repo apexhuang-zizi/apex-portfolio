@@ -1355,6 +1355,8 @@
         document.getElementById('gr').style.display = 'none';
         document.getElementById('pa').style.display = 'none';
         document.getElementById('wp').style.display = 'none';
+        if (document.getElementById('sm').style.display !== 'none' && SM.totalSentences > 0){ saveSmRecord(); }
+        flushSmHistoryToFirebase();
         document.getElementById('sm').style.display = 'none';
         document.getElementById('sub-layout').classList.remove('on');
         document.querySelector('.mc').classList.remove('wide');
@@ -1371,9 +1373,12 @@
         var pa = document.getElementById('pa');
         var gr = document.getElementById('gr');
         var wp = document.getElementById('wp');
-        if (ga.style.display !== 'none' || pa.style.display !== 'none' || gr.style.display !== 'none' || wp.style.display !== 'none'){
+        var sm = document.getElementById('sm');
+        if (ga.style.display !== 'none' || pa.style.display !== 'none' || gr.style.display !== 'none' || wp.style.display !== 'none' || sm.style.display !== 'none'){
             if (G.timer) clearInterval(G.timer);
             if (P.activeRec){try{P.activeRec.abort();}catch(e){}}
+            if (sm.style.display !== 'none' && SM.totalSentences > 0){ saveSmRecord(); }
+            flushSmHistoryToFirebase();
             backToMain();
         } else {
             window.location.href = 'index.html';
