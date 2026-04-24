@@ -2337,7 +2337,7 @@
     function scoreWithGemini(sentence,targetWord,retryCount){
         retryCount=retryCount||0;
         var prompt='你是一个越南语语法老师。请评估以下越南语造句练习。\n\n目标单词：'+targetWord+'\n学生造句：'+sentence+'\n\n评分标准（0-5分）：\n0分=句子中未包含目标单词或完全不通顺\n1分=包含目标单词但语法有明显错误或意思不清\n2分=包含目标单词，基本能理解，但语法有小错误或不自然\n3分=包含目标单词，语法基本正确，表达清楚\n4分=包含目标单词，语法正确，表达自然流畅\n5分=包含目标单词，语法完美，表达地道优美\n\n请严格按以下JSON格式回复（不要加其他文字）：\n{"score":0,"feedback":"简短的中文反馈，指出优点和不足"}';
-        return fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+_GEMINI_DIRECT_KEY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.3,maxOutputTokens:200}})}).then(function(r){
+        return fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+_GEMINI_DIRECT_KEY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.3,maxOutputTokens:5000})}).then(function(r){
             if(r.status===429){
                 if(retryCount>=3)throw new Error('API 限速，请稍后再试');
                 var delay=Math.pow(2,retryCount)*3;
