@@ -2427,7 +2427,7 @@ function scoreSentenceLocal(sentence,targetWord){
                 data.push(s);
             });
         }
-        if(data.length===0){alert('当前单元暂无造句记录');return;}
+        if(data.length===0){alert('当前选中的单元/词库暂无造句记录');return;}
         // Count unique words with sentences and total words in unit
         var wordsWithSentences={};
         data.forEach(function(s){wordsWithSentences[s.word]=true;});
@@ -2464,9 +2464,12 @@ function scoreSentenceLocal(sentence,targetWord){
     
     // 导出全部造句记录（按词库+单元分组）—— Word格式
     function exportSentencesDoc(){
+        var filterUnit = currentUnitFilter !== 'all' ? parseInt(currentUnitFilter) : null;
         var byVocab = {}, totalCount = 0;
         for (var word in SM.history) {
             SM.history[word].forEach(function(s) {
+                if (filterUnit && s.unit !== filterUnit) return;
+                if (currentVocab && s.vocab !== currentVocab) return;
                 var vocab = s.vocab || 'unknown';
                 var unit = s.unit || 0;
                 if (!byVocab[vocab]) byVocab[vocab] = {};
@@ -2475,7 +2478,7 @@ function scoreSentenceLocal(sentence,targetWord){
                 totalCount++;
             });
         }
-        if (totalCount === 0) { alert('暂无造句记录'); return; }
+        if (totalCount === 0) { alert('当前选中的单元/词库暂无造句记录'); return; }
         
         // Word兼容HTML（UTF-8+BOM，mso命名空间）
         var html = '<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>越南语造句清单</title>';
@@ -2545,9 +2548,12 @@ function scoreSentenceLocal(sentence,targetWord){
     
     // PDF导出（调用浏览器打印）
     function exportSentencesPdf(){
+        var filterUnit = currentUnitFilter !== 'all' ? parseInt(currentUnitFilter) : null;
         var byVocab = {}, totalCount = 0;
         for (var word in SM.history) {
             SM.history[word].forEach(function(s) {
+                if (filterUnit && s.unit !== filterUnit) return;
+                if (currentVocab && s.vocab !== currentVocab) return;
                 var vocab = s.vocab || 'unknown';
                 var unit = s.unit || 0;
                 if (!byVocab[vocab]) byVocab[vocab] = {};
@@ -2556,7 +2562,7 @@ function scoreSentenceLocal(sentence,targetWord){
                 totalCount++;
             });
         }
-        if (totalCount === 0) { alert('\u6682\u65E0\u9020\u53E5\u8BB0\u5F55'); return; }
+        if (totalCount === 0) { alert('当前选中的单元/词库暂无造句记录'); return; }
         
         // 构建打印区域的HTML
         var printHtml = '<div id="print-area" style="font-family:Calibri,Arial,sans-serif;font-size:12pt;padding:20px;max-width:800px;margin:0 auto;color:#1f2937;">';
