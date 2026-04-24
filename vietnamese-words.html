@@ -785,10 +785,13 @@
 
     function loadLocalFallback(){
         console.log('[Fallback] 使用本地词库');
+        console.log('[Fallback] typeof VN_VOCAB:', typeof VN_VOCAB);
         // 如果本地有 VN_VOCAB，使用它
         if (typeof VN_VOCAB !== 'undefined'){
+            console.log('[Fallback] VN_VOCAB keys:', Object.keys(VN_VOCAB));
             for (var lv in VN_VOCAB){
                 if (VN_VOCAB[lv]){
+                    console.log('[Fallback] 处理词库:', lv, '词条数:', VN_VOCAB[lv].length);
                     VOCAB_CACHE[lv] = VN_VOCAB[lv].map(function(w){
                         var obj = {word: w[0], translation: w[1], translation_en: w[2]};
                         if (w.length > 4) { obj.is_sino = w[3]; obj.unit = w[4]; }
@@ -805,6 +808,7 @@
             }
         }
         renderVocabButtons();
+        console.log('[Fallback] renderVocabButtons 完成, VOCAB_REGISTRY:', Object.keys(VOCAB_REGISTRY));
         renderHistory();
     }
 
