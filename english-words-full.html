@@ -2463,43 +2463,42 @@ function scoreSentenceLocal(sentence,targetWord){
     
     // 暴露关键函数到全局（供 HTML onclick 调用）
     window.startGame = startGame;
+    window.selVocab = selVocab;
     window.filterByUnit = filterByUnit;
     window.refreshVocabList = refreshVocabList;
     window.goBack = goBack;
     window.backToMain = backToMain;
-    window.selectWord = selectWord;
-    window.nextWord = nextWord;
+    window.confirmQuit = confirmQuit;
+    window.speakWord = speakWord;
     window.playWord = playWord;
     window.submitAnswer = submitAnswer;
     window.skipWord = skipWord;
     window.endGame = endGame;
-    window.startPron = startPron;
-    window.stopRec = stopRec;
+    window.startRec = startRec;
     window.submitPron = submitPron;
+    window.pronAgain = pronAgain;
+    window.pNext = pNext;
+    window.pPrev = pPrev;
+    window.playCur = playCur;
+    window.playMyRec = playMyRec;
     window.startWrongPractice = startWrongPractice;
-    window.wpShowWord = wpShowWord;
-    window.wpCheck = wpCheck;
     window.wpNext = wpNext;
     window.wpBack = wpBack;
-    window.smShowWord = smShowWord;
-    window.smCheck = smCheck;
-    window.smNext = smNext;
+    window.playWrongWord = playWrongWord;
+    window.playWS = playWS;
     window.smBack = smBack;
-    window.goToHistory = goToHistory;
-    window.renderHistory = renderHistory;
-    window.closeHistory = closeHistory;
-    window.confirmQuit = confirmQuit;
-    window.cancelQuit = cancelQuit;
-    window.showSettings = showSettings;
-    window.hideSettings = hideSettings;
-    window.saveApiKey = saveApiKey;
-    window.clearAllData = clearAllData;
-    window.goToLogin = goToLogin;
-    window.goToRegister = goToRegister;
-    window.doLogin = doLogin;
-    window.doRegister = doRegister;
-    window.logout = logout;
-    })();
+    window.smNext = smNext;
+    window.smPrev = smPrev;
+    window.playSmWord = playSmWord;
+    window.submitSentence = submitSentence;
+    window.toggleSmTrans = toggleSmTrans;
+    window.deleteSmSentence = deleteSmSentence;
+    window.showWriteInput = showWriteInput;
+    window.exportSentences = exportSentences;
+    window.exportSentencesDoc = exportSentencesDoc;
+    window.exportSentencesPdf = exportSentencesPdf;
+    window.startGame = startGame;
+    window.filterByUnit = filterByUnit;
     </script>
 </body>
 </html>
