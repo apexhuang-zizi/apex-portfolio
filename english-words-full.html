@@ -455,6 +455,40 @@
     <script src="english-vocab.js"></script>
     <script>
     (function(){
+    // ★ 函数提升后立即可用 — 必须放在最前面，确保任何运行时错误前就暴露全局
+    window.startGame = startGame;
+    window.selVocab = selVocab;
+    window.filterByUnit = filterByUnit;
+    window.refreshVocabList = refreshVocabList;
+    window.goBack = goBack;
+    window.backToMain = backToMain;
+    window.confirmQuit = confirmQuit;
+    window.speakWord = speakWord;
+    window.submitAnswer = submitAnswer;
+    window.endGame = endGame;
+    window.startRec = startRec;
+    window.pronAgain = pronAgain;
+    window.pNext = pNext;
+    window.pPrev = pPrev;
+    window.playCur = playCur;
+    window.playMyRec = playMyRec;
+    window.startWrongPractice = startWrongPractice;
+    window.wpNext = wpNext;
+    window.playWrongWord = playWrongWord;
+    window.playWS = playWS;
+    window.smBack = smBack;
+    window.smNext = smNext;
+    window.smPrev = smPrev;
+    window.playSmWord = playSmWord;
+    window.submitSentence = submitSentence;
+    window.toggleSmTrans = toggleSmTrans;
+    window.deleteSmSentence = deleteSmSentence;
+    window.showWriteInput = showWriteInput;
+    window.exportSentences = exportSentences;
+    window.exportSentencesDoc = exportSentencesDoc;
+    window.exportSentencesPdf = exportSentencesPdf;
+    window.renderHistory = renderHistory;
+
     /* ========== 配置 ========== */
     // Firebase 配置
     // Firebase config removed: using localStorage only
@@ -2457,41 +2491,7 @@ function scoreSentenceLocal(sentence,targetWord){
         return Promise.resolve([]);
     }
     
-    // 暴露关键函数到全局（供 HTML onclick 调用）
-    // 放在最前面，确保即使后续代码出错也能暴露
-    window.startGame = startGame;
-    window.selVocab = selVocab;
-    window.filterByUnit = filterByUnit;
-    window.refreshVocabList = refreshVocabList;
-    window.goBack = goBack;
-    window.backToMain = backToMain;
-    window.confirmQuit = confirmQuit;
-    window.speakWord = speakWord;
-    window.submitAnswer = submitAnswer;
-    window.endGame = endGame;
-    window.startRec = startRec;
-    window.pronAgain = pronAgain;
-    window.pNext = pNext;
-    window.pPrev = pPrev;
-    window.playCur = playCur;
-    window.playMyRec = playMyRec;
-    window.startWrongPractice = startWrongPractice;
-    window.wpNext = wpNext;
-    window.playWrongWord = playWrongWord;
-    window.playWS = playWS;
-    window.smBack = smBack;
-    window.smNext = smNext;
-    window.smPrev = smPrev;
-    window.playSmWord = playSmWord;
-    window.submitSentence = submitSentence;
-    window.toggleSmTrans = toggleSmTrans;
-    window.deleteSmSentence = deleteSmSentence;
-    window.showWriteInput = showWriteInput;
-    window.exportSentences = exportSentences;
-    window.exportSentencesDoc = exportSentencesDoc;
-    window.exportSentencesPdf = exportSentencesPdf;
-    window.renderHistory = renderHistory;
-
+    
     loadUserRolesFromFirebase();
     })();
     </script>
