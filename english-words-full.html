@@ -1673,7 +1673,10 @@ function refreshVocabList(){
         if (brEl) brEl.classList.remove('rec');
         P.totalScore += best;
         document.getElementById('p-score').textContent = P.totalScore + ' 分';
-        if (best < 80){P.lowScores.push(P.words[P.index]);}
+        if (best < 75){
+            var already = P.lowScores.some(function(l){return l.word === P.words[P.index].word;});
+            if (!already){P.lowScores.push(P.words[P.index]);}
+        }
         if (best < 60){recordWrong(P.words[P.index].word, P.words[P.index].translation, P.words[P.index].translation_en);}
         else {recordCorrect(P.words[P.index].word);}
         savePronRecord(P.words[P.index].word, P.words[P.index].translation, best);
