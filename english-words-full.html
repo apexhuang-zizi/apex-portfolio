@@ -721,10 +721,15 @@
 
     /* ========== 单元筛选 ========== */
     function updateUnitDropdown(words){
+        console.log('[updateUnitDropdown] words:', words ? words.length : 'null');
         var sel = document.getElementById('unitFilter');
-        if (!words || !words.length) { sel.style.display = 'none'; return; }
+        if (!words || !words.length) { sel.style.display = 'none'; console.log('[updateUnitDropdown] no words, hiding'); return; }
+        
+        // Log first few words to check structure
+        console.log('[updateUnitDropdown] sample word:', words[0]);
         
         var hasUnit = words.some(function(w){ return w.unit !== undefined && w.unit !== null; });
+        console.log('[updateUnitDropdown] hasUnit:', hasUnit);
         if (!hasUnit) { console.log('[unitFilter] no unit field found, hiding dropdown'); sel.style.display = 'none'; return; }
         console.log('[unitFilter] showing dropdown with units');
         
@@ -889,9 +894,16 @@ function refreshVocabList(){
 
     /* ========== 启动游戏 ========== */
     function startGame(type){
+        console.log('[startGame] type:', type, 'fullPool.length:', fullPool.length);
         if (!fullPool.length){
-            alert('词库未加载，请稍后重试');
-            return;
+            // 尝试从当前选中词库加载
+            if (currentVocab && VOCAB_CACHE[currentVocab]) {
+                fullPool = VOCAB_CACHE[currentVocab];
+                console.log('[startGame] 从缓存加载词库:', currentVocab, fullPool.length);
+            } else {
+                alert('请先选择词库');
+                return;
+            }
         }
         
         if (type === 'dictation'){
