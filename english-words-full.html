@@ -452,14 +452,7 @@
         <div class="loading-text" id="loadingText">加载中...</div>
     </div>
 
-    <script src="english-vocab.js"></script>  <!-- Replaced Firebase with local vocab -->
-    <!-- Firebase SDK removed: using localStorage -->
-    <!-- Firebase SDK removed: using localStorage -->
-    <!-- 本地词库回退（Firebase 不可用时使用） -->
-    <script src="starter-vocab.js"></script>
-    <!-- basic-vocab.js removed -->
-    <!-- hanviet-vocab.js removed -->
-    <!-- vsl2-vocab.js removed -->
+    <script src="english-vocab.js"></script>
     <script>
     /* ========== 配置 ========== */
     // Firebase 配置
@@ -622,24 +615,36 @@
     function loadLocalFallback(){
         console.log('[Fallback] 使用本地词库');
         console.log('[Fallback] typeof LOCAL_VOCAB:', typeof LOCAL_VOCAB);
-        // 如果本地有 LOCAL_VOCAB，使用它
+        // 英语词库格式: {en, cn, ph, unit}
         if (typeof LOCAL_VOCAB !== 'undefined'){
             console.log('[Fallback] LOCAL_VOCAB keys:', Object.keys(LOCAL_VOCAB));
             for (var lv in LOCAL_VOCAB){
                 if (LOCAL_VOCAB[lv]){
                     console.log('[Fallback] 处理词库:', lv, '词条数:', LOCAL_VOCAB[lv].length);
                     VOCAB_CACHE[lv] = LOCAL_VOCAB[lv].map(function(w){
-                        var obj = {word: w[0], translation: w[1], translation_en: w[2]};
-                        if (w.length > 4) { obj.is_sino = w[3]; obj.unit = w[4]; }
-                        else if (typeof w[3] === 'number') { obj.unit = w[3]; }
-                        else if (w[3] !== undefined) { obj.is_sino = w[3]; }
-                        return obj;
+                        return {
+                            word: w.en,
+                            translation: w.cn,
+                            phonetic: w.ph,
+                            unit: w.unit
+                        };
                     });
                     VOCAB_REGISTRY[lv] = {
                         id: lv,
                         name: getVocabDisplayName(lv),
                         count: VOCAB_CACHE[lv].length
                     };
+                    // 按单元分组: '3-1-1','3-1-2'...
+                    LOCAL_VOCAB[lv].forEach(function(w){
+                        var uk = lv + '-' + w.unit;
+                        if (!VOCAB_CACHE[uk]) VOCAB_CACHE[uk] = [];
+                        VOCAB_CACHE[uk].push({
+                            word: w.en,
+                            translation: w.cn,
+                            phonetic: w.ph,
+                            unit: w.unit
+                        });
+                    });
                 }
             }
         }
