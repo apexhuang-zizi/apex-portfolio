@@ -2167,7 +2167,7 @@ var _smDirty = false;
             fb.className='g-feedback err-fb';fb.innerHTML='0分 - 句子中未包含目标单词 "'+SM.currentWord.word+'"';fb.style.display='block';return;
         }
         fb.className='g-feedback';fb.style.background='#e0e7ff';fb.style.color='#3730a3';fb.innerHTML='⏳ AI 评分中...（如遇限速会自动重试）';fb.style.display='block';
-        scoreWithGemini(input,SM.currentWord.word).then(function(result){
+        scoreWithQwen(input,SM.currentWord.word).then(function(result){
             fb.style.display='block';
             if(result.score===0){fb.className='g-feedback err-fb';fb.innerHTML='0分 - '+result.feedback;}
             else if(result.score>=4){fb.className='g-feedback ok-fb';fb.innerHTML=result.score+'分 - '+result.feedback;}
@@ -2181,7 +2181,7 @@ var _smDirty = false;
             document.getElementById('sm-count').textContent=SM.history[SM.currentWord.word].length;
             showSmHistory(SM.currentWord.word);
         }).catch(function(err){
-            console.error('[SM] Gemini API failed:', err.message);
+            console.error('[SM] Qwen API failed:', err.message);
             var result=scoreSentenceLocal(sentence,word);
             fb.style.display='block';
             if(result.score===0){fb.className='g-feedback err-fb';fb.innerHTML=result.score+'分 - '+result.feedback;}
@@ -2198,39 +2198,45 @@ var _smDirty = false;
         });
     }
     
-    function scoreWithGemini(sentence, targetWord, retryCount) {
+    function scoreWithQwen(sentence, targetWord, retryCount) {
         retryCount = retryCount || 0;
-        var apiKey = localStorage.getItem("gemini_api_key");
-        if (!apiKey) {
-            apiKey = prompt("请输入你的 Gemini API Key（仅需一次，将保存在浏览器本地）：\n\n获取方式：https://aistudio.google.com/apikey");
-            if (!apiKey) throw new Error("需要 API Key 才能使用 AI 评分");
-            apiKey = apiKey.trim();
-            localStorage.setItem("gemini_api_key", apiKey);
+        // Default API Key for 阿里云百炼
+        var apiKey = localStorage.getItem("qwen_api_key") || "sk-572bf4b171024dce8d8e8a0455758f01";
+        if (!localStorage.getItem("qwen_api_key")) {
+            localStorage.setItem("qwen_api_key", apiKey);
         }
-        var geminiPrompt = "你是一个英语语法老师。请评估以下英语造句练习。\n\n目标单词：" + targetWord + "\n学生造句：" + sentence + "\n\n评分标准（0-5分）：\n0分=句子中未包含目标单词或完全不通顺\n1分=包含目标单词但语法有明显错误或意思不清\n2分=包含目标单词，基本能理解，但语法有小错误或不自然\n3分=包含目标单词，语法基本正确，表达清楚\n4分=包含目标单词，语法正确，表达自然流畅\n5分=包含目标单词，语法完美，表达地道优美\n\n请严格按以下JSON格式回复（不要加其他文字）：\n{\"score\":0,\"feedback\":\"简短的中文反馈，指出优点和不足\"}";
-        return fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + apiKey, {
+        var qwenPrompt = "你是一个英语语法老师。请评估以下英语造句练习。\n\n目标单词：" + targetWord + "\n学生造句：" + sentence + "\n\n评分标准（0-5分）：\n0分=句子中未包含目标单词或完全不通顺\n1分=包含目标单词但语法有明显错误或意思不清\n2分=包含目标单词，基本能理解，但语法有小错误或不自然\n3分=包含目标单词，语法基本正确，表达清楚\n4分=包含目标单词，语法正确，表达自然流畅\n5分=包含目标单词，语法完美，表达地道优美\n\n请严格按以下JSON格式回复（不要加其他文字）：\n{\"score\":0,\"feedback\":\"简短的中文反馈，指出优点和不足\"}";
+        return fetch("https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions", {
             method: "POST",
-            headers: {"Content-Type": "application/json"},
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + apiKey
+            },
             body: JSON.stringify({
-                contents: [{ parts: [{ text: geminiPrompt }] }],
-                generationConfig: { temperature: 0.3, maxOutputTokens: 5000 }
+                model: "qwen-plus",
+                messages: [
+                    { role: "system", content: "你是一个专业的英语老师，负责评估学生的英语造句练习。" },
+                    { role: "user", content: qwenPrompt }
+                ],
+                temperature: 0.3,
+                max_tokens: 500
             })
         }).then(function(r) {
             if (r.status === 403 || r.status === 401) {
-                localStorage.removeItem("gemini_api_key");
-                if (retryCount < 1) return scoreWithGemini(sentence, targetWord, retryCount + 1);
+                localStorage.removeItem("qwen_api_key");
+                if (retryCount < 1) return scoreWithQwen(sentence, targetWord, retryCount + 1);
                 throw new Error("API Key 无效，请重新输入");
             }
             if (r.status === 429) {
                 if (retryCount >= 3) throw new Error("API 限速，请稍后再试");
                 var delay = Math.pow(2, retryCount) * 3;
-                console.log("[SM] Gemini 429, retry " + (retryCount + 1) + " after " + delay + "s");
-                return new Promise(function(resolve) { setTimeout(resolve, delay * 1000); }).then(function() { return scoreWithGemini(sentence, targetWord, retryCount + 1); });
+                console.log("[SM] Qwen 429, retry " + (retryCount + 1) + " after " + delay + "s");
+                return new Promise(function(resolve) { setTimeout(resolve, delay * 1000); }).then(function() { return scoreWithQwen(sentence, targetWord, retryCount + 1); });
             }
             if (!r.ok) throw new Error("API " + r.status);
             return r.json();
         }).then(function(data) {
-            var text = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0].text;
+            var text = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
             if (!text) throw new Error("Empty response");
             text = text.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
             var m = text.match(/\{[\s\S]*\}/);
