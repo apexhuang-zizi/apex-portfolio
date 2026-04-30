@@ -454,6 +454,7 @@
 
     <script src="english-vocab.js"></script>
     <script>
+    (function(){
     /* ========== 配置 ========== */
     // Firebase 配置
     // Firebase config removed: using localStorage only
@@ -480,25 +481,24 @@
     document.getElementById('ud').textContent = '👤 ' + CU;
 
     /* ========== 初始化 ========== */
-    (function init(){
+    function startApp(){
         console.log('[Init] 初始化英语单词模块...');
         
         // 第一步：立即从本地 JS 加载词库（保证页面秒开）
         loadLocalFallback();
         renderHistory();
         
-        // 第二步：后台尝试 Firebase 更新（可选，失败不影响使用）
+        // 第二步：后台尝试 IndexedDB 缓存（可选，失败不影响使用）
         initIndexedDB().catch(function(){
             console.warn('[Init] IndexedDB 不可用，跳过缓存');
-        }).then(function(){
-    // Firebase auth removed: using localStorage only
-    })();
-    
-    // 启动：页面加载时初始化
+        });
+    }
+
+    // 页面加载完成后启动
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
+        document.addEventListener('DOMContentLoaded', startApp);
     } else {
-        init();
+        startApp();
     }
 
     /* ========== IndexedDB 操作 ========== */
@@ -560,55 +560,6 @@
             } else {
                 reject(new Error('Vocab not found: ' + vocabId));
             }
-        });
-    }
-            
-            var promises = [];
-            for (var i = 0; i < meta.chunks; i++){
-                var chunkDocId = vocabId + '_' + String(i).padStart(3, '0');
-                promises.push(Promise.resolve({empty: true}));
-            }
-            
-            Promise.all(promises).then(function(docs){
-                var words = [];
-                var chunkData = [];
-                
-                docs.forEach(function(doc, idx){
-                    if (doc.exists){
-                        var data = doc.data();
-                        // words may be stored as array field or as w0,w1,... map fields
-                        var chunkWords = data.words || [];
-                        if (chunkWords.length === 0){
-                            chunkWords = [];
-                            var wi = 0;
-                            while (data['w' + wi]){
-                                chunkWords.push(data['w' + wi]);
-                                wi++;
-                            }
-                        }
-                        chunkData.push({
-                            key: vocabId + '_' + String(idx).padStart(3, '0'),
-                            vocabId: vocabId,
-                            index: idx,
-                            words: chunkWords
-                        });
-                        words = words.concat(chunkWords);
-                    }
-                });
-                
-                // 缓存分片到 IndexedDB
-                var cachePromises = chunkData.map(function(chunk){
-                    return putToIDB('vocab_chunks', chunk);
-                });
-                
-                return Promise.all(cachePromises).then(function(){
-                    return words;
-                });
-            }).then(function(words){
-                resolve(words);
-            }).catch(function(err){
-                reject(err);
-            });
         });
     }
 
@@ -1791,8 +1742,6 @@ function refreshVocabList(){
         var h = JSON.parse(localStorage.getItem('en_hist') || '[]');
         h.unshift(rec); if (h.length > 200) h = h.slice(0, 200);
         localStorage.setItem('en_hist', JSON.stringify(h));
-            })).catch(function(){});
-        }
     }
 
     function savePronRecord(word, translation, score){
@@ -1800,8 +1749,6 @@ function refreshVocabList(){
         var h = JSON.parse(localStorage.getItem('en_hist') || '[]');
         h.unshift(rec); if (h.length > 200) h = h.slice(0, 200);
         localStorage.setItem('en_hist', JSON.stringify(h));
-            })).catch(function(){});
-        }
     }
 
     function savePronRound(){
@@ -1820,8 +1767,6 @@ function refreshVocabList(){
         var h = JSON.parse(localStorage.getItem('en_hist') || '[]');
         h.unshift(rec); if (h.length > 200) h = h.slice(0, 200);
         localStorage.setItem('en_hist', JSON.stringify(h));
-            })).catch(function(){});
-        }
     }
 
     /* ========== 错词数据库 ========== */
@@ -1907,9 +1852,6 @@ function refreshVocabList(){
         var h = JSON.parse(localStorage.getItem('en_hist') || '[]');
         h.unshift(rec); if (h.length > 200) h = h.slice(0, 200);
         localStorage.setItem('en_hist', JSON.stringify(h));
-        if (typeof db !== 'undefined' && db){
-            })).catch(function(){});
-        }
     }
 
     function wpShowWord(){
@@ -2008,11 +1950,8 @@ function refreshVocabList(){
 var _smDirty = false;
     
     function loadSentenceHistoryFromFirebase(){
-        // localStorage only
         var data = localStorage.getItem('en_sentences_' + CU);
         SM.history = data ? JSON.parse(data) : {};
-        return Promise.resolve();
-    }).catch(function(e){console.warn('[SM] Load failed:',e.message);});
     }
     
     function saveSentenceHistoryToFirebase(){
@@ -2456,7 +2395,6 @@ function scoreSentenceLocal(sentence,targetWord){
         // localStorage only: simple role system
         var roles = JSON.parse(localStorage.getItem('en_user_roles') || '{}');
         if (roles[CU]) USER_ROLES[CU] = roles[CU];
-    }).catch(function(e){console.warn('[Auth] Failed:',e.message);});
     }
     
     function hasPermission(action){
@@ -2473,6 +2411,7 @@ function scoreSentenceLocal(sentence,targetWord){
     }
     
     loadUserRolesFromFirebase();
+    })();
     </script>
 </body>
 </html>
