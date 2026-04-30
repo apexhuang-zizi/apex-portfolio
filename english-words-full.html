@@ -2460,6 +2460,45 @@ function scoreSentenceLocal(sentence,targetWord){
     }
     
     loadUserRolesFromFirebase();
+    
+    // 暴露关键函数到全局（供 HTML onclick 调用）
+    window.startGame = startGame;
+    window.filterByUnit = filterByUnit;
+    window.refreshVocabList = refreshVocabList;
+    window.goBack = goBack;
+    window.backToMain = backToMain;
+    window.selectWord = selectWord;
+    window.nextWord = nextWord;
+    window.playWord = playWord;
+    window.submitAnswer = submitAnswer;
+    window.skipWord = skipWord;
+    window.endGame = endGame;
+    window.startPron = startPron;
+    window.stopRec = stopRec;
+    window.submitPron = submitPron;
+    window.startWrongPractice = startWrongPractice;
+    window.wpShowWord = wpShowWord;
+    window.wpCheck = wpCheck;
+    window.wpNext = wpNext;
+    window.wpBack = wpBack;
+    window.smShowWord = smShowWord;
+    window.smCheck = smCheck;
+    window.smNext = smNext;
+    window.smBack = smBack;
+    window.goToHistory = goToHistory;
+    window.renderHistory = renderHistory;
+    window.closeHistory = closeHistory;
+    window.confirmQuit = confirmQuit;
+    window.cancelQuit = cancelQuit;
+    window.showSettings = showSettings;
+    window.hideSettings = hideSettings;
+    window.saveApiKey = saveApiKey;
+    window.clearAllData = clearAllData;
+    window.goToLogin = goToLogin;
+    window.goToRegister = goToRegister;
+    window.doLogin = doLogin;
+    window.doRegister = doRegister;
+    window.logout = logout;
     })();
     </script>
 </body>
