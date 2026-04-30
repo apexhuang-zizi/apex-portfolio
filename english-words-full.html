@@ -1828,11 +1828,9 @@ function refreshVocabList(){
     function invalidateWrongCache(){
         _wrongDBCache = null;
     }
-    function loadWrongFromFirebase(){
     function saveWrongDB(wdb){
         localStorage.setItem('en_wrong_words', JSON.stringify(wdb));
         invalidateWrongCache();
-        }
     }
     function recordWrong(word, translation, translation_en){
         var wdb = loadWrongDB();
