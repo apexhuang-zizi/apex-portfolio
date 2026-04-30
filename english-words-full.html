@@ -1732,11 +1732,17 @@ function refreshVocabList(){
     function showWriteInput(){
         var area = document.getElementById('write-area');
         var inp = document.getElementById('write-input');
+        var hint = document.getElementById('write-hint');
+        if (!area || !inp || !hint){
+            console.log('[showWriteInput] Elements not found:', !!area, !!inp, !!hint);
+            return;
+        }
         if (area.style.display === 'none'){
             area.style.display = 'block';
             inp.value = '';
             inp.className = 'write-input';
-            document.getElementById('write-hint').textContent = '';
+            hint.textContent = '';
+            hint.style.color = '';
             inp.focus();
         } else {
             area.style.display = 'none';
@@ -1747,8 +1753,17 @@ function refreshVocabList(){
         if (e && e.key !== 'Enter') return;
         var inp = document.getElementById('write-input');
         var hint = document.getElementById('write-hint');
+        if (!inp || !hint){
+            console.log('[checkWriteInput] Elements not found');
+            return;
+        }
         var val = inp.value.trim();
         if (!val) return;
+        if (!P.words || !P.words[P.index]){
+            console.log('[checkWriteInput] P.words empty:', P);
+            hint.textContent = '请先开始跟读游戏';
+            return;
+        }
         var target = P.words[P.index].word;
         if (val === target){
             inp.className = 'write-input correct';
