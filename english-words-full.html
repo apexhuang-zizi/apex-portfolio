@@ -2457,9 +2457,8 @@ function scoreSentenceLocal(sentence,targetWord){
         return Promise.resolve([]);
     }
     
-    loadUserRolesFromFirebase();
-    
     // 暴露关键函数到全局（供 HTML onclick 调用）
+    // 放在最前面，确保即使后续代码出错也能暴露
     window.startGame = startGame;
     window.selVocab = selVocab;
     window.filterByUnit = filterByUnit;
@@ -2495,8 +2494,13 @@ function scoreSentenceLocal(sentence,targetWord){
     window.exportSentences = exportSentences;
     window.exportSentencesDoc = exportSentencesDoc;
     window.exportSentencesPdf = exportSentencesPdf;
-    window.startGame = startGame;
-    window.filterByUnit = filterByUnit;
+    window.loadWrongFromLocal = loadWrongFromLocal;
+    window.showHint = showHint;
+    window.renderHistory = renderHistory;
+    window.startPronGame = startPronGame;
+    window.startSentenceGame = startSentenceGame;
+
+    loadUserRolesFromFirebase();
     })();
     </script>
 </body>
