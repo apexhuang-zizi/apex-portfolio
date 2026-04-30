@@ -658,6 +658,37 @@
         document.getElementById('loadingOverlay').style.display = 'none';
     }
 
+    /* ========== 词库加载 ========== */
+    function loadVocabData(vocabId){
+        return new Promise(function(resolve, reject){
+            // 1. 检查内存缓存
+            if (VOCAB_CACHE[vocabId]){
+                console.log('[Vocab] 从内存缓存加载:', vocabId);
+                resolve(VOCAB_CACHE[vocabId]);
+                return;
+            }
+            
+            // 2. 从本地 JS 文件加载 (LOCAL_VOCAB)
+            if (typeof LOCAL_VOCAB !== 'undefined' && LOCAL_VOCAB[vocabId]){
+                var words = LOCAL_VOCAB[vocabId].map(function(w){
+                    return {
+                        word: w.en,
+                        translation: w.cn,
+                        phonetic: w.ph,
+                        unit: w.unit
+                    };
+                });
+                VOCAB_CACHE[vocabId] = words;
+                console.log('[Vocab] 从本地 JS 加载:', vocabId, words.length, '词');
+                resolve(words);
+                return;
+            }
+            
+            // 3. 未找到
+            reject(new Error('词库 ' + vocabId + ' 不可用'));
+        });
+    }
+
     /* ========== 选择词库 ========== */
     function selVocab(vocabId, el){
         console.log('[selVocab] 选择词库:', vocabId);
@@ -815,12 +846,17 @@ function refreshVocabList(){
         show.forEach(function(r){
             var d = new Date(r.date);
             var timeStr = d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()) + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+            var levelName = r.level ? getVocabDisplayName(r.level) : '';
+            var unitName = r.unit && r.unit !== 'all' ? '第' + r.unit + '单元' : (r.unit === 'all' ? '全部单元' : '');
+            var levelInfo = levelName ? '<span>📚 ' + levelName + '</span>' : '';
+            var unitInfo = unitName ? '<span>📖 ' + unitName + '</span>' : '';
             if (r.type === 'dictation'){
                 var acc = r.accuracy || 0;
                 var correctInfo = r.correct + '/' + (r.correct + r.wrong);
                 html += '<div class="hist-card">';
                 html += '<div class="hc-top"><span class="hc-type dict">✍️ 听写</span><span class="hc-score">' + r.score + '分</span></div>';
                 html += '<div class="hc-info"><span>👤 ' + (r.user || '游客') + '</span><span>🕐 ' + timeStr + '</span></div>';
+                if (levelInfo || unitInfo) html += '<div class="hc-info">' + levelInfo + unitInfo + '</div>';
                 html += '<div class="hc-info"><span>✅ 正确 ' + correctInfo + '</span><span>🎯 准确率 ' + acc + '%</span><span>🔥 连击 ' + r.maxCombo + '</span></div>';
                 if (r.wrongWords && r.wrongWords.length){
                     html += '<div class="hc-wrong"><div class="hc-wrong-title">❌ 错词 (' + r.wrongWords.length + ')</div>';
@@ -834,6 +870,7 @@ function refreshVocabList(){
                 html += '<div class="hist-card">';
                 html += '<div class="hc-top"><span class="hc-type pron">🎤 跟读</span><span class="hc-score">' + r.score + '分</span></div>';
                 html += '<div class="hc-info"><span>👤 ' + (r.user || '游客') + '</span><span>🕐 ' + timeStr + '</span></div>';
+                if (levelInfo || unitInfo) html += '<div class="hc-info">' + levelInfo + unitInfo + '</div>';
                 html += '<div class="hc-info"><span>📊 平均' + r.avgScore + '分</span><span>📝 ' + r.total + '词</span><span>❌ 低分' + r.lowCount + '个</span></div>';
                 if (r.wrongWords && r.wrongWords.length){
                     html += '<div class="hc-wrong"><div class="hc-wrong-title">❌ 低分词 (' + r.wrongWords.length + ')</div>';
@@ -1732,7 +1769,7 @@ function refreshVocabList(){
             return {word: w.word, translation: w.translation, translation_en: w.translation_en};
         });
         var rec = {
-            type: 'dictation', level: currentVocab, score: score,
+            type: 'dictation', level: currentVocab, unit: currentUnitFilter, score: score,
             accScore: accScore, comboScore: comboScore, speedScore: speedScore,
             correct: G.correct, wrong: G.wrong, maxCombo: G.maxCombo,
             accuracy: G.total > 0 ? Math.round(G.correct / G.total * 100) : 0,
@@ -1759,7 +1796,7 @@ function refreshVocabList(){
             return {word: w.word, translation: w.translation, translation_en: w.translation_en};
         });
         var rec = {
-            type: 'pronunciation_round', level: currentVocab, score: P.totalScore,
+            type: 'pronunciation_round', level: currentVocab, unit: currentUnitFilter, score: P.totalScore,
             avgScore: avgScore, total: total, lowCount: P.lowScores.length,
             wrongWords: lowList,
             date: new Date().toISOString(), user: CU
