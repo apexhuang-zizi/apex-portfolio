@@ -2033,6 +2033,7 @@ var _smDirty = false;
     function loadSentenceHistoryFromFirebase(){
         var data = localStorage.getItem('en_sentences_' + CU);
         SM.history = data ? JSON.parse(data) : {};
+        return Promise.resolve();
     }
     
     function saveSentenceHistoryToFirebase(){
