@@ -407,8 +407,13 @@ canvas#onlineBoard{display:block;cursor:pointer;image-rendering:pixelated;max-wi
 <div class="modal-overlay" id="reviewModal">
     <div class="modal" style="max-width:700px;width:95vw">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-            <h3 style="color:var(--mc-green-light);margin:0">🔍 AI复盘分析</h3>
-            <button onclick="closeReview()" style="background:none;border:none;color:var(--text-muted);font-size:1.4rem;cursor:pointer;padding:4px 8px">✕</button>
+            <div style="display:flex;align-items:center;gap:10px">
+                <h3 style="color:var(--mc-green-light);margin:0">🔍 AI复盘分析</h3>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+                <button onclick="closeReview()" class="pixel-btn secondary">← 返回</button>
+                <button onclick="closeReview();document.getElementById('reviewModal').classList.remove('show')" style="background:none;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer;padding:4px 8px">✕</button>
+            </div>
         </div>
         <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px">
             <button class="pixel-btn" onclick="reviewPrev()">◀ 上一步</button>
@@ -1045,114 +1050,50 @@ function aiGetMove(boardState, color, difficulty) {
     var blockMove = findWinningMove(boardState, opponent);
     if (blockMove) return blockMove;
 
-    // 4. 防守对方VCF
-    var blockVCF = findVCFMove(boardState, opponent, 1);
-    if (blockVCF) return blockVCF;
-
-    // 5. 寻找做杀点（双威胁）
+    // 4. 做杀点检测（中高级/高级）
     if (difficulty >= 3) {
         var killMove = findKillMove(boardState, color, opponent);
         if (killMove) return killMove;
     }
 
-    // 6. 根据难度选择策略
-    if (difficulty === 1) {
-        // 初级：只评分，随机选前10名
-        var cands1 = getCandidates(boardState, color, opponent, false);
-        return cands1[Math.floor(Math.random() * Math.min(10, cands1.length))] || { row: 7, col: 7 };
-    } else if (difficulty === 2) {
-        // 中级：评分选前5名，有一定防守意识
-        var cands2 = getCandidates(boardState, color, opponent, false);
-        return cands2[Math.floor(Math.random() * Math.min(5, cands2.length))] || { row: 7, col: 7 };
-    } else if (difficulty === 3) {
-        // 中高级：评分+威胁计数，选前3名
-        var cands3 = getCandidates(boardState, color, opponent, true);
-        return cands3[Math.floor(Math.random() * Math.min(3, cands3.length))] || { row: 7, col: 7 };
-    } else {
-        // 高级：深度搜索 + Alpha-Beta剪枝
-        var result = minimaxAB(boardState, color, 3, -Infinity, Infinity);
-        if (result && result.move) return result.move;
-        var cands4 = getCandidates(boardState, color, opponent, true);
-        return cands4[0] || { row: 7, col: 7 };
-    }
-}
-
-function getCandidates(boardState, myColor, opColor, withThreats) {
+    // 5. 评分候选位
     var candidates = [];
     for (var r = 0; r < SIZE; r++) {
         for (var c = 0; c < SIZE; c++) {
             if (boardState[r][c] !== EMPTY) continue;
             if (!hasNeighbor(boardState, r, c, 2)) continue;
-            var score = evaluatePosition(boardState, r, c, myColor, opColor);
-            if (withThreats) {
-                score += countThreats(boardState, r, c, myColor) * 2000;
-                // 额外评估：对方在这个位置的威胁
+            var score = evaluatePosition(boardState, r, c, color, opponent);
+            // 高级AI：额外计算威胁数量，越多越强
+            if (difficulty === 4) {
+                score += countThreats(boardState, r, c, color) * 1500;
+                // 评估落子后能否发展为VCF（加分）
                 var sim = cloneBoard(boardState);
-                sim[r][c] = opColor;
-                score -= countThreats(sim, r, c, opColor) * 3000;
-                // 评估落子后能否发展为VCF
-                var vcfScore = evaluateVCFPotential(boardState, r, c, myColor);
-                score += vcfScore;
+                sim[r][c] = color;
+                var vcfTest = findVCFMove(sim, color, 1);
+                if (vcfTest) score += 5000; // 有VCF机会，强烈加分
+                // 评估防守价值
+                score += countThreats(boardState, r, c, opponent) * 1200;
             }
             candidates.push({ row: r, col: c, score: score });
         }
     }
+
+    if (candidates.length === 0) {
+        return { row: 7, col: 7 };
+    }
+
     candidates.sort(function(a, b) { return b.score - a.score; });
-    return candidates;
-}
 
-function evaluateVCFPotential(boardState, row, col, color) {
-    // 评估落子后是否有机会形成VCF
-    var sim = cloneBoard(boardState);
-    sim[row][col] = color;
-    var vcf = findVCFMove(sim, color, 1);
-    if (vcf) return 8000; // 有VCF机会
-
-    // 检查是否能形成活四
-    var dirs = [[0,1],[1,0],[1,1],[1,-1]];
-    for (var d = 0; d < dirs.length; d++) {
-        var info = getLineInfo(sim, row, col, dirs[d][0], dirs[d][1], color);
-        if (info.count === 3 && info.openEnds === 2) return 3000; // 活三可发展为活四
-        if (info.count === 4 && info.openEnds === 2) return 5000; // 活四极强
+    // 难度梯度：初级随机、中级小随机、高级小随机、特级最优
+    if (difficulty === 1) {
+        return candidates[Math.floor(Math.random() * Math.min(10, candidates.length))];
+    } else if (difficulty === 2) {
+        return candidates[Math.floor(Math.random() * Math.min(5, candidates.length))];
+    } else if (difficulty === 3) {
+        return candidates[Math.floor(Math.random() * Math.min(3, candidates.length))];
+    } else {
+        return candidates[0]; // 特级：永远选最优
     }
-    return 0;
-}
-
-// 深度搜索（难度4专用）
-function minimaxAB(boardState, color, depth, alpha, beta) {
-    var opponent = color === BLACK ? WHITE : BLACK;
-    var moves = getCandidates(boardState, color, opponent, true).slice(0, 8);
-
-    if (moves.length === 0) return { score: 0, move: null };
-    if (depth === 0) {
-        var total = 0;
-        for (var i = 0; i < moves.length; i++) {
-            total += moves[i].score;
-        }
-        return { score: total / moves.length, move: moves[0] };
-    }
-
-    var bestMove = moves[0];
-
-    for (var i = 0; i < moves.length; i++) {
-        var mv = moves[i];
-        var sim = cloneBoard(boardState);
-        sim[mv.row][mv.col] = color;
-
-        // 快速剪枝：落子后自己赢了
-        if (checkWin(sim)) return { score: 1000000 - (3 - depth) * 10000, move: mv };
-
-        var result = minimaxAB(sim, opponent, depth - 1, alpha, beta);
-        var score = -result.score;
-
-        if (score > alpha) {
-            alpha = score;
-            bestMove = mv;
-        }
-        if (alpha >= beta) break; // Beta剪枝
-    }
-
-    return { score: alpha, move: bestMove };
 }
 
 // 做杀点检测：一步形成两个威胁（对手防不胜防）
