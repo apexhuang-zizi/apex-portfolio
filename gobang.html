@@ -1321,6 +1321,12 @@ var onlineDocId = ''; // 房间文档ID
 
 function initCloudBase() {
     if (cbApp) return Promise.resolve();
+    // 检查SDK是否加载成功
+    if (typeof cloudbase === 'undefined') {
+        console.warn('CloudBase SDK not loaded');
+        showToast('云端功能暂时不可用');
+        return Promise.reject(new Error('CloudBase SDK not loaded'));
+    }
     try {
         cbApp = cloudbase.init({
             env: 'apex-english-4ga1ck7148c9e3'
