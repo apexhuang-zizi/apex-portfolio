@@ -64,6 +64,10 @@ body{font-family:'Outfit',system-ui,sans-serif;background:var(--bg);color:var(--
 .header h1{font-size:1.6rem;font-weight:700;color:var(--mc-green-light);text-shadow:2px 2px 0 #000}
 .header .subtitle{font-size:.8rem;color:var(--text-muted)}
 .user-info{background:var(--surface);padding:6px 14px;border-radius:4px;font-size:.85rem;color:var(--text-muted);border:var(--pixel-border)}
+.header-back{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--surface-2);color:var(--text);border:var(--pixel-border);
+    border-radius:4px;font-family:inherit;font-size:.85rem;font-weight:500;cursor:pointer;text-decoration:none;transition:all .15s}
+.header-back:hover{background:var(--mc-green);color:#fff}
+.header-back:active{transform:translateY(1px)}
 
 /* ===== TABS ===== */
 .tabs{max-width:1200px;margin:0 auto 16px;display:flex;gap:4px;background:var(--surface);padding:4px;border:var(--pixel-border);border-radius:4px;overflow-x:auto}
@@ -78,13 +82,19 @@ body{font-family:'Outfit',system-ui,sans-serif;background:var(--bg);color:var(--
 
 /* ===== BOARD ===== */
 .board-container{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
-.board-wrapper{position:relative;background:var(--mc-brown);padding:16px;border:var(--pixel-border);box-shadow:inset -4px -4px 0 rgba(0,0,0,.2),inset 4px 4px 0 rgba(255,255,255,.1)}
+.board-wrapper{position:relative;background:var(--mc-brown);padding:16px;border:var(--pixel-border);box-shadow:inset -4px -4px 0 rgba(0,0,0,.2),inset 4px 4px 0 rgba(255,255,255,.1);max-width:calc(100vw - 40px);box-sizing:border-box}
+.board-wrapper canvas{width:100%!important;height:auto!important;max-width:600px}
 .board-wrapper::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;
     background:repeating-linear-gradient(45deg,transparent,transparent 5px,rgba(0,0,0,.03) 5px,rgba(0,0,0,.03) 10px);pointer-events:none}
-canvas#board{display:block;cursor:pointer;image-rendering:pixelated}
-canvas#aiBoard{display:block;cursor:pointer;image-rendering:pixelated}
-canvas#onlineBoard{display:block;cursor:pointer;image-rendering:pixelated}
-.board-info{background:var(--surface);padding:16px 20px;border:var(--pixel-border);min-width:220px;max-width:300px;flex:1}
+canvas#board{display:block;cursor:pointer;image-rendering:pixelated;max-width:100%;height:auto}
+canvas#aiBoard{display:block;cursor:pointer;image-rendering:pixelated;max-width:100%;height:auto}
+canvas#onlineBoard{display:block;cursor:pointer;image-rendering:pixelated;max-width:100%;height:auto}
+.board-info{background:var(--surface);padding:16px 20px;border:var(--pixel-border);min-width:200px;max-width:300px;flex:1}
+@media(max-width:600px){
+.board-container{flex-direction:column;align-items:center!important}
+.board-wrapper{max-width:calc(100vw - 32px)}
+.board-info{min-width:auto;max-width:100%;width:100%}
+}
 .board-info h3{font-size:1rem;font-weight:600;margin-bottom:12px;color:var(--mc-green-light)}
 .status-line{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:8px 12px;background:var(--surface-2);border:2px solid #1a1a1a}
 .status-dot{width:12px;height:12px;border-radius:50%;border:2px solid #000}
@@ -210,7 +220,7 @@ canvas#onlineBoard{display:block;cursor:pointer;image-rendering:pixelated}
 <!-- ===== HEADER ===== -->
 <div class="header">
     <div class="header-left">
-        <button class="pixel-btn secondary" onclick="location.href='index.html'" style="padding:8px 12px">🏠</button>
+        <a href="index.html" class="header-back">🏠 返回主页</a>
         <div>
             <h1>♟ 五子棋</h1>
             <div class="subtitle">Gomoku / Cờ Carô</div>
@@ -359,7 +369,7 @@ canvas#onlineBoard{display:block;cursor:pointer;image-rendering:pixelated}
     <div class="stats-grid" id="statsGrid"></div>
     <h3 style="margin:16px 0 8px;color:var(--mc-green-light)">📜 对局记录</h3>
     <table class="history-table" id="historyTable">
-        <thead><tr><th>时间</th><th>模式</th><th>对手</th><th>结果</th><th>步数</th></tr></thead>
+        <thead><tr><th>时间</th><th>玩家</th><th>模式</th><th>对手</th><th>结果</th><th>步数</th></tr></thead>
         <tbody id="historyBody"></tbody>
     </table>
 </div>
@@ -374,6 +384,7 @@ canvas#onlineBoard{display:block;cursor:pointer;image-rendering:pixelated}
         <p id="modalInfo">共 20 步</p>
         <div class="btn-group">
             <button class="pixel-btn" onclick="closeModal();resetGame()">🔄 再来一局</button>
+            <button class="pixel-btn" onclick="openReview('local')">🔍 AI复盘</button>
             <button class="pixel-btn secondary" onclick="closeModal()">关闭</button>
         </div>
     </div>
@@ -386,8 +397,34 @@ canvas#onlineBoard{display:block;cursor:pointer;image-rendering:pixelated}
         <p id="aiModalInfo">共 20 步</p>
         <div class="btn-group">
             <button class="pixel-btn" onclick="closeAiModal();newAiGame()">🔄 再来一局</button>
+            <button class="pixel-btn" onclick="openReview('ai')">🔍 AI复盘</button>
             <button class="pixel-btn secondary" onclick="closeAiModal()">关闭</button>
         </div>
+    </div>
+</div>
+
+<!-- ===== REVIEW MODAL (复盘分析) ===== -->
+<div class="modal-overlay" id="reviewModal">
+    <div class="modal" style="max-width:700px;width:95vw">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <h3 style="color:var(--mc-green-light);margin:0">🔍 AI复盘分析</h3>
+            <button onclick="closeReview()" style="background:none;border:none;color:var(--text-muted);font-size:1.4rem;cursor:pointer;padding:4px 8px">✕</button>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+            <button class="pixel-btn" onclick="reviewPrev()">◀ 上一步</button>
+            <button class="pixel-btn" onclick="reviewPlay()" id="reviewPlayBtn">▶ 播放</button>
+            <button class="pixel-btn" onclick="reviewNext()">下一步 ▶</button>
+            <span style="color:var(--text-muted);padding:10px 8px;font-size:.85rem" id="reviewStepInfo">第 0 / 0 步</span>
+        </div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start">
+            <div style="flex:1;min-width:260px">
+                <canvas id="reviewBoard" width="400" height="400" style="max-width:100%;image-rendering:pixelated;border:3px solid #1a1a1a"></canvas>
+            </div>
+            <div style="flex:1;min-width:200px;max-width:280px">
+                <div id="reviewComment" style="background:var(--surface-2);border:2px solid #1a1a1a;padding:12px;min-height:120px;font-size:.85rem;line-height:1.6;max-height:300px;overflow-y:auto"></div>
+            </div>
+        </div>
+        <div id="reviewSummary" style="margin-top:12px;padding:12px;background:var(--surface-2);border:2px solid #1a1a1a;font-size:.85rem;line-height:1.6;display:none"></div>
     </div>
 </div>
 
@@ -1008,42 +1045,114 @@ function aiGetMove(boardState, color, difficulty) {
     var blockMove = findWinningMove(boardState, opponent);
     if (blockMove) return blockMove;
 
-    // 4. 高级AI：寻找能形成双威胁的位置（做杀）
+    // 4. 防守对方VCF
+    var blockVCF = findVCFMove(boardState, opponent, 1);
+    if (blockVCF) return blockVCF;
+
+    // 5. 寻找做杀点（双威胁）
     if (difficulty >= 3) {
         var killMove = findKillMove(boardState, color, opponent);
         if (killMove) return killMove;
     }
 
-    // 5. 评分候选位
+    // 6. 根据难度选择策略
+    if (difficulty === 1) {
+        // 初级：只评分，随机选前10名
+        var cands1 = getCandidates(boardState, color, opponent, false);
+        return cands1[Math.floor(Math.random() * Math.min(10, cands1.length))] || { row: 7, col: 7 };
+    } else if (difficulty === 2) {
+        // 中级：评分选前5名，有一定防守意识
+        var cands2 = getCandidates(boardState, color, opponent, false);
+        return cands2[Math.floor(Math.random() * Math.min(5, cands2.length))] || { row: 7, col: 7 };
+    } else if (difficulty === 3) {
+        // 中高级：评分+威胁计数，选前3名
+        var cands3 = getCandidates(boardState, color, opponent, true);
+        return cands3[Math.floor(Math.random() * Math.min(3, cands3.length))] || { row: 7, col: 7 };
+    } else {
+        // 高级：深度搜索 + Alpha-Beta剪枝
+        var result = minimaxAB(boardState, color, 3, -Infinity, Infinity);
+        if (result && result.move) return result.move;
+        var cands4 = getCandidates(boardState, color, opponent, true);
+        return cands4[0] || { row: 7, col: 7 };
+    }
+}
+
+function getCandidates(boardState, myColor, opColor, withThreats) {
     var candidates = [];
     for (var r = 0; r < SIZE; r++) {
         for (var c = 0; c < SIZE; c++) {
             if (boardState[r][c] !== EMPTY) continue;
             if (!hasNeighbor(boardState, r, c, 2)) continue;
-            var score = evaluatePosition(boardState, r, c, color, opponent);
-            // 高级AI额外考虑：落子后形成的威胁数量
-            if (difficulty >= 4) {
-                score += countThreats(boardState, r, c, color) * 1000;
+            var score = evaluatePosition(boardState, r, c, myColor, opColor);
+            if (withThreats) {
+                score += countThreats(boardState, r, c, myColor) * 2000;
+                // 额外评估：对方在这个位置的威胁
+                var sim = cloneBoard(boardState);
+                sim[r][c] = opColor;
+                score -= countThreats(sim, r, c, opColor) * 3000;
+                // 评估落子后能否发展为VCF
+                var vcfScore = evaluateVCFPotential(boardState, r, c, myColor);
+                score += vcfScore;
             }
             candidates.push({ row: r, col: c, score: score });
         }
     }
-
-    if (candidates.length === 0) {
-        return { row: 7, col: 7 };
-    }
-
     candidates.sort(function(a, b) { return b.score - a.score; });
+    return candidates;
+}
 
-    if (difficulty === 1) {
-        return candidates[Math.floor(Math.random() * Math.min(10, candidates.length))];
-    } else if (difficulty === 2) {
-        return candidates[Math.floor(Math.random() * Math.min(5, candidates.length))];
-    } else if (difficulty === 3) {
-        return candidates[Math.floor(Math.random() * Math.min(3, candidates.length))];
-    } else {
-        return candidates[0];
+function evaluateVCFPotential(boardState, row, col, color) {
+    // 评估落子后是否有机会形成VCF
+    var sim = cloneBoard(boardState);
+    sim[row][col] = color;
+    var vcf = findVCFMove(sim, color, 1);
+    if (vcf) return 8000; // 有VCF机会
+
+    // 检查是否能形成活四
+    var dirs = [[0,1],[1,0],[1,1],[1,-1]];
+    for (var d = 0; d < dirs.length; d++) {
+        var info = getLineInfo(sim, row, col, dirs[d][0], dirs[d][1], color);
+        if (info.count === 3 && info.openEnds === 2) return 3000; // 活三可发展为活四
+        if (info.count === 4 && info.openEnds === 2) return 5000; // 活四极强
     }
+    return 0;
+}
+
+// 深度搜索（难度4专用）
+function minimaxAB(boardState, color, depth, alpha, beta) {
+    var opponent = color === BLACK ? WHITE : BLACK;
+    var moves = getCandidates(boardState, color, opponent, true).slice(0, 8);
+
+    if (moves.length === 0) return { score: 0, move: null };
+    if (depth === 0) {
+        var total = 0;
+        for (var i = 0; i < moves.length; i++) {
+            total += moves[i].score;
+        }
+        return { score: total / moves.length, move: moves[0] };
+    }
+
+    var bestMove = moves[0];
+
+    for (var i = 0; i < moves.length; i++) {
+        var mv = moves[i];
+        var sim = cloneBoard(boardState);
+        sim[mv.row][mv.col] = color;
+
+        // 快速剪枝：落子后自己赢了
+        if (checkWin(sim)) return { score: 1000000 - (3 - depth) * 10000, move: mv };
+
+        var result = minimaxAB(sim, opponent, depth - 1, alpha, beta);
+        var score = -result.score;
+
+        if (score > alpha) {
+            alpha = score;
+            bestMove = mv;
+        }
+        if (alpha >= beta) break; // Beta剪枝
+    }
+
+    return { score: alpha, move: bestMove };
 }
 
 // 做杀点检测：一步形成两个威胁（对手防不胜防）
@@ -1668,6 +1777,7 @@ function saveGameResult(winnerColor, mode, opponent, moveCount) {
     var result = isDraw ? 'draw' : (isPlayerWin || mode === '本地对战' ? 'win' : 'lose');
     stats.history.unshift({
         time: timeStr,
+        player: currentUser,
         mode: mode,
         opponent: opponent,
         result: result,
@@ -1698,7 +1808,7 @@ function renderStats() {
 
     var tbody = document.getElementById('historyBody');
     if (stats.history.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:20px">暂无对局记录</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:20px">暂无对局记录</td></tr>';
         return;
     }
     var html = '';
@@ -1706,14 +1816,324 @@ function renderStats() {
         var h = stats.history[i];
         var resultClass = h.result === 'win' ? 'result-win' : (h.result === 'lose' ? 'result-lose' : 'result-draw');
         var resultText = h.result === 'win' ? '🏆 胜' : (h.result === 'lose' ? '💔 负' : '🤝 和');
-        html += '<tr><td>' + h.time + '</td><td>' + h.mode + '</td><td>' + h.opponent +
+        html += '<tr><td>' + h.time + '</td><td>' + (h.player || currentUser) + '</td><td>' + h.mode + '</td><td>' + h.opponent +
             '</td><td class="' + resultClass + '">' + resultText + '</td><td>' + h.moves + '</td></tr>';
     }
     tbody.innerHTML = html;
 }
 
 // ============================================================
-//  TAB 切换
+//  AI复盘系统
+// ============================================================
+var reviewData = [];       // 棋谱数据
+var reviewStep = 0;        // 当前步数
+var reviewSource = '';     // 'ai' 或 'local'
+var reviewPlaying = false;
+var reviewTimer = null;
+
+// 启动复盘
+function openReview(source) {
+    reviewSource = source;
+    var history = source === 'ai' ? aiHistory : moveHistory;
+    if (!history || history.length === 0) { showToast('暂无棋谱可复盘'); return; }
+    reviewData = history.slice();
+    reviewStep = 0;
+    reviewPlaying = false;
+    if (reviewTimer) { clearInterval(reviewTimer); reviewTimer = null; }
+    document.getElementById('reviewModal').classList.add('show');
+    document.getElementById('reviewSummary').style.display = 'none';
+    renderReviewBoard();
+    analyzeReview();
+}
+
+function closeReview() {
+    if (reviewTimer) { clearInterval(reviewTimer); reviewTimer = null; }
+    reviewPlaying = false;
+    document.getElementById('reviewModal').classList.remove('show');
+}
+
+function reviewPrev() {
+    if (reviewStep > 0) { reviewStep--; renderReviewBoard(); }
+}
+
+function reviewNext() {
+    if (reviewStep < reviewData.length) { reviewStep++; renderReviewBoard(); }
+}
+
+function reviewPlay() {
+    if (reviewPlaying) {
+        reviewPlaying = false;
+        if (reviewTimer) { clearInterval(reviewTimer); reviewTimer = null; }
+        document.getElementById('reviewPlayBtn').textContent = '▶ 播放';
+        return;
+    }
+    reviewPlaying = true;
+    document.getElementById('reviewPlayBtn').textContent = '⏸ 暂停';
+    reviewTimer = setInterval(function() {
+        if (reviewStep >= reviewData.length) {
+            reviewPlaying = false;
+            clearInterval(reviewTimer);
+            reviewTimer = null;
+            document.getElementById('reviewPlayBtn').textContent = '▶ 播放';
+            return;
+        }
+        reviewStep++;
+        renderReviewBoard();
+    }, 800);
+}
+
+function renderReviewBoard() {
+    var canvas = document.getElementById('reviewBoard');
+    var ctx = canvas.getContext('2d');
+    var w = canvas.width, h = canvas.height;
+    var cell = (w - 40) / (SIZE - 1);
+    var pad = 20;
+
+    // 背景
+    ctx.fillStyle = '#c8a24e';
+    ctx.fillRect(0, 0, w, h);
+
+    // 网格
+    ctx.strokeStyle = '#5a4a2a';
+    ctx.lineWidth = 1;
+    for (var i = 0; i < SIZE; i++) {
+        ctx.beginPath(); ctx.moveTo(pad, pad + i * cell); ctx.lineTo(pad + (SIZE - 1) * cell, pad + i * cell); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(pad + i * cell, pad); ctx.lineTo(pad + i * cell, pad + (SIZE - 1) * cell); ctx.stroke();
+    }
+
+    // 星位
+    var stars = [3, 7, 11];
+    ctx.fillStyle = '#5a4a2a';
+    for (var si = 0; si < 3; si++)
+        for (var sj = 0; sj < 3; sj++)
+            ctx.beginPath(), ctx.arc(pad + stars[sj] * cell, pad + stars[si] * cell, 3, 0, Math.PI * 2), ctx.fill();
+
+    // 棋子
+    var tempBoard = [];
+    for (var r = 0; r < SIZE; r++) { tempBoard[r] = []; for (var c = 0; c < SIZE; c++) tempBoard[r][c] = EMPTY; }
+
+    for (var i = 0; i < reviewStep; i++) {
+        var m = reviewData[i];
+        tempBoard[m.row][m.col] = m.color;
+    }
+
+    for (var r = 0; r < SIZE; r++) {
+        for (var c = 0; c < SIZE; c++) {
+            if (tempBoard[r][c] === EMPTY) continue;
+            var x = pad + c * cell, y = pad + r * cell;
+            ctx.beginPath(); ctx.arc(x, y, 14, 0, Math.PI * 2);
+            if (tempBoard[r][c] === BLACK) {
+                ctx.fillStyle = '#1a1a1a'; ctx.fill();
+            } else {
+                ctx.fillStyle = '#f5f5f5'; ctx.fill();
+                ctx.strokeStyle = '#bbb'; ctx.lineWidth = 1; ctx.stroke();
+            }
+            // 步数标注
+            if (i < reviewStep) {
+                ctx.fillStyle = tempBoard[r][c] === BLACK ? '#fff' : '#111';
+                ctx.font = 'bold 9px sans-serif';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(i + 1, x, y);
+            }
+        }
+    }
+
+    // 高亮最后落子
+    if (reviewStep > 0) {
+        var last = reviewData[reviewStep - 1];
+        var lx = pad + last.col * cell, ly = pad + last.row * cell;
+        ctx.strokeStyle = '#7cb342'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(lx, ly, 17, 0, Math.PI * 2); ctx.stroke();
+    }
+
+    document.getElementById('reviewStepInfo').textContent = '第 ' + reviewStep + ' / ' + reviewData.length + ' 步';
+}
+
+// AI分析复盘
+function analyzeReview() {
+    var steps = reviewData;
+    var b = []; for (var r = 0; r < SIZE; r++) { b[r] = []; for (var c = 0; c < SIZE; c++) b[r][c] = EMPTY; }
+    var comments = [];
+    var badMoves = [];
+
+    for (var i = 0; i < steps.length; i++) {
+        var m = steps[i];
+        b[m.row][m.col] = m.color;
+        var eval = aiEvaluateMove(b, m.row, m.col, m.color);
+        var issue = checkMistake(b, m.row, m.col, m.color, i, steps);
+        var stepComment = '';
+
+        if (issue.type === 'bad') {
+            badMoves.push({ step: i + 1, row: m.row, col: m.col, reason: issue.reason, suggestion: issue.suggestion });
+            stepComment = '<span style="color:var(--danger)">⚠️ 此步有问题: ' + issue.reason + '。建议: ' + issue.suggestion + '</span>';
+        } else if (eval.score > 3000) {
+            stepComment = '<span style="color:var(--success)">✅ 佳着！</span>';
+        } else if (eval.score > 500) {
+            stepComment = '<span style="color:var(--mc-green-light)">👍 好棋</span>';
+        } else {
+            stepComment = '<span style="color:var(--text-muted)">一般</span>';
+        }
+        comments.push(stepComment);
+    }
+
+    renderReviewComments(comments);
+    renderReviewSummary(badMoves, steps);
+}
+
+function renderReviewComments(comments) {
+    var el = document.getElementById('reviewComment');
+    var html = '<div style="font-weight:600;margin-bottom:8px;color:var(--mc-green-light)">各步评价</div>';
+    for (var i = 0; i < comments.length; i++) {
+        var m = reviewData[i];
+        var col = m.color === BLACK ? '⬛' : '⬜';
+        var colLetter = String.fromCharCode(65 + m.col);
+        var rowNum = SIZE - m.row;
+        html += '<div style="padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:.8rem">' +
+            (i + 1) + '. ' + col + ' ' + colLetter + rowNum + ' ' + comments[i] + '</div>';
+    }
+    el.innerHTML = html;
+}
+
+function renderReviewSummary(badMoves, steps) {
+    var el = document.getElementById('reviewSummary');
+    el.style.display = 'block';
+    var total = steps.length;
+    var bad = badMoves.length;
+    var rate = total > 0 ? Math.round((total - bad) / total * 100) : 100;
+    var rating = rate >= 90 ? '🌟 优秀！' : (rate >= 70 ? '👍 良好' : (rate >= 50 ? '⚠️ 有待提高' : '❌ 需要多练习'));
+
+    var html = '<div style="margin-bottom:8px"><b>' + rating + ' 综合评分: ' + rate + '%</b></div>';
+    html += '<div style="margin-bottom:8px">总步数: ' + total + ' 步 | 需改进: ' + bad + ' 步</div>';
+
+    if (badMoves.length > 0) {
+        html += '<div style="margin-bottom:8px;font-weight:600">🔍 重点复盘:</div>';
+        for (var i = 0; i < badMoves.length; i++) {
+            var b = badMoves[i];
+            var colLetter = String.fromCharCode(65 + b.col);
+            var rowNum = SIZE - b.row;
+            html += '<div style="margin-bottom:6px;padding:6px 8px;background:rgba(239,83,80,.1);border-left:3px solid var(--danger)">' +
+                '<b>第 ' + b.step + ' 步 (' + colLetter + rowNum + ')</b>: ' + b.reason + '<br>' +
+                '<span style="color:var(--success)">💡 ' + b.suggestion + '</span></div>';
+        }
+    } else {
+        html += '<div style="color:var(--success)">🎉 本局棋谱质量很高，没有明显失误！</div>';
+    }
+
+    el.innerHTML = html;
+}
+
+// 检查是否是失误
+function checkMistake(boardState, row, col, color, stepIdx, steps) {
+    // 模拟在此位置落子后的状态
+    var sim = cloneBoard(boardState);
+    sim[row][col] = color;
+    var opponent = color === BLACK ? WHITE : BLACK;
+
+    // 检查1：是否错过了必胜机会（我方有活四但没走）
+    var vcf = findVCFMove(sim, color, 1);
+    if (vcf) {
+        return { type: 'bad', reason: '此步错失了VCF必胜机会', suggestion: '应走' + coord(vcf.row, vcf.col) + '形成连续冲四取胜' };
+    }
+
+    // 检查2：是否挡住了对方的VCF
+    var oppVCF = findVCFMove(sim, opponent, 1);
+    if (oppVCF) {
+        return { type: 'bad', reason: '未挡住对方VCF必胜', suggestion: '应立即堵' + coord(oppVCF.row, oppVCF.col) + '，否则对手下一步获胜' };
+    }
+
+    // 检查3：是否忽视了对方活三
+    var allMoves = getAllMoves(sim);
+    var oppThreat = [];
+    for (var i = 0; i < allMoves.length; i++) {
+        var mv = allMoves[i];
+        var eval2 = aiEvaluateMove(sim, mv.row, mv.col, opponent);
+        if (eval2.score > 500) oppThreat.push({ row: mv.row, col: mv.col, score: eval2.score, info: eval2 });
+    }
+    oppThreat.sort(function(a, b) { return b.score - a.score; });
+    if (oppThreat.length > 0 && oppThreat[0].score > 2000) {
+        return { type: 'bad', reason: '忽视了对手的大威胁', suggestion: '应防守' + coord(oppThreat[0].row, oppThreat[0].col) + ' (' + describeThreat(oppThreat[0].info) + ')' };
+    }
+
+    // 检查4：评估是否太低（明显臭棋）
+    var myEval = aiEvaluateMove(sim, row, col, color);
+    if (myEval.score < 50 && stepIdx > 3) {
+        return { type: 'bad', reason: '此步效率较低', suggestion: '建议在' + describeBetterMove(sim, color) + '等位置落子更优' };
+    }
+
+    return { type: 'ok' };
+}
+
+function describeThreat(info) {
+    if (info.four > 0) return '冲四威胁';
+    if (info.liveThree > 0) return '活三威胁';
+    if (info.deadFour > 0) return '眠四';
+    return '威胁';
+}
+
+function describeBetterMove(boardState, color) {
+    var moves = getAllMoves(boardState);
+    var best = null, bestScore = -9999;
+    for (var i = 0; i < moves.length; i++) {
+        var eval2 = aiEvaluateMove(boardState, moves[i].row, moves[i].col, color);
+        if (eval2.score > bestScore) { bestScore = eval2.score; best = moves[i]; }
+    }
+    return best ? coord(best.row, best.col) : '更好';
+}
+
+function coord(row, col) {
+    return String.fromCharCode(65 + col) + (SIZE - row);
+}
+
+function cloneBoard(b) {
+    var nb = []; for (var r = 0; r < SIZE; r++) { nb[r] = b[r].slice(); } return nb;
+}
+
+function getAllMoves(boardState) {
+    var moves = [];
+    for (var r = 0; r < SIZE; r++)
+        for (var c = 0; c < SIZE; c++)
+            if (boardState[r][c] === EMPTY && hasNeighbor(boardState, r, c, 2))
+                moves.push({ row: r, col: c });
+    return moves;
+}
+
+// AI评估单步（基于启发式）
+function aiEvaluateMove(boardState, row, col, color) {
+    var sim = cloneBoard(boardState);
+    sim[row][col] = color;
+    var opponent = color === BLACK ? WHITE : BLACK;
+    var dirs = [[0,1],[1,0],[1,1],[1,-1]];
+    var score = 0;
+    var info = { four: 0, liveThree: 0, deadFour: 0 };
+
+    for (var d = 0; d < dirs.length; d++) {
+        var lineInfo = getLineInfo(sim, row, col, dirs[d][0], dirs[d][1], color);
+        if (lineInfo.count >= 5) { score += 100000; }
+        else if (lineInfo.count === 4) {
+            if (lineInfo.openEnds === 2) { score += 50000; info.four++; }
+            else if (lineInfo.openEnds === 1) { score += 5000; info.deadFour++; }
+        }
+        else if (lineInfo.count === 3) {
+            if (lineInfo.openEnds === 2) { score += 3000; info.liveThree++; }
+            else if (lineInfo.openEnds === 1) { score += 200; }
+        }
+        else if (lineInfo.count === 2) {
+            if (lineInfo.openEnds === 2) score += 200;
+            else if (lineInfo.openEnds === 1) score += 20;
+        }
+        else if (lineInfo.count === 1 && lineInfo.openEnds === 2) score += 10;
+    }
+
+    // 对方威胁
+    for (var d = 0; d < dirs.length; d++) {
+        var oppLine = getLineInfo(sim, row, col, dirs[d][0], dirs[d][1], opponent);
+        if (oppLine.count === 4 && oppLine.openEnds === 1) score -= 8000;
+        if (oppLine.count === 3 && oppLine.openEnds === 2) score -= 3000;
+    }
+
+    return { score: score, info: info };
+}
+
 // ============================================================
 function switchTab(tabName) {
     var tabs = document.querySelectorAll('.tab-btn');
