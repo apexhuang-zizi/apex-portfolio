@@ -1914,11 +1914,18 @@ var reviewStep = 0;        // 当前步数
 var reviewSource = '';     // 'ai' 或 'local'
 var reviewPlaying = false;
 var reviewTimer = null;
+var reviewPlayerColor = BLACK; // 玩家执子颜色
 
 // 启动复盘
 function openReview(source) {
     reviewSource = source;
     var history = source === 'ai' ? aiHistory : moveHistory;
+    // 确定玩家颜色（根据第一招判断）
+    if (history && history.length > 0) {
+        reviewPlayerColor = history[0].color === playerColor ? playerColor : aiColor;
+    } else {
+        reviewPlayerColor = BLACK;
+    }
     if (!history || history.length === 0) { showToast('暂无棋谱可复盘'); return; }
     reviewData = history.slice();
     reviewStep = 0;
@@ -1985,6 +1992,18 @@ function renderReviewBoard() {
         ctx.beginPath(); ctx.moveTo(pad + i * cell, pad); ctx.lineTo(pad + i * cell, pad + (SIZE - 1) * cell); ctx.stroke();
     }
 
+    // 坐标标签
+    ctx.fillStyle = '#3a2a1a';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (var i = 0; i < SIZE; i++) {
+        // 横坐标 A-O
+        ctx.fillText(String.fromCharCode(65 + i), pad + i * cell, pad - 8);
+        // 纵坐标 15-1
+        ctx.fillText(String(SIZE - i), pad - 10, pad + i * cell + 4);
+    }
+
     // 星位
     var stars = [3, 7, 11];
     ctx.fillStyle = '#5a4a2a';
@@ -2005,7 +2024,7 @@ function renderReviewBoard() {
         for (var c = 0; c < SIZE; c++) {
             if (tempBoard[r][c] === EMPTY) continue;
             var x = pad + c * cell, y = pad + r * cell;
-            ctx.beginPath(); ctx.arc(x, y, 14, 0, Math.PI * 2);
+            ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI * 2);
             if (tempBoard[r][c] === BLACK) {
                 ctx.fillStyle = '#1a1a1a'; ctx.fill();
             } else {
@@ -2037,19 +2056,24 @@ function renderReviewBoard() {
 function analyzeReview() {
     var steps = reviewData;
     var b = []; for (var r = 0; r < SIZE; r++) { b[r] = []; for (var c = 0; c < SIZE; c++) b[r][c] = EMPTY; }
-    var comments = [];
+    var comments = []; // 只存玩家步的评价
     var badMoves = [];
 
     for (var i = 0; i < steps.length; i++) {
         var m = steps[i];
+        // 只分析玩家的棋
+        if (m.color !== reviewPlayerColor) continue;
         b[m.row][m.col] = m.color;
         var eval = aiEvaluateMove(b, m.row, m.col, m.color);
         var issue = checkMistake(b, m.row, m.col, m.color, i, steps);
         var stepComment = '';
 
+        // 获取这步是第几步（玩家的第几步）
+        var playerStep = badMoves.length + 1;
+
         if (issue.type === 'bad') {
-            badMoves.push({ step: i + 1, row: m.row, col: m.col, reason: issue.reason, suggestion: issue.suggestion });
-            stepComment = '<span style="color:var(--danger)">⚠️ 此步有问题: ' + issue.reason + '。建议: ' + issue.suggestion + '</span>';
+            badMoves.push({ step: playerStep, row: m.row, col: m.col, reason: issue.reason, suggestion: issue.suggestion });
+            stepComment = '<span style="color:var(--danger)">⚠️ ' + issue.reason + '。建议: ' + issue.suggestion + '</span>';
         } else if (eval.score > 3000) {
             stepComment = '<span style="color:var(--success)">✅ 佳着！</span>';
         } else if (eval.score > 500) {
@@ -2057,23 +2081,30 @@ function analyzeReview() {
         } else {
             stepComment = '<span style="color:var(--text-muted)">一般</span>';
         }
-        comments.push(stepComment);
+        // 对应到玩家的步数
+        comments[playerStep - 1] = stepComment;
     }
 
     renderReviewComments(comments);
-    renderReviewSummary(badMoves, steps);
+    renderReviewSummary(badMoves, reviewData);
 }
 
 function renderReviewComments(comments) {
     var el = document.getElementById('reviewComment');
-    var html = '<div style="font-weight:600;margin-bottom:8px;color:var(--mc-green-light)">各步评价</div>';
+    var html = '<div style="font-weight:600;margin-bottom:8px;color:var(--mc-green-light)">你的落子评价</div>';
+    var hasComment = false;
     for (var i = 0; i < comments.length; i++) {
-        var m = reviewData[i];
-        var col = m.color === BLACK ? '⬛' : '⬜';
-        var colLetter = String.fromCharCode(65 + m.col);
-        var rowNum = SIZE - m.row;
-        html += '<div style="padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:.8rem">' +
-            (i + 1) + '. ' + col + ' ' + colLetter + rowNum + ' ' + comments[i] + '</div>';
+        if (comments[i]) {
+            hasComment = true;
+            var m = reviewData.filter(function(x) { return x.color === reviewPlayerColor; })[i];
+            var colLetter = String.fromCharCode(65 + m.col);
+            var rowNum = SIZE - m.row;
+            html += '<div style="padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:.8rem">' +
+                (i + 1) + '. ' + colLetter + rowNum + ' ' + comments[i] + '</div>';
+        }
+    }
+    if (!hasComment) {
+        html += '<div style="color:var(--text-muted);font-size:.8rem">暂无你的落子记录</div>';
     }
     el.innerHTML = html;
 }
@@ -2081,13 +2112,17 @@ function renderReviewComments(comments) {
 function renderReviewSummary(badMoves, steps) {
     var el = document.getElementById('reviewSummary');
     el.style.display = 'block';
-    var total = steps.length;
+    // 计算玩家的总步数和失误数
+    var playerTotal = 0;
+    for (var i = 0; i < steps.length; i++) {
+        if (steps[i].color === reviewPlayerColor) playerTotal++;
+    }
     var bad = badMoves.length;
-    var rate = total > 0 ? Math.round((total - bad) / total * 100) : 100;
+    var rate = playerTotal > 0 ? Math.round((playerTotal - bad) / playerTotal * 100) : 100;
     var rating = rate >= 90 ? '🌟 优秀！' : (rate >= 70 ? '👍 良好' : (rate >= 50 ? '⚠️ 有待提高' : '❌ 需要多练习'));
 
     var html = '<div style="margin-bottom:8px"><b>' + rating + ' 综合评分: ' + rate + '%</b></div>';
-    html += '<div style="margin-bottom:8px">总步数: ' + total + ' 步 | 需改进: ' + bad + ' 步</div>';
+    html += '<div style="margin-bottom:8px">你的落子: ' + playerTotal + ' 步 | 需改进: ' + bad + ' 步</div>';
 
     if (badMoves.length > 0) {
         html += '<div style="margin-bottom:8px;font-weight:600">🔍 重点复盘:</div>';
@@ -2099,6 +2134,8 @@ function renderReviewSummary(badMoves, steps) {
                 '<b>第 ' + b.step + ' 步 (' + colLetter + rowNum + ')</b>: ' + b.reason + '<br>' +
                 '<span style="color:var(--success)">💡 ' + b.suggestion + '</span></div>';
         }
+    } else if (playerTotal === 0) {
+        html += '<div style="color:var(--text-muted)">暂无你的落子记录</div>';
     } else {
         html += '<div style="color:var(--success)">🎉 本局棋谱质量很高，没有明显失误！</div>';
     }
