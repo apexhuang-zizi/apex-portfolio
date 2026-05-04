@@ -1044,7 +1044,11 @@ function aiGetMove(boardState, color, difficulty) {
     var winMove = findWinningMove(boardState, color);
     if (winMove) return winMove;
 
-    // 2. 对手一步能赢 → 必堵
+    // 2. 检测自己已有的活四/冲四 → 直接下让5连形成
+    var nearWinMove = findNearWinMove(boardState, color);
+    if (nearWinMove) return nearWinMove;
+
+    // 3. 对手一步能赢 → 必堵
     var blockMove = findWinningMove(boardState, opponent);
     if (blockMove) return blockMove;
 
@@ -1188,6 +1192,50 @@ function findWinningMove(boardState, color) {
                 return { row: r, col: c };
             }
             boardState[r][c] = EMPTY;
+        }
+    }
+    return null;
+}
+
+// 检测自己已有的4连（活四/冲四），返回能形成5连的位置
+function findNearWinMove(boardState, color) {
+    var dirs = [[0,1],[1,0],[1,1],[1,-1]];
+    for (var r = 0; r < SIZE; r++) {
+        for (var c = 0; c < SIZE; c++) {
+            if (boardState[r][c] !== color) continue;
+            for (var d = 0; d < dirs.length; d++) {
+                var dr = dirs[d][0], dc = dirs[d][1];
+                // 检查4个方向延伸
+                var line = [];
+                for (var k = -4; k <= 4; k++) {
+                    var nr = r + dr * k, nc = c + dc * k;
+                    if (nr < 0 || nr >= SIZE || nc < 0 || nc >= SIZE) continue;
+                    if (boardState[nr][nc] === color) {
+                        line.push({row: nr, col: nc});
+                    } else if (boardState[nr][nc] === EMPTY && line.length > 0 && line.length <= 4) {
+                        // 只有连续4个同色+1空格的情况
+                        var emptyPos = {row: nr, col: nc};
+                        // 验证这4个连续
+                        var consecutive = 0;
+                        for (var i = 0; i < line.length; i++) {
+                            if (i === 0 || (Math.abs(line[i].row - line[i-1].row) <= 1 && Math.abs(line[i].col - line[i-1].col) <= 1)) {
+                                consecutive++;
+                            }
+                        }
+                        if (consecutive >= 4) {
+                            boardState[emptyPos.row][emptyPos.col] = color;
+                            if (checkWin(boardState)) {
+                                boardState[emptyPos.row][emptyPos.col] = EMPTY;
+                                return emptyPos;
+                            }
+                            boardState[emptyPos.row][emptyPos.col] = EMPTY;
+                        }
+                        line.push(emptyPos);
+                    } else {
+                        line = [];
+                    }
+                }
+            }
         }
     }
     return null;
