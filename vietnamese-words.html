@@ -513,6 +513,9 @@
                     renderVocabButtons();
                     hideLoading();
                     loadWrongFromFirebase();
+                    return loadSentenceHistoryFromFirebase();
+                }).then(function(){
+                    console.log('[Init] 造句历史加载完成');
                 }).catch(function(e){
                     console.warn('[Init] Firebase 不可用,使用本地词库:', e.message);
                     loadLocalFallback();
@@ -521,6 +524,11 @@
                 // Firebase 不可用,使用本地词库
                 loadLocalFallback();
             }
+        });
+
+        // 页面关闭前保存数据
+        window.addEventListener('beforeunload', function(){
+            if (_smDirty) flushSmHistoryToFirebase();
         });
 
         // 显示历史记录
