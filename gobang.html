@@ -351,6 +351,7 @@ canvas#onlineBoard{display:block;cursor:pointer;image-rendering:pixelated;max-wi
                         <button class="pixel-btn" onclick="sendSocial('cow')" style="flex:1;background:var(--mc-brown)">💩 送牛粪</button>
                     </div>
                     <button class="pixel-btn danger" onclick="onlineLeaveRoom()" style="width:100%">🚪 离开房间</button>
+                    <button class="pixel-btn" id="onlineRematchBtn" onclick="onlineRematch()" style="width:100%;margin-top:8px;display:none;background:var(--mc-green-light)">🎁 再来一局</button>
                 </div>
                 <h3 style="margin-top:12px">📜 落子记录</h3>
                 <div class="move-list" id="onlineMoveList"><div style="color:var(--text-muted);text-align:center;padding:20px">等待开始...</div></div>
@@ -1741,6 +1742,8 @@ function startOnlineWatcher(roomId, docId) {
             if (moves[i].social && moves[i].playerId !== cbUid) {
                 var socText = moves[i].social === 'flower' ? '🌹 对方送了你一朵鲜花！' : '💩 对方送了你一份牛粪！';
                 showToast(socText);
+                // 显示飘落动画
+                showSocialAnimation(moves[i].social);
                 // 播放对应音效
                 initAudio();
                 if (moves[i].social === 'flower') {
@@ -1797,6 +1800,12 @@ function startOnlineWatcher(roomId, docId) {
             var isMyWin = (winner === onlineMyColor);
             saveGameResult(winner === BLACK ? 'black' : 'white', '在线对战', '对手', onlineHistory.length);
             showToast(isMyWin ? '🎉 你赢了！' : '💔 你输了！');
+            // 显示再来一局按钮
+            var rematchBtn = document.getElementById('onlineRematchBtn');
+            if (rematchBtn) {
+                rematchBtn.style.display = 'block';
+                rematchBtn.textContent = isMyWin ? '🎁 再来一局' : '🤝 要求再来一局';
+            }
             if (onlineDocId) {
                 cbDb.collection('gobang_rooms').doc(onlineDocId).update({
                     status: 'finished', winner: winner, updatedAt: Date.now()
@@ -1961,7 +1970,33 @@ function onlineLeaveRoom() {
     onlineGameOver = false;
     document.getElementById('lobbyView').style.display = 'block';
     document.getElementById('onlineGameView').style.display = 'none';
+    var rematchBtn = document.getElementById('onlineRematchBtn');
+    if (rematchBtn) rematchBtn.style.display = 'none';
     onlineRefreshRooms();
+}
+
+// 再来一局
+function onlineRematch() {
+    if (!onlineDocId || !onlineRoom) return;
+    // 重置房间状态
+    cbDb.collection('gobang_rooms').doc(onlineDocId).update({
+        status: 'playing',
+        currentTurn: 1,
+        winner: 0,
+        updatedAt: Date.now()
+    }).then(function() {
+        // 删除旧落子
+        cbDb.collection('gobang_moves')
+            .where('roomId', '==', onlineRoom.roomId)
+            .get().then(function(snap) {
+                snap.forEach(function(d) { d.ref.delete(); });
+            });
+        // 隐藏按钮
+        var rematchBtn = document.getElementById('onlineRematchBtn');
+        if (rematchBtn) rematchBtn.style.display = 'none';
+        // 重置本地状态 - 重新进入房间
+        enterOnlineRoom(onlineRoom.roomId, onlineDocId);
+    });
 }
 
 // 刷新房间列表 - 简化查询避免需要索引
@@ -2046,6 +2081,27 @@ function sendSocial(type) {
         }catch(e){}
     }
     showToast(text);
+}
+
+// 社交动画：显示鲜花/牛粪飘落效果
+function showSocialAnimation(type) {
+    var container = document.getElementById('onlineGameView');
+    if (!container) container = document.body;
+    var count = type === 'flower' ? 15 : 8;
+    for (var i = 0; i < count; i++) {
+        setTimeout(function() {
+            var el = document.createElement('div');
+            el.textContent = type === 'flower' ? '🌹' : '💩';
+            el.style.cssText = 'position:fixed;left:' + Math.random() * 80 + 10 + '%;top:-50px;font-size:' + (type === 'flower' ? '2rem' : '1.5rem') + ';z-index:9999;pointer-events:none;transition:top 2s ease-in,opacity 2s ease-in,transform 2s ease-in;';
+            document.body.appendChild(el);
+            setTimeout(function() {
+                el.style.top = (window.innerHeight + 50) + 'px';
+                el.style.opacity = '0';
+                el.style.transform = 'rotate(' + (Math.random() * 360 - 180) + 'deg)';
+            }, 50);
+            setTimeout(function() { el.remove(); }, 2050);
+        }, i * 100);
+    }
 }
 // ============================================================
 //  战绩统计
