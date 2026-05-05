@@ -346,6 +346,10 @@ canvas#onlineBoard{display:block;cursor:pointer;image-rendering:pixelated;max-wi
                         房间号: <b id="onlineRoomCode" style="color:var(--mc-green-light);font-size:1.2rem">----</b>
                         <button class="pixel-btn secondary" onclick="onlineCopyLink()" style="margin-left:8px;padding:4px 10px;font-size:.75rem">📋 复制邀请</button>
                     </div>
+                    <div style="display:flex;gap:6px;margin-bottom:8px">
+                        <button class="pixel-btn" onclick="sendSocial('flower')" style="flex:1;background:var(--mc-green)">🌹 送鲜花</button>
+                        <button class="pixel-btn" onclick="sendSocial('cow')" style="flex:1;background:var(--mc-brown)">💩 送牛粪</button>
+                    </div>
                     <button class="pixel-btn danger" onclick="onlineLeaveRoom()" style="width:100%">🚪 离开房间</button>
                 </div>
                 <h3 style="margin-top:12px">📜 落子记录</h3>
@@ -1705,13 +1709,55 @@ function startOnlineWatcher(roomId, docId) {
     onlineUnsub = movesRef.onSnapshot(function(snap) {
         var moves = [];
         snap.forEach(function(d) { moves.push(d.data()); });
-        // 重建棋盘
+        // 先处理社交消息
+        for (var i = 0; i < moves.length; i++) {
+            if (moves[i].social && moves[i].playerId !== cbUid) {
+                var socText = moves[i].social === 'flower' ? '🌹 对方送了你一朵鲜花！' : '💩 对方送了你一份牛粪！';
+                showToast(socText);
+                // 播放对应音效
+                initAudio();
+                if (moves[i].social === 'flower') {
+                    // 掌声
+                    try{
+                        var osc = audioCtx.createOscillator();
+                        var gain = audioCtx.createGain();
+                        osc.connect(gain); gain.connect(audioCtx.destination);
+                        osc.type = 'sine'; osc.frequency.value = 523;
+                        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+                        osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.3);
+                        setTimeout(function() {
+                            var osc2 = audioCtx.createOscillator();
+                            var gain2 = audioCtx.createGain();
+                            osc2.connect(gain2); gain2.connect(audioCtx.destination);
+                            osc2.type = 'sine'; osc2.frequency.value = 659;
+                            gain2.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                            gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+                            osc2.start(audioCtx.currentTime); osc2.stop(audioCtx.currentTime + 0.3);
+                        }, 150);
+                    }catch(e){}
+                } else {
+                    // 嘘声
+                    try{
+                        var osc = audioCtx.createOscillator();
+                        var gain = audioCtx.createGain();
+                        osc.connect(gain); gain.connect(audioCtx.destination);
+                        osc.type = 'sawtooth'; osc.frequency.value = 200;
+                        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+                        osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.5);
+                    }catch(e){}
+                }
+            }
+        }
+        // 重建棋盘（只处理实际落子）
         for (var r = 0; r < SIZE; r++)
             for (var c = 0; c < SIZE; c++)
                 onlineBoard[r][c] = EMPTY;
         onlineHistory = [];
         for (var i = 0; i < moves.length; i++) {
             var m = moves[i];
+            if (m.social || m.seq < 0) continue; // 跳过社交消息
             onlineBoard[m.row][m.col] = m.color;
             onlineHistory.push({ row: m.row, col: m.col, color: m.color });
         }
@@ -1913,6 +1959,58 @@ function onlineRefreshRooms() {
                 el.innerHTML = html;
             });
     });
+}
+
+// 社交功能：送鲜花/牛粪
+function sendSocial(type) {
+    if (!onlineRoom || onlineRoom.status !== 'playing' || !onlineDocId) return;
+    var text = type === 'flower' ? '🌹 送给对手一朵鲜花！' : '💩 送给对手一份牛粪！';
+    var emoji = type === 'flower' ? '🌹' : '💩';
+    
+    // 发送到Firebase
+    cbDb.collection('gobang_moves').add({
+        roomId: onlineRoom.roomId,
+        seq: -1,  // 特殊序列表示社交消息
+        social: type,
+        playerId: cbUid,
+        timestamp: Date.now()
+    });
+    
+    // 本地播放音效
+    initAudio();
+    if (type === 'flower') {
+        // 掌声
+        try{
+            var osc = audioCtx.createOscillator();
+            var gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.type = 'sine'; osc.frequency.value = 523;
+            gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+            osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.3);
+            setTimeout(function() {
+                var osc2 = audioCtx.createOscillator();
+                var gain2 = audioCtx.createGain();
+                osc2.connect(gain2); gain2.connect(audioCtx.destination);
+                osc2.type = 'sine'; osc2.frequency.value = 659;
+                gain2.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+                osc2.start(audioCtx.currentTime); osc2.stop(audioCtx.currentTime + 0.3);
+            }, 150);
+        }catch(e){}
+    } else {
+        // 嘘声
+        try{
+            var osc = audioCtx.createOscillator();
+            var gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.type = 'sawtooth'; osc.frequency.value = 200;
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+            osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.5);
+        }catch(e){}
+    }
+    showToast(text);
 }
 // ============================================================
 //  战绩统计
