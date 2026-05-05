@@ -400,6 +400,11 @@
                         <div class="gpg" id="sm-pg">0 / 0</div>
                         <div class="gsc" id="sm-cnt">已造 0 句</div>
                     </div>
+                    <!-- 用户和数据状态提示 -->
+                    <div id="sm-status" style="margin:.3rem .5rem;padding:.4rem .6rem;background:var(--sf);border-radius:6px;font-size:.75rem;color:var(--tx-m);display:flex;justify-content:space-between;align-items:center">
+                        <span>👤 用户: <b id="sm-user">-</b></span>
+                        <span id="sm-sync-status">🔄 数据加载中...</span>
+                    </div>
                     <div class="pwd">
                         <div style="display:flex;justify-content:center;align-items:center;gap:1rem;margin-bottom:.5rem">
                             <div class="pw" id="sm-w" style="font-size:4rem">加载中...</div>
@@ -2203,14 +2208,64 @@
 var _smDirty = false;
 
     function loadSentenceHistoryFromFirebase(){
-        if(typeof db==='undefined'||!db)return Promise.resolve();
+        // 优先从本地缓存加载(快速响应)
+        var localCache = localStorage.getItem('vn_sentences_' + CU);
+        if(localCache){
+            try{SM.history = JSON.parse(localCache) || {};}catch(e){SM.history = {};}
+        }
+        
+        // 然后从 Firebase 加载最新数据
+        if(typeof db==='undefined'||!db){
+            console.warn('[SM] Firebase unavailable, using local cache');
+            return Promise.resolve();
+        }
         return db.collection('vietnamese_sentences').doc(CU).get().then(function(doc){
-            if(doc.exists){SM.history=doc.data().history||{};}
-        }).catch(function(e){console.warn('[SM] Load failed:',e.message);});
+            if(doc.exists){
+                SM.history = doc.data().history || {};
+                // 同步更新本地缓存
+                localStorage.setItem('vn_sentences_' + CU, JSON.stringify(SM.history));
+                console.log('[SM] Loaded from Firebase:', Object.keys(SM.history).length, 'words');
+            }
+        }).catch(function(e){
+            console.warn('[SM] Firebase load failed, using local cache:', e.message);
+        });
     }
 
     function saveSentenceHistoryToFirebase(){
-        _smDirty = true; // mark dirty, write to Firebase on module exit
+        console.log('[SM] saveSentenceHistoryToFirebase called. CU=' + CU + ', history keys=' + Object.keys(SM.history).length);
+        // 1. 立即保存到本地缓存(防止丢失)
+        try{
+            localStorage.setItem('vn_sentences_' + CU, JSON.stringify(SM.history));
+            console.log('[SM] Saved to localStorage: vn_sentences_' + CU);
+        }catch(e){console.warn('[SM] Local save failed:', e);}
+        
+        // 更新同步状态
+        var syncStatus = document.getElementById('sm-sync-status');
+        if(syncStatus) syncStatus.textContent = '🔄 正在同步...';
+        
+        // 2. 实时写入 Firebase(不再延迟)
+        if(typeof db!=='undefined'&&db){
+            console.log('[SM] Writing to Firebase: vietnamese_sentences/' + CU);
+            db.collection('vietnamese_sentences').doc(CU).set({
+                history: SM.history,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }).then(function(){
+                console.log('[SM] ✓ Saved to Firebase:', Object.keys(SM.history).length, 'words');
+                // 更新同步状态
+                if(syncStatus){
+                    var totalSentences = 0;
+                    for(var w in SM.history){totalSentences += SM.history[w].length;}
+                    syncStatus.textContent = '✅ 已同步 ' + totalSentences + ' 句';
+                }
+            }).catch(function(e){
+                console.error('[SM] ✗ Firebase save failed:', e.code, e.message);
+                if(syncStatus) syncStatus.textContent = '⚠️ 同步失败: ' + e.message;
+                // Firebase 失败不影响本地已保存的数据
+            });
+        } else {
+            console.warn('[SM] Firebase unavailable (db=' + typeof db + ')');
+            if(syncStatus) syncStatus.textContent = '⚠️ 仅本地存储(Firebase不可用)';
+        }
     }
     function flushSmHistoryToFirebase(){
         if(!_smDirty) return;
@@ -2238,7 +2293,16 @@ var _smDirty = false;
         document.getElementById('sm').style.display='block';
         showRules('sentence');
         renderHistory();
+        // 显示当前用户名
+        document.getElementById('sm-user').textContent = CU;
+        document.getElementById('sm-sync-status').textContent = '🔄 数据加载中...';
+        console.log('[SM] 当前用户:', CU, '| Firebase 可用:', typeof db!=='undefined');
         loadSentenceHistoryFromFirebase().then(function(){
+            var wordCount = Object.keys(SM.history).length;
+            var totalSentences = 0;
+            for(var w in SM.history){totalSentences += SM.history[w].length;}
+            document.getElementById('sm-sync-status').textContent = '✅ 已同步 ' + totalSentences + ' 句 (' + wordCount + ' 词)';
+            console.log('[SM] 加载完成:', wordCount, '个词有造句记录');
             // auto-skip to first word without sentence history
             for(var _si=0;_si<SM.words.length;_si++){if(!SM.history[SM.words[_si].word]||!SM.history[SM.words[_si].word].length){SM.index=_si;break;}}
             showSmWord();
@@ -2288,6 +2352,8 @@ var _smDirty = false;
     function deleteSmSentence(word,idx){
         if(!SM.history[word]||!SM.history[word][idx])return;
         SM.history[word].splice(idx,1);
+        // 如果该词没有造句了,删除该词的记录
+        if(SM.history[word].length===0){delete SM.history[word];}
         saveSentenceHistoryToFirebase();
         // 更新计数
         var cnt=SM.history[word]?SM.history[word].length:0;
