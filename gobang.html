@@ -1944,15 +1944,17 @@ function onlineLeaveRoom() {
     onlineRefreshRooms();
 }
 
-// 刷新房间列表
+// 刷新房间列表 - 简化查询避免需要索引
 function onlineRefreshRooms() {
     initCloudBase().then(function() {
+        // 不使用orderBy避免需要复合索引
         cbDb.collection('gobang_rooms')
             .where('status', '==', 'waiting')
-            .orderBy('createdAt', 'desc')
             .limit(20)
             .get().then(function(res) {
                 var rooms = res.docs ? res.docs.map(function(d) { var r = d.data(); r._id = d.id; return r; }) : [];
+                // 手动在客户端按时间排序（因为无法用orderBy）
+                rooms.sort(function(a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
                 var el = document.getElementById('roomList');
                 if (rooms.length === 0) {
                     el.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:20px">暂无等待中的房间</div>';
