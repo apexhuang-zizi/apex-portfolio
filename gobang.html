@@ -1562,7 +1562,8 @@ function generateRoomId() {
 function onlineCreateRoom() {
     initCloudBase().then(function() {
         var roomId = generateRoomId();
-        cbDb.collection('gobang_rooms').add({
+        console.log('[创建] 开始, roomId:', roomId, 'cbUid:', cbUid);
+        var roomData = {
             roomId: roomId,
             hostId: cbUid,
             hostName: cbName,
@@ -1574,13 +1575,24 @@ function onlineCreateRoom() {
             winner: 0,
             createdAt: Date.now(),
             updatedAt: Date.now()
-        }).then(function(res) {
-            console.log('[创建房间] 成功, docId:', res.id, 'roomId:', roomId, 'cbUid:', cbUid);
+        };
+        cbDb.collection('gobang_rooms').add(roomData).then(function(res) {
+            console.log('[创建] Firestore返回, id:', res.id);
+            // 立即读取验证
+            return cbDb.collection('gobang_rooms').doc(res.id).get();
+        }).then(function(snap) {
+            var data = snap.data();
+            console.log('[创建] 验证读取, data:', JSON.stringify(data));
+            if (!data || !data.hostId) {
+                console.error('[创建] 错误: 数据未保存!');
+                showToast('创建失败: 数据未保存');
+                return;
+            }
             showToast('房间已创建: ' + roomId);
-            enterOnlineRoom(roomId, res.id);
+            enterOnlineRoom(roomId, snap.id);
         }).catch(function(err) {
-            console.error('create room error', err);
-            showToast('创建房间失败');
+            console.error('[创建房间失败]:', err.code, err.message);
+            showToast('创建房间失败: ' + err.message);
         });
     });
 }
