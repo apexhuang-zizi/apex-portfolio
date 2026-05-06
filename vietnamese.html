@@ -171,7 +171,7 @@ const auth = firebase.auth();
 // 匿名登录后再加载数据（用于 Firestore 安全规则）
 auth.signInAnonymously().then(function() {
     console.log("Firebase 匿名登录成功");
-    loadFromFirebase();
+    loadFromFirebase().then(cleanupOldDocs);
 }).catch(function(error) {
     console.log("Firebase 匿名登录失败:", error.message);
     // 登录失败也尝试加载（可能规则已更改）
@@ -409,7 +409,8 @@ function init() {
 // 从 Firebase 加载数据
 async function loadFromFirebase() {
     try {
-        const snapshot = await db.collection('dialogues').orderBy('created', 'desc').get();
+        // 按日期降序排列
+        const snapshot = await db.collection('dialogues').orderBy('date', 'desc').get();
         if (snapshot.empty) {
             // Firebase 为空，检查 localStorage 是否有数据
             var stored = localStorage.getItem('vnDialogues');
@@ -458,6 +459,54 @@ async function loadFromFirebase() {
             try { dialogues = JSON.parse(stored); } catch(e) { dialogues = []; }
         }
         renderList();
+    }
+}
+
+// 清理重复/旧格式文档（仅执行一次）
+async function cleanupOldDocs() {
+    var cleaned = localStorage.getItem('vnDialoguesCleaned');
+    if (cleaned) return; // 已在执行
+    
+    try {
+        localStorage.setItem('vnDialoguesCleaned', 'true');
+        var snapshot = await db.collection('dialogues').get();
+        var docsToDelete = [];
+        var seen = {};
+        
+        snapshot.forEach(function(doc) {
+            var id = doc.id;
+            var data = doc.data();
+            var key = data.date + '|' + data.topic;
+            
+            // 检查是否是旧格式（无日期前缀）
+            if (!id.match(/^20\d{2}-\d{2}-\d{2}_/)) {
+                if (seen[key]) {
+                    // 重复文档，删除
+                    docsToDelete.push(doc.ref);
+                } else {
+                    // 旧格式文档，改为日期命名
+                    var safeTopic = (data.topic || 'untitled').replace(/[\/<>"#?]/g, '_').substring(0, 30);
+                    var newId = data.date + '_' + safeTopic;
+                    docsToDelete.push({ oldRef: doc.ref, newId: newId, data: data });
+                }
+                seen[key] = true;
+            }
+        });
+        
+        // 批量更新和删除
+        for (var d of docsToDelete) {
+            if (d.oldRef) {
+                // 重命名操作
+                await db.collection('dialogues').doc(d.newId).set(d.data);
+                await d.oldRef.delete();
+            } else {
+                await d.delete();
+            }
+        }
+        console.log('已清理 ' + docsToDelete.length + ' 个文档');
+    } catch(e) {
+        console.error('清理失败:', e);
+        localStorage.removeItem('vnDialoguesCleaned');
     }
 }
 
@@ -602,26 +651,26 @@ function saveNew() {
 // 保存到 Firebase
 async function saveToFirebase(dialogue) {
     try {
-        // 检查 Firebase 是否已存在相同日期+标题的对话（防止重复）
-        // 使用简单查询+本地过滤，避免复合索引问题
-        var dupSnapshot = await db.collection('dialogues').where('date', '==', dialogue.date).get();
-        var exists = false;
-        dupSnapshot.forEach(function(doc) {
-            var d = doc.data();
-            if (d.topic === dialogue.topic) {
-                exists = true;
-                dialogue.id = doc.id;
-            }
-        });
-        if (exists) {
+        // 使用日期作为文档 ID，方便查找和排序
+        // 格式: 2026-05-06_对话标题（处理特殊字符）
+        var safeTopic = (dialogue.topic || 'untitled')
+            .replace(/[\/<>"#?]/g, '_')
+            .substring(0, 30); // 限制长度
+        var docId = dialogue.date + '_' + safeTopic;
+        
+        // 检查是否已存在
+        var docRef = db.collection('dialogues').doc(docId);
+        var docSnap = await docRef.get();
+        if (docSnap.exists) {
             // 已存在，不重复添加，但仍触发翻译
             showAutoAddNotice('该对话已存在于云端');
-            translateAndSave(dialogue.id);
+            translateAndSave(docId);
             return;
         }
         
-        const docRef = await db.collection('dialogues').add(dialogue);
-        dialogue.id = docRef.id;
+        // 创建文档
+        await docRef.set(dialogue);
+        dialogue.id = docId;
         dialogues.unshift(dialogue);
         dialogues.sort(function(a, b) { return b.date.localeCompare(a.date) || b.created - a.created; });
         
