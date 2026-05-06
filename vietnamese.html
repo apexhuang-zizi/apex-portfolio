@@ -514,62 +514,55 @@ async function syncFromCloudBackground() {
 
 // 清理重复/旧格式文档（仅执行一次）
 async function cleanupOldDocs() {
-    var cleaned = localStorage.getItem('vnDialoguesCleaned');
-    if (cleaned === 'done') return; // 已在执行
+    var cleaned = localStorage.getItem('vnDialoguesCleaned_v2');
+    if (cleaned === 'done') return;
     
     try {
-        localStorage.setItem('vnDialoguesCleaned', 'running');
+        localStorage.setItem('vnDialoguesCleaned_v2', 'running');
         var snapshot = await db.collection('dialogues').get();
-        var docsToDelete = [];
         var seen = {};
-        var docsToRename = [];
+        var duplicates = [];
+        var docsData = [];
         
         console.log('开始清理 Firebase 文档，当前数量:', snapshot.size);
         
+        // 先收集所有文档
         snapshot.forEach(function(doc) {
-            var id = doc.id;
-            var data = doc.data();
-            var key = data.date + '|' + data.topic;
-            
-            console.log('检查文档:', id, '日期:', data.date);
-            
-            // 检查是否是旧格式（无日期前缀或不是以日期开头）
-            if (!id.match(/^20\d{2}-\d{2}-\d{2}_/)) {
-                if (seen[key]) {
-                    // 重复文档，标记删除
-                    console.log('删除重复:', id);
-                    docsToDelete.push(doc.ref);
-                } else {
-                    // 旧格式文档，标记重命名
-                    var safeTopic = (data.topic || 'untitled').replace(/[\/<>"#?]/g, '_').substring(0, 30);
-                    var newId = data.date + '_' + safeTopic;
-                    console.log('重命名:', id, '->', newId);
-                    docsToRename.push({ oldRef: doc.ref, newId: newId, data: data });
-                }
-                seen[key] = true;
+            docsData.push({ id: doc.id, ref: doc.ref, data: doc.data() });
+        });
+        
+        // 按日期排序（新的在前）
+        docsData.sort(function(a, b) { return b.data.date.localeCompare(a.data.date); });
+        
+        // 检测重复（相同 date+topic）
+        docsData.forEach(function(doc) {
+            var key = doc.data.date + '|' + doc.data.topic;
+            if (seen[key]) {
+                duplicates.push(doc);
+                console.log('重复文档:', doc.id, '日期:', doc.data.date, '主题:', doc.data.topic);
             } else {
-                seen[key] = true;
+                seen[key] = doc;
             }
         });
         
-        // 先重命名
-        for (var d of docsToRename) {
-            try {
-                await db.collection('dialogues').doc(d.newId).set(d.data);
-                await d.oldRef.delete();
-            } catch(e) { console.error('重命名失败:', e); }
+        console.log('发现 ' + duplicates.length + ' 个重复文档待删除');
+        
+        // 删除重复文档
+        var deletedCount = 0;
+        for (var d of duplicates) {
+            try { 
+                await d.ref.delete(); 
+                deletedCount++;
+            } catch(e) { console.error('删除失败:', d.id, e); }
         }
         
-        // 再删除重复
-        for (var d of docsToDelete) {
-            try { await d.delete(); } catch(e) { console.error('删除失败:', e); }
-        }
-        
-        console.log('清理完成: 重命名 ' + docsToRename.length + ' 个, 删除 ' + docsToDelete.length + ' 个');
-        localStorage.setItem('vnDialoguesCleaned', 'done');
+        console.log('清理完成: 删除 ' + deletedCount + ' 个重复文档');
+        localStorage.setItem('vnDialoguesCleaned_v2', 'done');
+        return deletedCount;
     } catch(e) {
         console.error('清理失败:', e);
-        localStorage.removeItem('vnDialoguesCleaned');
+        localStorage.removeItem('vnDialoguesCleaned_v2');
+        return 0;
     }
 }
 
@@ -579,13 +572,14 @@ async function refreshCloud() {
     if (btn) { btn.disabled = true; btn.textContent = '⏳ 同步中...'; }
     
     try {
-        // 重新清理旧文档
-        localStorage.removeItem('vnDialoguesCleaned');
-        await cleanupOldDocs();
+        // 清理重复文档
+        localStorage.removeItem('vnDialoguesCleaned_v2');
+        var deleted = await cleanupOldDocs();
+        console.log('删除重复文档:', deleted);
         
-        // 加载最新数据
-        await loadFromFirebase();
-        showAutoAddNotice('已同步云端数据');
+        // 强制从云端加载
+        await loadFromFirebase(true);
+        showAutoAddNotice('已同步云端数据，删除了 ' + deleted + ' 个重复文档');
     } catch(e) {
         console.error('同步失败:', e);
         showAutoAddNotice('同步失败: ' + e.message);
