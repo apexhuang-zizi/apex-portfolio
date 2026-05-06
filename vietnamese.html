@@ -411,28 +411,18 @@ async function loadFromFirebase() {
     try {
         const snapshot = await db.collection('dialogues').orderBy('created', 'desc').get();
         if (snapshot.empty) {
-            // Firebase 为空，检查 localStorage 是否有数据需要迁移
+            // Firebase 为空，检查 localStorage 是否有数据
             var stored = localStorage.getItem('vnDialogues');
             if (stored) {
                 try { 
                     dialogues = JSON.parse(stored); 
-                    // 迁移到 Firebase（去重：只添加不存在于云端的数据）
-                    var existingTopics = [];
-                    for (var d of dialogues) {
-                        if (d.topic && !existingTopics.includes(d.topic)) {
-                            await db.collection('dialogues').add(d);
-                            existingTopics.push(d.topic);
-                        }
-                    }
-                    console.log('已将本地数据迁移到云端');
+                    console.log('从本地存储加载了 ' + dialogues.length + ' 条对话');
                 } catch(e) { 
                     dialogues = []; 
                 }
             } else {
-                // 使用预置数据（添加到云端前先检查是否已存在）
+                // 使用预置数据
                 dialogues = defaultDialogues.slice();
-                // 不再自动添加到云端，避免重复
-                // 用户手动添加的对话才会保存到云端
                 console.log('使用预置数据，共 ' + dialogues.length + ' 条对话');
             }
         } else {
@@ -442,15 +432,20 @@ async function loadFromFirebase() {
                 dialogues.push({ id: doc.id, ...doc.data() });
             });
             
-            // 不再每次自动清理重复，避免频繁写入
-            // 重复数据会在添加时通过 date+topic 检测防止
-            console.log('从 Firebase 加载了 ' + dialogues.length + ' 条对话');
+            // 简单的本地去重（按 date+topic），不影响 Firebase
+            var seen = {};
+            dialogues = dialogues.filter(function(d) {
+                var key = d.date + '|' + d.topic;
+                if (seen[key]) return false;
+                seen[key] = true;
+                return true;
+            });
+            console.log('从 Firebase 加载了 ' + dialogues.length + ' 条对话（去重后）');
             
-            // 同步到 localStorage 作为备份
-            localStorage.setItem('vnDialogues', JSON.stringify(dialogues.map(d => {
-                // 移除 id 字段（Firebase 特有）
+            // 同步到 localStorage
+            localStorage.setItem('vnDialogues', JSON.stringify(dialogues.map(function(dd) {
                 var copy = {};
-                for (var k in d) if (k !== 'id') copy[k] = d[k];
+                for (var key in dd) { if (key !== 'id') copy[key] = dd[key]; }
                 return copy;
             })));
         }
@@ -629,6 +624,13 @@ async function saveToFirebase(dialogue) {
         dialogue.id = docRef.id;
         dialogues.unshift(dialogue);
         dialogues.sort(function(a, b) { return b.date.localeCompare(a.date) || b.created - a.created; });
+        
+        // 保存到 localStorage 作为备份
+        localStorage.setItem('vnDialogues', JSON.stringify(dialogues.map(function(dd) {
+            var copy = {};
+            for (var key in dd) { if (key !== 'id') copy[key] = dd[key]; }
+            return copy;
+        })));
         
         // URL 参数上传时不切换表单状态
         if (!dialogue._fromUrl) toggleAddForm();
