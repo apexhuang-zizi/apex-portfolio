@@ -442,34 +442,9 @@ async function loadFromFirebase() {
                 dialogues.push({ id: doc.id, ...doc.data() });
             });
             
-            // 按 topic 去重（保留最新的 created）
-            var topicMap = {};
-            var duplicates = [];
-            for (var i = 0; i < dialogues.length; i++) {
-                var d = dialogues[i];
-                var t = d.topic || '(无主题)';
-                if (!topicMap[t] || (d.created && d.created > topicMap[t].created)) {
-                    if (topicMap[t]) duplicates.push(topicMap[t].id);
-                    topicMap[t] = d;
-                } else {
-                    duplicates.push(d.id);
-                }
-            }
-            
-            // 删除云端重复数据
-            if (duplicates.length > 0) {
-                console.log('发现 ' + duplicates.length + ' 条重复对话，正在清理...');
-                for (var dupId of duplicates) {
-                    if (dupId) {
-                        try { await db.collection('dialogues').doc(dupId).delete(); }
-                        catch(e) { console.log('删除失败:', dupId, e.message); }
-                    }
-                }
-                // 更新 dialogues 为去重后的数据
-                dialogues = Object.values(topicMap);
-                dialogues.sort(function(a, b) { return (b.created || 0) - (a.created || 0); });
-                console.log('清理完成，剩余 ' + dialogues.length + ' 条对话');
-            }
+            // 不再每次自动清理重复，避免频繁写入
+            // 重复数据会在添加时通过 date+topic 检测防止
+            console.log('从 Firebase 加载了 ' + dialogues.length + ' 条对话');
             
             // 同步到 localStorage 作为备份
             localStorage.setItem('vnDialogues', JSON.stringify(dialogues.map(d => {
@@ -633,11 +608,18 @@ function saveNew() {
 async function saveToFirebase(dialogue) {
     try {
         // 检查 Firebase 是否已存在相同日期+标题的对话（防止重复）
-        var dupSnapshot = await db.collection('dialogues').where('date', '==', dialogue.date).where('topic', '==', dialogue.topic).get();
-        if (!dupSnapshot.empty) {
+        // 使用简单查询+本地过滤，避免复合索引问题
+        var dupSnapshot = await db.collection('dialogues').where('date', '==', dialogue.date).get();
+        var exists = false;
+        dupSnapshot.forEach(function(doc) {
+            var d = doc.data();
+            if (d.topic === dialogue.topic) {
+                exists = true;
+                dialogue.id = doc.id;
+            }
+        });
+        if (exists) {
             // 已存在，不重复添加，但仍触发翻译
-            var existDoc = dupSnapshot.docs[0];
-            dialogue.id = existDoc.id;
             showAutoAddNotice('该对话已存在于云端');
             translateAndSave(dialogue.id);
             return;
