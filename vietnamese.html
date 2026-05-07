@@ -606,17 +606,20 @@ async function refreshCloud() {
             }
         }
 
-        // Step 3: 增量推送本地变更
+        // Step 3: 增量推送本地变更（推送前先查云端是否已存在）
         var pushStart = Date.now();
         var pushed = 0, pushSkipped = 0;
         for (var i = 0; i < dialogues.length; i++) {
             var d = dialogues[i];
-            // 只推送 lastModified > lastSyncTime 的对话（首次同步时推送所有）
-            if (!isFirstSync && (d.lastModified || 0) <= lastSyncTime) {
+            var docId = getDocId(d);
+            
+            // 先查云端是否已存在该文档
+            var existingDoc = snapshot.docs.find(function(doc) { return doc.id === docId; });
+            if (existingDoc) {
                 pushSkipped++;
                 continue;
             }
-            var docId = getDocId(d);
+            
             try {
                 // 准备推送数据（去掉本地 id 字段）
                 var pushData = {};
