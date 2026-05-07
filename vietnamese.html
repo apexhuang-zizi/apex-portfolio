@@ -502,39 +502,21 @@ async function refreshCloud() {
         }
         console.log('[同步] 网络OK，耗时', Date.now() - t0, 'ms');
 
-        var lastSyncTime = parseInt(localStorage.getItem('vnLastSyncTime')) || 0;
-        // 如果还没迁移过文档ID格式（旧ID含越南文，新ID只含ASCII），强制首次同步
-        var idMigrated = localStorage.getItem('vnDocIdMigrated');
-        var isFirstSync = lastSyncTime === 0 || !idMigrated;
-        console.log('[同步] 上次同步时间:', lastSyncTime ? new Date(lastSyncTime).toLocaleString() : '首次同步');
-
-        // Step 1: 增量拉取云端变更
+        // Step 1: 查询云端所有文档（基于docId对比，不再依赖时间戳增量查询）
         var pullStart = Date.now();
-        var snapshot;
-        if (isFirstSync) {
-            // 首次同步：全量拉取
-            console.log('[同步] 首次同步，全量拉取...');
-            snapshot = await db.collection('dialogues').get();
-        } else {
-            // 增量拉取：lastModified 用 Firestore timestamp 格式
-            // lastModified 在 Firestore 中是 integerValue（数字时间戳）
-            // Firestore 数字比较需要数字类型，ISO 字符串无法匹配 integerValue
-            var syncTimeMs = lastSyncTime ? Number(lastSyncTime) : null;
-            console.log('[同步] 增量拉取 lastModified >', syncTimeMs, '(' + (syncTimeMs ? new Date(syncTimeMs).toLocaleString('zh-CN', {timeZone:'Asia/Saigon'}) : 'null') + ')');
-            snapshot = await db.collection('dialogues')
-                .where('lastModified', '>', syncTimeMs)
-                .get();
-        }
-        console.log('[同步] 拉取完成，', snapshot.size, '条变更，耗时', Date.now() - pullStart, 'ms');
-
-        // Step 1.5: 查询云端所有对话（用于Step 3检查重复）
-        // 改用 date+topic 判断重复，而不是docId
-        var cloudDialogues = []; // 存储云端对话的 date+topic 信息
-        var cloudDocIds = new Set(); // 仍保留docId集合，用于其他逻辑
-        console.log('[同步] 查询云端所有对话（用于去重判断）...');
         var allDocs = await db.collection('dialogues').get();
+        console.log('[同步] 云端文档数:', allDocs.size, '条，耗时', Date.now() - pullStart, 'ms');
+
+        // 构建：本地docId集合 + 云端文档列表
+        var localDocIds = new Set();
+        dialogues.forEach(function(d) {
+            if (d.docId) localDocIds.add(d.docId);
+        });
+        var cloudDocIds = new Set();
+        var cloudDialogues = [];
         allDocs.docs.forEach(function(doc) {
             var data = doc.data();
+            if (!data.docId) data.docId = doc.id;
             cloudDocIds.add(doc.id);
             cloudDialogues.push({
                 docId: doc.id,
@@ -543,21 +525,15 @@ async function refreshCloud() {
                 lastModified: data.lastModified || 0
             });
         });
-        console.log('[同步] 云端文档数:', cloudDocIds.size, '条');
 
-        // Step 2: 合并云端数据到本地（首次同步时顺便迁移旧文档ID）
-        var pulled = 0, deleted = 0, updated = 0, migrated = 0;
-        snapshot.forEach(function(doc) {
+        // Step 2: 合并云端数据到本地（docId对比：本地缺的拉取，已有取较新的）
+        var pulled = 0, deleted = 0, updated = 0;
+        allDocs.docs.forEach(function(doc) {
             var cloudData = doc.data();
             var cloudDocId = doc.id;
-            
-            // 确保云端数据有docId字段
-            if (!cloudData.docId) {
-                cloudData.docId = cloudDocId;
-            }
+            if (!cloudData.docId) cloudData.docId = cloudDocId;
 
             if (cloudData.deleted) {
-                // Tombstone：云端已删除，从本地移除
                 var localIdx = dialogues.findIndex(function(d) { return d.docId === cloudDocId; });
                 if (localIdx >= 0) {
                     dialogues.splice(localIdx, 1);
@@ -566,78 +542,49 @@ async function refreshCloud() {
                 return;
             }
 
-            // 查找本地是否已有相同 docId 的对话
             var localIdx = dialogues.findIndex(function(d) { return d.docId === cloudDocId; });
             if (localIdx >= 0) {
-                // 已有：取 lastModified 更大的
                 var cloudTs = cloudData.lastModified || 0;
-                var localData = dialogues[localIdx];
-                var localTs = localData.lastModified || 0;
+                var localTs = dialogues[localIdx].lastModified || 0;
                 if (cloudTs > localTs) {
-                    // 云端更新，覆盖本地
                     dialogues[localIdx] = cloudData;
                     updated++;
                 }
-                // 否则本地更新，后续推送时处理
             } else {
-                // 本地没有，新增
                 dialogues.push(cloudData);
                 pulled++;
             }
         });
         console.log('[同步] 合并完成：新增', pulled, '更新', updated, '删除', deleted);
 
-        // Step 2.5: 清理旧随机ID文档（首次同步后，如果之前已有旧文档则清理）
-        if (isFirstSync && migrated > 0) {
-            console.log('[同步] 等待迁移完成后清理旧文档...');
-            await new Promise(function(r) { setTimeout(r, 3000); });  // 等3秒让异步迁移完成
-            // 找出所有文档ID不符合 date_topic 格式的旧文档并删除
-        }
-
-        // Step 3: 增量推送本地变更（用 date+topic 判断云端是否已存在）
+        // Step 3: 推送本地独有的文档到云端（docId不在云端的才推送）
         var pushStart = Date.now();
         var pushed = 0, pushSkipped = 0;
         for (var i = 0; i < dialogues.length; i++) {
             var d = dialogues[i];
-            
-            // 确保本地数据有docId
             if (!d.docId) {
                 d.docId = d.date + '_' + randomId(8);
             }
             var docId = d.docId;
-            
-            // 检查云端是否已存在相同 date+topic 的对话（使用 cloudDialogues 数组）
-            var existsInCloud = cloudDialogues.some(function(cd) {
-                return cd.date === d.date && cd.topic === d.topic;
-            });
-            
-            if (existsInCloud) {
+
+            // docId已在云端则跳过
+            if (cloudDocIds.has(docId)) {
                 pushSkipped++;
                 continue;
             }
-            
+
             try {
-                // 准备推送数据（保留docId字段）
                 var pushData = {};
                 for (var key in d) {
                     if (key !== 'id') pushData[key] = d[key];
                 }
-                // 如果没有lastModified，使用created或0
                 if (!pushData.lastModified) {
                     pushData.lastModified = pushData.created || 0;
                 }
                 await db.collection('dialogues').doc(docId).set(pushData);
                 d.lastModified = pushData.lastModified;
                 d.id = docId;
-                
-                // 添加到云端对话列表（防止后续重复推送）
-                cloudDialogues.push({
-                    docId: docId,
-                    date: d.date,
-                    topic: d.topic,
-                    lastModified: d.lastModified
-                });
-                
+                cloudDocIds.add(docId);
                 pushed++;
             } catch(e) {
                 console.error('[同步] 推送失败:', docId, e.message);
@@ -670,11 +617,9 @@ async function refreshCloud() {
             console.log('[同步] tombstone 清理跳过');
         }
 
-        // Step 5: 更新同步时间戳和本地存储
-        localStorage.setItem('vnLastSyncTime', Date.now().toString());
-        localStorage.setItem('vnDocIdMigrated', 'true');  // 标记文档ID已迁移
-        // 移除旧的清理标志（不再需要）
-        localStorage.removeItem('vnDialoguesCleaned_v2');
+        // Step 5: 更新本地存储（不再使用lastSyncTime，改为docId对比）
+        localStorage.removeItem('vnLastSyncTime');  // 清理旧标志
+        localStorage.removeItem('vnDocIdMigrated');  // 清理旧标志
         saveToLocal();
         renderList();
 
