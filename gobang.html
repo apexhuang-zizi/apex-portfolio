@@ -5,9 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>五子棋 / Gomoku</title>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+
 <style>
 :root {
     --mc-dark: #2d2d2d;
@@ -150,18 +148,19 @@ canvas#onlineBoard{display:block;cursor:pointer;image-rendering:pixelated;max-wi
 .result-lose{color:var(--danger);font-weight:600}
 .result-draw{color:var(--warning);font-weight:600}
 
-/* ===== LOBBY (在线对战) ===== */
-.lobby-panel{background:var(--surface);padding:20px;border:var(--pixel-border)}
-.lobby-panel h3{font-size:1.1rem;font-weight:600;margin-bottom:16px;color:var(--mc-green-light)}
-.room-list{margin-bottom:16px}
-.room-item{display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--surface-2);border:2px solid #1a1a1a;margin-bottom:8px;transition:all .15s}
-.room-item:hover{border-color:var(--mc-green)}
-.room-info{display:flex;align-items:center;gap:10px}
-.room-info .host{font-weight:600}
-.room-info .status{font-size:.75rem;padding:3px 8px;border:1px solid #1a1a1a;background:var(--surface)}
-.room-info .status.waiting{color:var(--warning);background:rgba(255,167,38,.1)}
-.room-info .status.playing{color:var(--success);background:rgba(102,187,106,.1)}
-.lobby-notice{padding:16px;background:rgba(124,179,66,.1);border:2px solid var(--mc-green);margin-bottom:16px;font-size:.85rem;line-height:1.6}
+/* ===== P2P LOBBY ===== */
+.p2p-notice{padding:16px;background:rgba(124,179,66,.1);border:2px solid var(--mc-green);margin-bottom:16px;font-size:.85rem;line-height:1.6}
+.p2p-code-box{background:var(--surface-2);border:2px solid #1a1a1a;padding:16px;border-radius:4px;margin-bottom:12px}
+.p2p-code-value{font-size:1.6rem;font-weight:700;color:var(--mc-green-light);letter-spacing:4px;text-align:center;padding:8px 0}
+.p2p-exchange-box{background:var(--surface-2);border:2px solid #1a1a1a;padding:14px;border-radius:4px;margin-bottom:12px}
+.p2p-exchange-textarea{width:100%;min-height:80px;background:var(--surface);border:2px solid #1a1a1a;color:var(--text);font-family:monospace;font-size:.7rem;padding:8px;border-radius:2px;resize:vertical;box-sizing:border-box}
+.connection-status{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:4px;font-size:.8rem}
+.connection-status.connected{background:rgba(102,187,106,.1);border:2px solid var(--success)}
+.connection-status.disconnected{background:rgba(239,83,80,.1);border:2px solid var(--danger)}
+.connection-dot{width:10px;height:10px;border-radius:50%;background:var(--warning);flex-shrink:0}
+.connection-status.connected .connection-dot{background:var(--success)}
+.connection-status.disconnected .connection-dot{background:var(--danger)}
+
 
 /* ===== TOAST ===== */
 .toast{position:fixed;top:20px;right:20px;padding:12px 20px;background:var(--mc-green);color:#fff;font-weight:600;

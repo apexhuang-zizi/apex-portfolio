@@ -1,0 +1,326 @@
+[
+  {
+    "word": "bệnh",
+    "translation": "生病",
+    "translation_en": "to be ill, be sick",
+    "unit": 2
+  },
+  {
+    "word": "bệnh nhân",
+    "translation": "病人",
+    "translation_en": "patient",
+    "unit": 2
+  },
+  {
+    "word": "người bệnh",
+    "translation": "病人",
+    "translation_en": "patient",
+    "unit": 2
+  },
+  {
+    "word": "bữa ăn",
+    "translation": "餐 / 饭次",
+    "translation_en": "meal",
+    "unit": 2
+  },
+  {
+    "word": "buồn ngủ",
+    "translation": "困倦 / 想睡",
+    "translation_en": "to be sleepy",
+    "unit": 2
+  },
+  {
+    "word": "buồn nôn",
+    "translation": "恶心 / 想吐",
+    "translation_en": "to feel nauseous",
+    "unit": 2
+  },
+  {
+    "word": "cảm",
+    "translation": "感冒",
+    "translation_en": "cold, illness",
+    "unit": 2
+  },
+  {
+    "word": "cảm thấy",
+    "translation": "感觉",
+    "translation_en": "to feel",
+    "unit": 2
+  },
+  {
+    "word": "cho phép",
+    "translation": "允许 / 许可",
+    "translation_en": "to permit, to allow, to authorize",
+    "unit": 2
+  },
+  {
+    "word": "chóng mặt",
+    "translation": "头晕",
+    "translation_en": "to feel dizzy",
+    "unit": 2
+  },
+  {
+    "word": "dễ chịu",
+    "translation": "舒服 / 缓解",
+    "translation_en": "to feel better",
+    "unit": 2
+  },
+  {
+    "word": "nói dối",
+    "translation": "说谎",
+    "translation_en": "lie",
+    "unit": 2
+  },
+  {
+    "word": "ẩu",
+    "translation": "草率 / 粗心",
+    "translation_en": "careless, reckless",
+    "unit": 2
+  },
+  {
+    "word": "dược sĩ",
+    "translation": "药剂师",
+    "translation_en": "pharmacist, chemist",
+    "unit": 2
+  },
+  {
+    "word": "hết",
+    "translation": "完 / 结束",
+    "translation_en": "to finish, to end",
+    "unit": 2
+  },
+  {
+    "word": "ho",
+    "translation": "咳嗽",
+    "translation_en": "to cough",
+    "unit": 2
+  },
+  {
+    "word": "ít khi ",
+    "translation": "很少 / 罕见",
+    "translation_en": "rarely",
+    "unit": 2
+  },
+  {
+    "word": "hiếm khi",
+    "translation": "很少 / 罕见",
+    "translation_en": "rarely",
+    "unit": 2
+  },
+  {
+    "word": "khó chịu",
+    "translation": "难受 / 不舒服",
+    "translation_en": "to feel bad, uncomfortable",
+    "unit": 2
+  },
+  {
+    "word": "khỏi",
+    "translation": "痊愈 / 病好了",
+    "translation_en": "to recover from, to be cured, to get well",
+    "unit": 2
+  },
+  {
+    "word": "kiểm tra",
+    "translation": "检查",
+    "translation_en": "to test, to examine",
+    "unit": 2
+  },
+  {
+    "word": "kỹ lưỡng",
+    "translation": "仔细 / 彻底",
+    "translation_en": "careful, thorough",
+    "unit": 2
+  },
+  {
+    "word": "lầm",
+    "translation": "错 / 误",
+    "translation_en": "to be wrong",
+    "unit": 2
+  },
+  {
+    "word": "nhầm",
+    "translation": "错 / 误",
+    "translation_en": "to be wrong",
+    "unit": 2
+  },
+  {
+    "word": "lo lắng",
+    "translation": "担心 / 焦虑",
+    "translation_en": "to worry",
+    "unit": 2
+  },
+  {
+    "word": "mệt mỏi",
+    "translation": "疲劳 / 累",
+    "translation_en": "to be tired",
+    "unit": 2
+  },
+  {
+    "word": "một số",
+    "translation": "一些 / 若干",
+    "translation_en": "some, a number of",
+    "unit": 2
+  },
+  {
+    "word": "mỏi",
+    "translation": "（肌肉）酸累",
+    "translation_en": "be tired",
+    "unit": 2
+  },
+  {
+    "word": "đau",
+    "translation": "疼 / 痛",
+    "translation_en": "sore, ache, pain",
+    "unit": 2
+  },
+  {
+    "word": "đau bụng",
+    "translation": "肚子疼",
+    "translation_en": "to have a stomachache, bellyache",
+    "unit": 2
+  },
+  {
+    "word": "đau răng",
+    "translation": "牙疼",
+    "translation_en": "to have a toothache",
+    "unit": 2
+  },
+  {
+    "word": "ngay",
+    "translation": "马上 / 立即",
+    "translation_en": "right away, immediately",
+    "unit": 2
+  },
+  {
+    "word": "nghỉ",
+    "translation": "休息",
+    "translation_en": "to have a rest",
+    "unit": 2
+  },
+  {
+    "word": "ngủ ngon",
+    "translation": "睡得香 / 好眠",
+    "translation_en": "to sleep well",
+    "unit": 2
+  },
+  {
+    "word": "nha sĩ",
+    "translation": "牙医",
+    "translation_en": "dentist",
+    "unit": 2
+  },
+  {
+    "word": "nhà riêng",
+    "translation": "私宅 / 民房",
+    "translation_en": "private house, residence",
+    "unit": 2
+  },
+  {
+    "word": "đi khám bệnh",
+    "translation": "去看病",
+    "translation_en": "to go to the doctor",
+    "unit": 2
+  },
+  {
+    "word": "nông dân",
+    "translation": "农民",
+    "translation_en": "farmer",
+    "unit": 2
+  },
+  {
+    "word": "đỡ",
+    "translation": "缓解 / 减轻(痛.饿.)",
+    "translation_en": "to relieve (one's pain, one's hunger)",
+    "unit": 2
+  },
+  {
+    "word": "phòng mạch tư",
+    "translation": "私人诊所",
+    "translation_en": "private clinic",
+    "unit": 2
+  },
+  {
+    "word": "phòng khám tư",
+    "translation": "私人诊所",
+    "translation_en": "private clinic",
+    "unit": 2
+  },
+  {
+    "word": "sốt",
+    "translation": "发烧",
+    "translation_en": "to have a fever",
+    "unit": 2
+  },
+  {
+    "word": "sức khỏe",
+    "translation": "健康",
+    "translation_en": "health",
+    "unit": 2
+  },
+  {
+    "word": "tai nạn",
+    "translation": "事故 / 意外",
+    "translation_en": "accident",
+    "unit": 2
+  },
+  {
+    "word": "thở",
+    "translation": "呼吸",
+    "translation_en": "to breathe",
+    "unit": 2
+  },
+  {
+    "word": "thuốc",
+    "translation": "药",
+    "translation_en": "medicines",
+    "unit": 2
+  },
+  {
+    "word": "thuốc ho",
+    "translation": "止咳药",
+    "translation_en": "cough medicine",
+    "unit": 2
+  },
+  {
+    "word": "thuốc ngủ",
+    "translation": "安眠药",
+    "translation_en": "sleeping-pill",
+    "unit": 2
+  },
+  {
+    "word": "trông... có vẻ...",
+    "translation": "看起来...",
+    "translation_en": "to look like",
+    "unit": 2
+  },
+  {
+    "word": "uống thuốc",
+    "translation": "吃药",
+    "translation_en": "to take medicines",
+    "unit": 2
+  },
+  {
+    "word": "viêm họng",
+    "translation": "咽喉炎 / 喉咙痛",
+    "translation_en": "sore throat",
+    "unit": 2
+  },
+  {
+    "word": "viên",
+    "translation": "（药）粒 / 片",
+    "translation_en": "tablet, pill",
+    "unit": 2
+  },
+  {
+    "word": "X quang",
+    "translation": "X光",
+    "translation_en": "X - ray",
+    "unit": 2
+  },
+  {
+    "word": "yếu",
+    "translation": "虚弱 / 弱",
+    "translation_en": "weak, feeble",
+    "unit": 2
+  }
+]

@@ -774,12 +774,22 @@ document.getElementById('userInfo').textContent = '👤 ' + currentUser;
 function loadTasks() {
     document.getElementById('taskList').innerHTML = '<div class="loading">⏳ 加载任务中...</div>';
     db.collection('task_list').orderBy('createdAt', 'desc').get().then(function(snapshot) {
-        allTasks = snapshot.docs.map(function(doc) {
+        var rawTasks = snapshot.docs.map(function(doc) {
             var t = doc.data();
             t._id = doc.id;
             return t;
         });
-        console.log("Firebase 加载了 " + allTasks.length + " 条任务");
+        
+        // 去重：按任务内容去重，保留第一个
+        var seen = {};
+        allTasks = rawTasks.filter(function(t) {
+            var key = (t.task || '').toLowerCase().replace(/[\s，,、。\.\-]+/g, '');
+            if (seen[key]) return false;
+            seen[key] = true;
+            return true;
+        });
+        
+        console.log("Firebase 加载了 " + rawTasks.length + " 条，去重后 " + allTasks.length + " 条");
         renderTasks();
         checkUrlParams();
     }).catch(function(err) {
@@ -898,6 +908,17 @@ function updateStats(tasks) {
 function addTask() {
     var taskText = document.getElementById('fTask').value.trim();
     if (!taskText) { toast('请输入事项内容', 'error'); return; }
+
+    // 本地去重检查
+    var normalized = taskText.toLowerCase().replace(/[\s，,、。\.\-]+/g, '');
+    var isDuplicate = allTasks.some(function(t) {
+        var existing = (t.task || '').toLowerCase().replace(/[\s，,、。\.\-]+/g, '');
+        return normalized === existing;
+    });
+    if (isDuplicate) {
+        toast('任务已存在，请勿重复添加', 'warn');
+        return;
+    }
 
     var doc = {
         task: taskText,
