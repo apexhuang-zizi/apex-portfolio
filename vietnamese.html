@@ -571,7 +571,7 @@ async function refreshCloud() {
                 // 本地没有：需要拉取
                 needPull.push(docId);
             }
-        }
+        });
 
         // 按需拉取完整内容
         var pullDetailStart = Date.now();
