@@ -550,7 +550,15 @@ async function refreshCloud() {
             var meta = cloudMeta[docId];
             var localIdx = -1;
             for (var li = 0; li < dialogues.length; li++) {
+                // 先按 docId 匹配
                 if (dialogues[li].docId === docId) { localIdx = li; break; }
+                // docId 不匹配，再按 date+topic 匹配（兼容旧数据）
+                if (dialogues[li].date === meta.date && dialogues[li].topic === meta.topic) {
+                    localIdx = li;
+                    // 把云端的 docId 赋给本地，统一标识符
+                    dialogues[li].docId = docId;
+                    break;
+                }
             }
 
             if (meta.deleted) {
@@ -657,13 +665,11 @@ async function refreshCloud() {
         console.log('[同步] 推送完成：', pushed, '条，跳过', pushSkipped, '条，耗时', Date.now() - pushStart, 'ms');
 
         // Step 4: 清理过期 tombstone（30天前的已删除文档）
-        // 注意：只用单字段 where 避免复合索引，客户端过滤日期
         try {
             var thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
             var tombstones = await db.collection('dialogues')
                 .where('deleted', '==', true)
-                .select('deleted', 'lastModified')
-                .get();
+                .get();  // Client SDK 不支持 .select()
             var purged = 0;
             for (var doc of tombstones.docs) {
                 var data = doc.data();
