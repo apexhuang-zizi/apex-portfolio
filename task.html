@@ -839,6 +839,26 @@ function loadTasks() {
         });
         
         console.log("Firebase 加载了 " + rawTasks.length + " 条，去重后 " + allTasks.length + " 条");
+
+        // Migration: add category field to old tasks that don't have it
+        var needMigrate = allTasks.filter(function(t) { return !t.category; });
+        if (needMigrate.length > 0) {
+            console.log("Migrating " + needMigrate.length + " tasks without category...");
+            var batch = db.batch();
+            needMigrate.forEach(function(t) {
+                batch.update(db.collection('task_list').doc(t._id), { category: '其他' });
+            });
+            batch.commit().then(function() {
+                console.log("Migration done: " + needMigrate.length + " tasks set to default category");
+                needMigrate.forEach(function(t) { t.category = '其他'; });
+                renderTasks();
+            }).catch(function(err) {
+                console.error("Migration failed:", err);
+                renderTasks();
+            });
+            return; // renderTasks will be called after migration
+        }
+
         renderTasks();
         checkUrlParams();
     }).catch(function(err) {
