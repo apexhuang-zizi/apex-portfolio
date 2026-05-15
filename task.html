@@ -557,7 +557,7 @@
             cursor: pointer;
             transition: all 0.2s;
         }
-        .cat-badge:hover { opacity: 0.75; }
+        .cat-badge:hover { opacity: 0.75; transform: scale(1.1); }
         .cat-设施设备 { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
         .cat-项目相关 { background: #dbeafe; color: #1d4ed8; border: 1px solid #93c5fd; }
         .cat-现场相关 { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
@@ -948,7 +948,7 @@ function renderTasks() {
         html += '<td class="col-num">' + (index + 1) + '</td>';
         html += '<td class="col-date">' + (t.date ? t.date.replace(/^(\d{4})-(\d{2})-(\d{2})$/, '$2/$3') : '-') + '</td>';
         html += '<td class="col-desc"' + rowStyle + '>' + escHtml(t.task || '') + '</td>';
-        html += '<td class="col-cat"><span class="cat-badge cat-' + escHtml(t.category || '其他') + '" title="点击筛选此类" onclick="filterByCategory(\'' + escHtml(t.category || '其他') + '\');event.stopPropagation();">' + escHtml(t.category || '其他') + '</span></td>';
+        html += '<td class="col-cat"><span class="cat-badge cat-' + escHtml(t.category || '其他') + '" title="点击切换分类" onclick="cycleCategory('\'' + (t._id || t.id) + '\',this);event.stopPropagation();">' + escHtml(t.category || '其他') + '</span></td>';
         html += '<td class="col-status" onclick="toggleDone(\'' + (t._id || t.id) + '\');event.stopPropagation();" title="点击切换进度">';
         html += '<span class="status-imp">' + impIcon + '</span>';
         html += '<span class="status-urg">' + urgIcon + '</span>';
@@ -1243,6 +1243,31 @@ function toggleAddForm() {
 }
 
 // ==================== 分类筛选辅助 ====================
+
+function cycleCategory(id, el) {
+    var task = allTasks.find(function(t) { return (t._id || t.id) === id; });
+    if (!task) return;
+    var idx = CATEGORIES.indexOf(task.category || '其他');
+    idx = (idx + 1) % CATEGORIES.length;
+    var newCat = CATEGORIES[idx];
+    // Update local
+    task.category = newCat;
+    // Update UI
+    el.textContent = newCat;
+    el.className = 'cat-badge cat-' + newCat;
+    // Save to Firebase
+    db.collection('task_list').doc(id).update({ category: newCat }).then(function() {
+        toast('分类已更新为: ' + newCat, 'success');
+    }).catch(function(err) {
+        toast('保存失败: ' + err.message, 'error');
+        // Revert
+        var oldIdx = (idx - 1 + CATEGORIES.length) % CATEGORIES.length;
+        task.category = CATEGORIES[oldIdx];
+        el.textContent = task.category;
+        el.className = 'cat-badge cat-' + task.category;
+    });
+}
+
 function filterByCategory(cat) {
     var el = document.querySelector('[data-filter="cat-' + cat + '"]');
     if (el) setFilter(el);
