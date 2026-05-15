@@ -547,6 +547,27 @@
         .col-status { width: 150px; font-size: 13px; }
         .col-creator { width: 70px; color: #64748b; font-size: 13px; }
         .col-actions { width: 110px; text-align: center; }
+        .col-cat { width: 90px; text-align: center; }
+        .cat-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .cat-badge:hover { opacity: 0.75; }
+        .cat-设施设备 { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+        .cat-项目相关 { background: #dbeafe; color: #1d4ed8; border: 1px solid #93c5fd; }
+        .cat-现场相关 { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+        .cat-开发计划 { background: #e0e7ff; color: #3730a3; border: 1px solid #a5b4fc; }
+        .cat-其他 { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+        .filter-tag.cat-filter.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+            color: #fff;
+        }
         /* No border on hover last row */
         .task-empty { }
         
@@ -589,6 +610,12 @@
         <span class="filter-count" id="filterCount">0 条任务</span>
         <span class="filter-tag filter-my" data-filter="mine" onclick="setFilter(this)">👤 我的</span>
         <span class="filter-tag filter-all" data-filter="all" onclick="setFilter(this)">📋 全部</span>
+        <span class="filter-label" style="margin-left:6px;">分类：</span>
+        <span class="filter-tag cat-filter" data-filter="cat-设施设备" onclick="setFilter(this)">🏗️设施设备</span>
+        <span class="filter-tag cat-filter" data-filter="cat-项目相关" onclick="setFilter(this)">📁项目相关</span>
+        <span class="filter-tag cat-filter" data-filter="cat-现场相关" onclick="setFilter(this)">🏭现场相关</span>
+        <span class="filter-tag cat-filter" data-filter="cat-开发计划" onclick="setFilter(this)">💻开发计划</span>
+        <span class="filter-tag cat-filter" data-filter="cat-其他" onclick="setFilter(this)">📦其他</span>
         <!-- Desktop only: Add button inside bar -->
         <button class="btn btn-primary btn-add-task btn-desktop-only" onclick="toggleAddForm()" style="margin-left:auto;padding:8px 20px;font-size:0.95rem;">➕ 新增任务</button>
     </div>
@@ -639,6 +666,16 @@
                     <option value="done">✓ 已完成</option>
                 </select>
             </div>
+            <div class="form-group">
+                <label>分类</label>
+                <select id="fCategory">
+                    <option value="其他" selected>📦 其他</option>
+                    <option value="设施设备">🏗️ 设施设备</option>
+                    <option value="项目相关">📁 项目相关</option>
+                    <option value="现场相关">🏭 现场相关</option>
+                    <option value="开发计划">💻 开发计划</option>
+                </select>
+            </div>
         </div>
         <div class="form-actions">
             <button class="btn btn-secondary" onclick="hideAddForm()">收起</button>
@@ -655,13 +692,14 @@
                     <th class="col-num">#</th>
                     <th class="col-date">日期</th>
                     <th class="col-desc">事项</th>
+                    <th class="col-cat">分类</th>
                     <th class="col-status">状态</th>
                     <th class="col-creator">创建人</th>
                     <th class="col-actions">操作</th>
                 </tr>
             </thead>
             <tbody>
-                <tr class="loading-row"><td colspan="6" class="loading">⏳ 加载任务中...</td></tr>
+                <tr class="loading-row"><td colspan="7" class="loading">⏳ 加载任务中...</td></tr>
             </tbody>
         </table>
         <div class="task-empty" id="taskEmpty" style="display:none;text-align:center;padding:40px;color:var(--text-muted);">暂无任务</div>
@@ -706,6 +744,16 @@
                     <option value="pending">○ 未开始</option>
                     <option value="in-progress">◐ 进行中</option>
                     <option value="done">☑ 已完成</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>分类</label>
+                <select id="editCategory">
+                    <option value="其他">📦 其他</option>
+                    <option value="设施设备">🏗️ 设施设备</option>
+                    <option value="项目相关">📁 项目相关</option>
+                    <option value="现场相关">🏭 现场相关</option>
+                    <option value="开发计划">💻 开发计划</option>
                 </select>
             </div>
         </div>
@@ -756,6 +804,7 @@ var currentFilter = 'all';
 var mineOnly = false;  // true = 只显示自己的任务
 var editingId = null;
 var isAdminUser = false;
+var CATEGORIES = ['设施设备','项目相关','现场相关','开发计划','其他'];
 
 // 检测管理员身份（从 sessionStorage 的 role 字段，index.html 设置）
 (function() {
@@ -844,7 +893,8 @@ function renderTasks() {
             (currentFilter === 'importance-high' && t.importance === 'high') ||
             (currentFilter === 'importance-low' && t.importance === 'low') ||
             (currentFilter === 'completion-pending' && t.completion === 'pending') ||
-            (currentFilter === 'completion-done' && t.completion === 'done');
+            (currentFilter === 'completion-done' && t.completion === 'done') ||
+            (currentFilter.startsWith('cat-') && t.category === currentFilter.slice(4));
         return tabMatch && filterMatch && mineMatch;
     });
 
@@ -878,6 +928,7 @@ function renderTasks() {
         html += '<td class="col-num">' + (index + 1) + '</td>';
         html += '<td class="col-date">' + (t.date ? t.date.replace(/^(\d{4})-(\d{2})-(\d{2})$/, '$2/$3') : '-') + '</td>';
         html += '<td class="col-desc"' + rowStyle + '>' + escHtml(t.task || '') + '</td>';
+        html += '<td class="col-cat"><span class="cat-badge cat-' + escHtml(t.category || '其他') + '" title="点击筛选此类" onclick="filterByCategory(\'' + escHtml(t.category || '其他') + '\');event.stopPropagation();">' + escHtml(t.category || '其他') + '</span></td>';
         html += '<td class="col-status" onclick="toggleDone(\'' + (t._id || t.id) + '\');event.stopPropagation();" title="点击切换进度">';
         html += '<span class="status-imp">' + impIcon + '</span>';
         html += '<span class="status-urg">' + urgIcon + '</span>';
@@ -926,6 +977,7 @@ function addTask() {
         urgency: document.getElementById('fUrgency').value,
         importance: document.getElementById('fImportance').value,
         completion: document.getElementById('fCompletion').value,
+        category: document.getElementById('fCategory').value,
         creator: currentUser,
         createdAt: new Date().toISOString()
     };
@@ -947,6 +999,7 @@ function clearForm() {
     document.getElementById('fUrgency').value = 'medium';
     document.getElementById('fImportance').value = 'low';
     document.getElementById('fCompletion').value = 'pending';
+    document.getElementById('fCategory').value = '其他';
 }
 
 // ==================== 切换完成状态 ====================
@@ -979,6 +1032,7 @@ function openEditModal(id) {
     document.getElementById('editUrgency').value = task.urgency || 'medium';
     document.getElementById('editImportance').value = task.importance || 'medium';
     document.getElementById('editCompletion').value = task.completion || 'pending';
+    document.getElementById('editCategory').value = task.category || '其他';
     document.getElementById('editModal').classList.add('show');
 }
 
@@ -996,7 +1050,8 @@ function saveEdit() {
         date: document.getElementById('editDate').value,
         urgency: document.getElementById('editUrgency').value,
         importance: document.getElementById('editImportance').value,
-        completion: document.getElementById('editCompletion').value
+        completion: document.getElementById('editCompletion').value,
+        category: document.getElementById('editCategory').value
     };
     db.collection('task_list').doc(editingId).update(updates).then(function() {
         var task = allTasks.find(function(t) { return t._id === editingId; });
@@ -1056,7 +1111,7 @@ function setFilter(el) {
 
 // ==================== 导出当前显示的任务 ====================
 function exportFilteredCSV() {
-    var rows = [['日期', '事项', '紧急', '重要', '完成度', '创建人', '创建时间']];
+    var rows = [['日期', '事项', '分类', '紧急', '重要', '完成度', '创建人', '创建时间']];
     // Get filtered tasks (same logic as renderTasks)
     var tabMatch, filterMatch, filtered = [];
     filtered = allTasks.filter(function(t) {
@@ -1079,6 +1134,7 @@ function exportFilteredCSV() {
         rows.push([
             t.date || '',
             (t.task || '').replace(/"/g, '""'),
+            t.category || '',
             urgMap[t.urgency] || '',
             impMap[t.importance] || '',
             t.completion === 'done' ? '已完成' : (t.completion === 'in-progress' ? '进行中' : '未开始'),
@@ -1163,6 +1219,19 @@ function toggleAddForm() {
         form.scrollIntoView({ behavior: 'smooth', block: 'center' });
     } else {
         form.style.display = 'none';
+    }
+}
+
+// ==================== 分类筛选辅助 ====================
+function filterByCategory(cat) {
+    var el = document.querySelector('[data-filter="cat-' + cat + '"]');
+    if (el) setFilter(el);
+    else {
+        currentFilter = 'cat-' + cat;
+        document.querySelectorAll('.filter-tag').forEach(function(t) { t.classList.remove('active'); });
+        var target = document.querySelector('.cat-filter[data-filter="cat-' + cat + '"]');
+        if (target) target.classList.add('active');
+        renderTasks();
     }
 }
 
