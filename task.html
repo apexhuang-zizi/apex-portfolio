@@ -769,7 +769,8 @@
 
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
 
 <!-- 数据层 -->
 <script>
@@ -782,12 +783,21 @@ var currentUser = sessionStorage.getItem('apex_username') || localStorage.getIte
         apiKey: "AIzaSyCMPFTNEBWXA_EnkF7Yk__F1gdHYfPg8kM",
         authDomain: "vietnames-data.firebaseapp.com",
         projectId: "vietnames-data",
-        storageBucket: "vietnames-data.firebasestorage.app",
+              storageBucket: "vietnames-data.firebasestorage.app",
         messagingSenderId: "474396114838",
         appId: "1:474396114838:web:0fc28fb08bfbd4b6bee7b7"
     };
-    firebase.initializeApp(firebaseConfig);
-    db = firebase.firestore();
+    var __app = firebase.initializeApp(firebaseConfig);
+    // Firebase Anonymous Auth (required by Security Rules)
+    console.log('[DEBUG] signInAnonymously called');
+    firebase.auth().signInAnonymously().then(function() {
+        console.log('[DEBUG] Auth .then() fired, user:', firebase.auth().currentUser);
+        console.log('Auth OK');
+        db = firebase.firestore();
+        initApp(); // restart init after auth
+    }).catch(function(err) {
+        console.error('Auth error:', err);
+    });
     console.log("Firebase 初始化完成");
 })();
 </script>
@@ -816,12 +826,17 @@ var CATEGORIES = ['设施设备','项目相关','现场相关','开发计划','�
 })();
 
 // ==================== 初始化 ====================
-document.getElementById('fDate').valueAsDate = new Date();
-document.getElementById('userInfo').textContent = '👤 ' + currentUser;
+function initApp() {
+    console.log('[DEBUG] initApp called, currentUser:', firebase.auth(__app).currentUser ? firebase.auth(__app).currentUser.uid : 'null');
+    document.getElementById('fDate').valueAsDate = new Date();
+    document.getElementById('userInfo').textContent = '👤 ' + currentUser;
+    loadTasks();
+}
 
 // ==================== 加载任务 ====================
 function loadTasks() {
     document.getElementById('taskList').innerHTML = '<div class="loading">⏳ 加载任务中...</div>';
+    console.log('[DEBUG] loadTasks - Firestore get called, currentUser:', firebase.auth(__app).currentUser ? firebase.auth(__app).currentUser.uid : 'null');
     db.collection('task_list').orderBy('createdAt', 'desc').get().then(function(snapshot) {
         var rawTasks = snapshot.docs.map(function(doc) {
             var t = doc.data();
@@ -1211,8 +1226,7 @@ function escHtml(str) {
     }
 })();
 
-// ==================== 加载任务列表（Firebase） ====================
-loadTasks();
+// (loadTasks moved to initApp, called after auth)
 
 // ==================== 切换新增任务表单 ====================
 function toggleAddForm() {
