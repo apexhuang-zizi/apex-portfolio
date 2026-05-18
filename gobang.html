@@ -1538,10 +1538,19 @@ var supabaseClient = null;   // Supabase client instance
 var rtChannel = null;         // Realtime channel
 var SIGNALING_SERVER = null;  // 废弃，保留变量避免报错
 var ICE_SERVERS = [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:stun.qq.com:3478' },
-    { urls: 'stun:stun.mediatek.com:3478' }
+    { urls: 'stun:stun.relay.metered.ca:80' },
+    { urls: 'turn:global.relay.metered.ca:80',
+      username: 'c917236d8f1ef3de350a6955',
+      credential: '1RQqnxDQAB/u6nub' },
+    { urls: 'turn:global.relay.metered.ca:80?transport=tcp',
+      username: 'c917236d8f1ef3de350a6955',
+      credential: '1RQqnxDQAB/u6nub' },
+    { urls: 'turn:global.relay.metered.ca:443',
+      username: 'c917236d8f1ef3de350a6955',
+      credential: '1RQqnxDQAB/u6nub' },
+    { urls: 'turns:global.relay.metered.ca:443?transport=tcp',
+      username: 'c917236d8f1ef3de350a6955',
+      credential: '1RQqnxDQAB/u6nub' }
 ];
 
 // ---- WebSocket Signaling ----
