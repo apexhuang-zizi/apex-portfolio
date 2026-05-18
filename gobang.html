@@ -1116,9 +1116,9 @@ function aiMinimax(boardState, depth, alpha, beta, isMaximizing, aiColor) {
         var maxEval = -Infinity;
         for (var i = 0; i < candidates.length; i++) {
             var move = candidates[i];
-            boardState[move.row][move.col] = aiColor;
-            var eval = aiMinimax(boardState, depth - 1, alpha, beta, false, aiColor);
-            boardState[move.row][move.col] = EMPTY;
+            var boardClone = cloneBoard(boardState);
+            boardClone[move.row][move.col] = aiColor;
+            var eval = aiMinimax(boardClone, depth - 1, alpha, beta, false, aiColor);
             maxEval = Math.max(maxEval, eval);
             alpha = Math.max(alpha, eval);
             if (beta <= alpha) break;
@@ -1128,9 +1128,9 @@ function aiMinimax(boardState, depth, alpha, beta, isMaximizing, aiColor) {
         var minEval = Infinity;
         for (var i = 0; i < candidates.length; i++) {
             var move = candidates[i];
-            boardState[move.row][move.col] = opponent;
-            var eval = aiMinimax(boardState, depth - 1, alpha, beta, true, aiColor);
-            boardState[move.row][move.col] = EMPTY;
+            var boardClone = cloneBoard(boardState);
+            boardClone[move.row][move.col] = opponent;
+            var eval = aiMinimax(boardClone, depth - 1, alpha, beta, true, aiColor);
             minEval = Math.min(minEval, eval);
             beta = Math.min(beta, eval);
             if (beta <= alpha) break;
@@ -1149,9 +1149,10 @@ function aiGetMoveMinimax(boardState, color, depth) {
 
     for (var i = 0; i < candidates.length; i++) {
         var move = candidates[i];
-        boardState[move.row][move.col] = color;
-        var score = aiMinimax(boardState, depth - 1, -Infinity, Infinity, false, color);
-        boardState[move.row][move.col] = EMPTY;
+        var boardClone = cloneBoard(boardState);  // 克隆棋盘
+        boardClone[move.row][move.col] = color;
+        var score = aiMinimax(boardClone, depth - 1, -Infinity, Infinity, false, color);
+        // 无需恢复，因为操作的是克隆
 
         if (score > bestScore) {
             bestScore = score;
