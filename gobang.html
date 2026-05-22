@@ -1639,6 +1639,7 @@ var onlineRoomId = '';
 var onlineIsHost = false;
 var onlinePartnerConnected = false;
 var onlineUndoCount = 2;       // 每局最多可悔棋2次
+var onlineUndoLock = false;      // 悔棋锁：true = 悔棋进行中，禁止落子
 var onlinePendingUndo = false; // 等待对方确认悔棋
 var useRelayMode = false;          // Fallback: use Supabase broadcast instead of P2P
 var iceFailedTimer = null;         // Timer to detect ICE failure
@@ -2085,32 +2086,67 @@ function handleGameData(msg) {
         case 'undo-request':
             // Opponent requests undo
             if (confirm('对手请求悔棋一步，是否同意？')) {
+                // B 立即执行撤销（不等广播）
+                if (onlinePendingUndo && onlinePendingUndo === true) {
+                    // 撤销2步（A的棋子 + B的棋子）
+                    var removed = 0;
+                    for (var i = onlineHistory.length - 1; i >= 0 && removed < 2; i--) {
+                        onlineBoard[onlineHistory[i].row][onlineHistory[i].col] = EMPTY;
+                        onlineHistory.splice(i, 1);
+                        removed++;
+                    }
+                    drawBoard('onlineBoard', onlineBoard, onlineHistory);
+                    updateMoveList(onlineHistory, 'onlineMoveList');
+                    onlineUndoCount--;
+                    updateUndoCountDisplay();
+                    if (onlineUndoCount <= 0) {
+                        document.getElementById('undoBtn').style.display = 'none';
+                    }
+                }
+                // 加锁：B 撤销后也禁止落子，等 A 完成撤销
+                onlineUndoLock = true;
+                // 通知 A 可以撤销
                 sendData({ type: 'undo-accept' });
             } else {
+                onlineUndoLock = false;  // 拒绝则解锁
                 sendData({ type: 'undo-reject' });
             }
             break;
 
         case 'undo-accept':
             // Our undo was accepted by opponent
-            onlinePendingUndo = false;
-            onlineUndoCount--;
-            updateUndoCountDisplay();
-            if (onlineUndoCount <= 0) {
-                document.getElementById('undoBtn').style.display = 'none';
-            } else {
-                document.getElementById('undoBtn').style.opacity = '1';
+            if (onlinePendingUndo) {
+                // A 执行撤销（onlinePendingUndo 存在时才执行，防重入）
+                onlinePendingUndo = false;
+                onlineUndoCount--;
+                updateUndoCountDisplay();
+                if (onlineUndoCount <= 0) {
+                    document.getElementById('undoBtn').style.display = 'none';
+                } else {
+                    document.getElementById('undoBtn').style.opacity = '1';
+                }
+                // Remove last two moves: our move + opponent's move
+                var removed = 0;
+                for (var i = onlineHistory.length - 1; i >= 0 && removed < 2; i--) {
+                    onlineBoard[onlineHistory[i].row][onlineHistory[i].col] = EMPTY;
+                    onlineHistory.splice(i, 1);
+                    removed++;
+                }
+                drawBoard('onlineBoard', onlineBoard, onlineHistory);
+                updateMoveList(onlineHistory, 'onlineMoveList');
+                showToast('悔棋成功！对方同意了（剩余' + onlineUndoCount + '次）');
+                
+                // A 撤销完成，通知 B 解锁
+                sendData({ type: 'undo-done' });
+                // 解锁（A 的撤销已完成）
+                onlineUndoLock = false;
             }
-            // Remove last two moves: our move + opponent's move
-            var removed = 0;
-            for (var i = onlineHistory.length - 1; i >= 0 && removed < 2; i--) {
-                onlineBoard[onlineHistory[i].row][onlineHistory[i].col] = EMPTY;
-                onlineHistory.splice(i, 1);
-                removed++;
-            }
-            drawBoard('onlineBoard', onlineBoard, onlineHistory);
-            updateMoveList(onlineHistory, 'onlineMoveList');
-            showToast('悔棋成功！对方同意了（剩余' + onlineUndoCount + '次）');
+            break;
+            
+        case 'undo-done':
+            // B 收到 A 的撤销完成通知，解锁
+            onlineUndoLock = false;
+            showToast('悔棋完成');
             break;
 
         case 'undo-reject':
@@ -2330,6 +2366,11 @@ function onlineTick() {
 // Online board click
 function handleOnlineBoardClick(e) {
     if (onlineGameOver) return;
+    // 悔棋锁检查：悔棋期间禁止落子
+    if (onlineUndoLock) {
+        showToast('悔棋进行中，请稍候...');
+        return;
+    }
     if (!onlineRoom || onlineRoom.status !== 'playing') { showToast('游戏未开始'); return; }
     if (!dataChannel || dataChannel.readyState !== 'open') { showToast('P2P连接未建立'); return; }
 
@@ -2513,6 +2554,9 @@ function requestUndo() {
     if (onlinePendingUndo) { showToast('正在等待对方回复悔棋请求'); return; }
     if (onlineMyColor === onlineRoom.currentTurn) { showToast('还没轮到你落子，无法悔棋'); return; }
 
+    // 加锁：悔棋期间禁止落子
+    onlineUndoLock = true;
+    
     sendData({ type: 'undo-request' });
     onlinePendingUndo = true;
     showToast('已发送悔棋请求，等待对方回复...');
@@ -2527,6 +2571,7 @@ function updateUndoCountDisplay() {
 function resetOnlineUndoCount() {
     onlineUndoCount = 2;
     onlinePendingUndo = false;
+    onlineUndoLock = false;  // 清除锁
     updateUndoCountDisplay();
     var btn = document.getElementById('undoBtn');
     if (btn) btn.style.opacity = '1';
