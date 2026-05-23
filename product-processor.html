@@ -321,8 +321,6 @@ function setPixel(imgData, x, y, w, c, val) {
   imgData.data[(y * w + x) * 4 + c] = Math.round(Math.max(0, Math.min(255, val)));
 }
 
-// 在 STATE 中增加 corners 字段
-STATE.corners = null;  // [{x, y}, ...] 四角点（比例坐标）
 
 </script>
 </head>
@@ -423,6 +421,7 @@ const STATE = {
   barcodeImage: null,       // 条码照片 Blob
   ocrData: { a: '', b: '', c: '', d: '' },
   records: [],              // 已保存记录 [{filename, a, b, c, area, imageData}]
+  corners: null,             // [{x, y}, ...] 四角点（比例坐标）
 };
 
 // ============================================================
