@@ -250,7 +250,6 @@
                             <div class="tt">按词造句</div>
                             <div class="st" id="sentence-desc">用单词造句练习</div>
                         </div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -467,6 +466,7 @@
     <script src="basic-vocab.js"></script>
     <script src="hanviet-vocab.js"></script>
     <script src="vsl2-vocab.js"></script>
+    <script src="vsl1-vocab.js"></script>
     <script>
     /* ========== 配置 ========== */
     // Firebase 配置
@@ -484,7 +484,7 @@
 
     // IndexedDB 配置
     var DB_NAME = 'VietnameseVocabDB';
-    var DB_VERSION = 1;
+    var DB_VERSION = 2;
 
     /* ========== 全局状态 ========== */
     var db = null;  // Firebase Firestore
@@ -566,6 +566,10 @@
                 if (!database.objectStoreNames.contains('vocab_chunks')){
                     var chunkStore = database.createObjectStore('vocab_chunks', {keyPath: 'key'});
                     chunkStore.createIndex('vocabId', 'vocabId', {unique: false});
+                }
+                // 句子缓存（替代 localStorage，解决配额问题）
+                if (!database.objectStoreNames.contains('sentence_cache')){
+                    database.createObjectStore('sentence_cache', {keyPath: 'key'});
                 }
             };
         });
@@ -841,7 +845,7 @@
     /* ========== UI 渲染 ========== */
     function renderVocabButtons(){
         var container = document.getElementById('vocabBtns');
-        var ids = Object.keys(VOCAB_REGISTRY).sort(function(a, b){ if (a === 'vsl2') return -1; if (b === 'vsl2') return 1; return (a === 'hanviet' ? -1 : b === 'hanviet' ? 1 : a.localeCompare(b)); });
+        var ids = Object.keys(VOCAB_REGISTRY).sort(function(a, b){ if (a === 'vsl1') return -1; if (b === 'vsl1') return 1; if (a === 'vsl2') return -1; if (b === 'vsl2') return 1; return (a === 'hanviet' ? -1 : b === 'hanviet' ? 1 : a.localeCompare(b)); });
 
         if (ids.length === 0){
             container.innerHTML = '<span style="color:var(--tx-m)">暂无词库</span>';
@@ -870,6 +874,8 @@
 
     function getVocabDisplayName(id){
         var names = {
+            vsl1: '🐦 VSL1 词汇',
+            vsl2: '🐦 VSL2 词汇',
             starter: '🌱 Starter',
             basic: '📗 Basic',
             intermediate: '📘 Intermediate',
@@ -2210,11 +2216,13 @@
 var _smDirty = false;
 
     function loadSentenceHistoryFromFirebase(){
-        // 优先从本地缓存加载(快速响应)
-        var localCache = localStorage.getItem('vn_sentences_' + CU);
-        if(localCache){
-            try{SM.history = JSON.parse(localCache) || {};}catch(e){SM.history = {};}
-        }
+        // 优先从 IndexedDB 本地缓存加载(快速响应)
+        getFromIDB('sentence_cache', 'vn_sentences_' + CU).then(function(cached){
+            if(cached && cached.data){
+                SM.history = cached.data || {};
+                console.log('[SM] Loaded from IDB cache:', Object.keys(SM.history).length, 'words');
+            }
+        });
         
         // 然后从 Firebase 加载最新数据
         if(typeof db==='undefined'||!db){
@@ -2224,8 +2232,8 @@ var _smDirty = false;
         return db.collection('vietnamese_sentences').doc(CU).get().then(function(doc){
             if(doc.exists){
                 SM.history = doc.data().history || {};
-                // 同步更新本地缓存
-                localStorage.setItem('vn_sentences_' + CU, JSON.stringify(SM.history));
+                // 同步更新 IndexedDB 本地缓存
+                putToIDB('sentence_cache', {key: 'vn_sentences_' + CU, data: SM.history});
                 console.log('[SM] Loaded from Firebase:', Object.keys(SM.history).length, 'words');
             }
         }).catch(function(e){
@@ -2235,11 +2243,10 @@ var _smDirty = false;
 
     function saveSentenceHistoryToFirebase(){
         console.log('[SM] saveSentenceHistoryToFirebase called. CU=' + CU + ', history keys=' + Object.keys(SM.history).length);
-        // 1. 立即保存到本地缓存(防止丢失)
-        try{
-            localStorage.setItem('vn_sentences_' + CU, JSON.stringify(SM.history));
-            console.log('[SM] Saved to localStorage: vn_sentences_' + CU);
-        }catch(e){console.warn('[SM] Local save failed:', e);}
+        // 1. 立即保存到 IndexedDB 本地缓存(防止丢失)
+        putToIDB('sentence_cache', {key: 'vn_sentences_' + CU, data: SM.history}).then(function(){
+            console.log('[SM] Saved to IDB cache: vn_sentences_' + CU);
+        });
         
         // 更新同步状态
         var syncStatus = document.getElementById('sm-sync-status');
@@ -2752,6 +2759,15 @@ function scoreSentenceLocal(sentence,targetWord){
     }
 
     loadUserRolesFromFirebase();
+
+    function goToClassroomNotes() {
+        if (!currentVocab || currentUnitFilter === 'all') {
+            alert('请先选择具体词库和具体单元');
+            return;
+        }
+        // 构建传参格式：classroom-notes.html?unit=vsl2-1
+        window.location.href = 'classroom-notes.html?unit=' + currentVocab + '-' + currentUnitFilter;
+    }
     </script>
 </body>
 </html>
