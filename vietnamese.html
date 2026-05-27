@@ -367,7 +367,7 @@ function filterBySource(source) {
       if (dialogues[i].topic && dialogues[i].topic.includes('VSL2')) visibleCount++;
     }
     // VSL1特殊逻辑：按标题筛选（标题包含"VSL1"）
-    if (source === 'VSL1') {
+    else if (source === 'VSL1') {
       if (dialogues[i].topic && dialogues[i].topic.includes('VSL1')) visibleCount++;
     } else {
       if (dialogues[i].source === source) visibleCount++;
@@ -389,7 +389,7 @@ function filterBySource(source) {
       }
     }
     // VSL1特殊逻辑：按标题筛选（标题包含"VSL1"）
-    if (source === 'VSL1') {
+    else if (source === 'VSL1') {
       if (dialogues[i].topic && dialogues[i].topic.includes('VSL1')) {
         item.style.display = '';
       } else {
