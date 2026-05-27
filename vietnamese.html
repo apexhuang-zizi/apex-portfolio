@@ -182,6 +182,50 @@ var defaultDialogues = [
   }
 ];
 
+/* ========== IndexedDB 本地存储（替代 localStorage，解决配额问题）========== */
+var vnDB = null;
+var VN_DB_NAME = 'vnDialoguesDB';
+var VN_DB_VERSION = 1;
+
+function initVnIndexedDB() {
+    return new Promise(function(resolve, reject) {
+        var request = indexedDB.open(VN_DB_NAME, VN_DB_VERSION);
+        request.onerror = function() { reject(request.error); };
+        request.onsuccess = function() { vnDB = request.result; resolve(); };
+        request.onupgradeneeded = function(event) {
+            var db = event.target.result;
+            if (!db.objectStoreNames.contains('dialogues')) {
+                db.createObjectStore('dialogues', { keyPath: 'key' });
+            }
+        };
+    });
+}
+
+function vnGetFromIDB(key) {
+    return new Promise(function(resolve, reject) {
+        if (!vnDB) { resolve(null); return; }
+        var tx = vnDB.transaction('dialogues', 'readonly');
+        var store = tx.objectStore('dialogues');
+        var request = store.get(key);
+        request.onsuccess = function() { resolve(request.result); };
+        request.onerror = function() { reject(request.error); };
+    });
+}
+
+function vnPutToIDB(key, data) {
+    return new Promise(function(resolve, reject) {
+        if (!vnDB) { resolve(); return; }
+        var tx = vnDB.transaction('dialogues', 'readwrite');
+        var store = tx.objectStore('dialogues');
+        var request = store.put({ key: key, data: data });
+        request.onsuccess = function() { resolve(); };
+        request.onerror = function() { reject(request.error); };
+    });
+}
+
+// 初始化 IndexedDB
+initVnIndexedDB().catch(function(e) { console.warn('IndexedDB 不可用:', e); });
+
 var dialogues = [];
 var deleteTarget = -1;
 var currentFilter = 'all'; // 当前筛选分类
@@ -258,7 +302,7 @@ function buildFilter() {
   }
   
   // 固定分类（手动标签）
-  var sourceCategories = ['VSL2']; // 可扩展：['VSL1', 'VSL2', '基础词汇', ...]
+  var sourceCategories = ['VSL1', 'VSL2']; // 可扩展：['VSL1', 'VSL2', '基础词汇', ...]
   
   // 统计手动分类（VSL2特殊逻辑：按标题筛选）
   var sourceCount = {};
@@ -266,6 +310,10 @@ function buildFilter() {
     // VSL2特殊逻辑：统计标题包含"VSL2"的对话
     if (dialogues[i].topic && dialogues[i].topic.includes('VSL2')) {
       sourceCount['VSL2'] = (sourceCount['VSL2'] || 0) + 1;
+    }
+    // VSL1特殊逻辑：统计标题包含"VSL1"的对话
+    if (dialogues[i].topic && dialogues[i].topic.includes('VSL1')) {
+      sourceCount['VSL1'] = (sourceCount['VSL1'] || 0) + 1;
     }
     // 其他手动分类仍按source字段统计
     var src = dialogues[i].source || '';
@@ -317,6 +365,10 @@ function filterBySource(source) {
     // VSL2特殊逻辑：按标题筛选（标题包含"VSL2"）
     if (source === 'VSL2') {
       if (dialogues[i].topic && dialogues[i].topic.includes('VSL2')) visibleCount++;
+    }
+    // VSL1特殊逻辑：按标题筛选（标题包含"VSL1"）
+    if (source === 'VSL1') {
+      if (dialogues[i].topic && dialogues[i].topic.includes('VSL1')) visibleCount++;
     } else {
       if (dialogues[i].source === source) visibleCount++;
     }
@@ -331,6 +383,14 @@ function filterBySource(source) {
     // VSL2特殊逻辑：按标题筛选（标题包含"VSL2"）
     if (source === 'VSL2') {
       if (dialogues[i].topic && dialogues[i].topic.includes('VSL2')) {
+        item.style.display = '';
+      } else {
+        item.style.display = 'none';
+      }
+    }
+    // VSL1特殊逻辑：按标题筛选（标题包含"VSL1"）
+    if (source === 'VSL1') {
+      if (dialogues[i].topic && dialogues[i].topic.includes('VSL1')) {
         item.style.display = '';
       } else {
         item.style.display = 'none';
@@ -434,8 +494,21 @@ function isSameDialogue(d1, d2) {
     return d1.date === d2.date && d1.topic === d2.topic;
 }
 
-// 从 localStorage 加载数据（页面加载时调用，不请求网络）
-function loadFromLocalStorage() {
+// 从 IndexedDB 加载数据（页面加载时调用，不请求网络）
+async function loadFromLocalStorage() {
+    // 先尝试从 IndexedDB 加载
+    var cached = await vnGetFromIDB('vnDialogues');
+    if (cached && cached.data) {
+        dialogues = cached.data;
+        dialogues.forEach(function(d, i) {
+            if (!d.docId) d.docId = deriveDocId(d.date, d.topic);
+        });
+        console.log('从 IndexedDB 加载了 ' + dialogues.length + ' 条对话');
+        renderList();
+        return;
+    }
+    
+    // Fallback 到 localStorage（兼容旧数据）
     var stored = localStorage.getItem('vnDialogues');
     if (stored) {
         try {
@@ -443,29 +516,34 @@ function loadFromLocalStorage() {
             dialogues.forEach(function(d, i) {
                 if (!d.docId) d.docId = deriveDocId(d.date, d.topic);
             });
-            console.log('从本地加载了 ' + dialogues.length + ' 条对话');
+            console.log('从 localStorage 加载了 ' + dialogues.length + ' 条对话');
+            // 迁移到 IndexedDB
+            vnPutToIDB('vnDialogues', dialogues);
         } catch(e) {
             dialogues = [];
         }
     } else {
         dialogues = defaultDialogues.slice();
-        // 为预置数据补充 docId
         dialogues.forEach(function(d, i) {
             if (!d.docId) d.docId = deriveDocId(d.date, d.topic);
         });
         console.log('使用预置数据，共 ' + dialogues.length + ' 条对话');
-        localStorage.setItem('vnDialogues', JSON.stringify(dialogues));
+        vnPutToIDB('vnDialogues', dialogues);
     }
     renderList();
 }
 
-// 保存数据到 localStorage（纯本地，无网络）
-function saveToLocal() {
-    localStorage.setItem('vnDialogues', JSON.stringify(dialogues.map(function(dd) {
+// 保存数据到 IndexedDB（纯本地，无网络）
+async function saveToLocal() {
+    var data = dialogues.map(function(dd) {
         var copy = {};
         for (var key in dd) { if (key !== 'id' && key !== '_fromUrl') copy[key] = dd[key]; }
         return copy;
-    })));
+    });
+    await vnPutToIDB('vnDialogues', data);
+    console.log('已保存到 IndexedDB:', dialogues.length, '条对话');
+    // 同时保留 localStorage 作为 fallback
+    localStorage.setItem('vnDialogues', JSON.stringify(data));
 }
 
 // 等待 Firebase 在线（最多 waitMs 毫秒）
