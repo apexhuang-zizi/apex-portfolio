@@ -199,7 +199,7 @@ body { font-family: "Outfit", sans-serif; background: var(--bg); color: var(--te
                 <span class="module-badge" id="mod-tracker-badge">需权限</span>
             </a>
 
-            <a class="module-card" id="mod-notes" href="classroom-notes.html" onclick="this.href='classroom-notes.html?user='+encodeURIComponent(localStorage.getItem('username')||'')">
+            <a class="module-card" id="mod-notes" href="classroom-notes.html" onclick="this.href='classroom-notes.html?user='+encodeURIComponent(sessionStorage.getItem('apex_username')||'')">
                 <div class="icon">📒</div>
                 <h4>课堂笔记与测试 <span class="module-vi">Ghi chú & Kiểm tra</span></h4>
                 <p>独立的笔记记录与AI自动出题系统</p>
