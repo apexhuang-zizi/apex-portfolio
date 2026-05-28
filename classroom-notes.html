@@ -126,7 +126,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 <div class="content-area" id="content-area"><div class="whiteboard" id="whiteboard"><div class="wb-empty">在下方输入框录入内容...</div></div>
 <div class="input-area" id="input-area"><div class="input-header"><label id="input-label">✍️ 录入内容</label><button class="collapse-btn" id="collapse-btn" onclick="toggleInputCollapse()" title="隐藏/展开">▼</button></div><div class="input-main"><div class="input-box" id="sentence-input" contenteditable="true" data-placeholder="输入内容，选中文字后右键标记..."></div><div class="input-actions"><button class="btn-sm" onclick="clearInput()">🗑️ 清空</button><button class="btn-submit" onclick="submitSentence()">📤 提交</button></div></div></div>
 </div>
-<div class="test-area" id="test-area"><div class="test-empty" id="test-empty"><div style="font-size:2rem;margin-bottom:.5rem">📝</div>完成测试后将在此显示结果</div><div id="test-results" style="flex:1"></div></div>
+<div class="test-area" id="test-area"><div id="test-results" style="flex:1"></div></div>
 </div>
 <div class="side-r"><div class="side-h">⭐ 重点提取</div><div class="extract-list" id="extract-list"><div class="wb-empty" style="padding:1rem;font-size:.8rem">标记的词语和语法<br>将自动汇聚到这里</div></div><div class="side-r-footer" style="display:none"></div></div>
 </div>
