@@ -182,6 +182,26 @@ function renderWordList(){var c=document.getElementById('word-list');if(!wordLis
 // 存储当前选区（Range 对象），用于在 DOM 修改后恢复
 window._selRange = null;
 
+// 每次松开鼠标/松开选择时：保存当前选区（供右键菜单和标记使用）
+document.getElementById('sentence-input').addEventListener('mouseup',function(e){
+  var sel=window.getSelection();
+  if(!sel.isCollapsed&&sel.rangeCount){
+    var range=sel.getRangeAt(0);
+    if(this.contains(range.commonAncestorContainer)){
+      window._selRange=range.cloneRange();
+    }
+  }
+});
+document.addEventListener('selectionchange',function(){
+  var sel=window.getSelection();
+  if(!sel.isCollapsed&&sel.rangeCount){
+    var range=sel.getRangeAt(0);
+    var inp=document.getElementById('sentence-input');
+    if(inp&&inp.contains(range.commonAncestorContainer)){
+      window._selRange=range.cloneRange();
+    }
+  }
+});
 // 鼠标右键：弹出自定义菜单
 document.getElementById('sentence-input').addEventListener('contextmenu',function(e){
   e.preventDefault();
@@ -193,8 +213,9 @@ document.getElementById('sentence-input').addEventListener('contextmenu',functio
   window._selRange=range.cloneRange();
   var menu=document.getElementById('ctx-menu');
   var x=e.clientX,y=e.clientY;
-  menu.style.left=Math.min(x,window.innerWidth-menu.offsetWidth-8)+'px';
-  menu.style.top=Math.min(y,window.innerHeight-menu.offsetHeight-8)+'px';
+  var menuW=menu.offsetWidth||160,menuH=menu.offsetHeight||200;
+  menu.style.left=Math.max(8,Math.min(x,window.innerWidth-menuW-12))+'px';
+  menu.style.top=Math.max(8,Math.min(y,window.innerHeight-menuH-12))+'px';
   menu.classList.add('show');
 });
 
@@ -271,10 +292,10 @@ function wrapSelection(range,type,extra){
     sp.dataset.extra=(extra||'');
     range.surroundContents(sp);
   }
-  // 选中新 span
+  // 选中新 span，保持词后位置，方便继续分段选择
   sel.removeAllRanges();
   var newRange=document.createRange();
-  newRange.selectNodeContents(document.getElementById('sentence-input'));
+  newRange.selectNodeContents(sp);
   newRange.collapse(false);
   sel.addRange(newRange);
 }
@@ -287,6 +308,20 @@ async function submitSentence(){
   var html=editor.innerHTML.trim();
   // 取纯文本供统计
   var text=editor.innerText.trim();
+  // 自动附中文翻译（已知词在句中出现时附翻译标题）
+  if(wordList&&wordList.length){
+    var done={};
+    wordList.forEach(function(w){
+      if(!w.vi||done[w.vi])return;
+      var ve=w.vi.replace(/[.*+?^\x24{}()|[\]\\]/g,function(m){return'\\'+m;});
+      var re=new RegExp(ve,'gi');
+      if(re.test(text)){
+        done[w.vi]=true;
+        var zh=w.zh||'';
+        html=html.replace(re,zh?function(m){return'<span class="auto-zh" title="'+zh+'">'+m+'</span>';}:function(m){return'<span class="auto-zh">'+m+'</span>';});
+      }
+    });
+  }
   if(!text){alert('\u8BF7\u8F93\u5165\u5185\u5BB9');return;}
   // 检查用户状态
   if(!currentUser||!currentUser.uid){
@@ -396,6 +431,31 @@ async function editRecord(id){
   overlay.appendChild(box);
   document.body.appendChild(overlay);
   document.getElementById('edit-editor').focus();
+  // 让编辑弹窗内的 contenteditable 也支持右键标记
+  var editEd=document.getElementById('edit-editor');
+  editEd.addEventListener('mouseup',function(e){
+    var sel=window.getSelection();
+    if(!sel.isCollapsed&&sel.rangeCount){
+      var range=sel.getRangeAt(0);
+      if(editEd.contains(range.commonAncestorContainer)){
+        window._selRange=range.cloneRange();
+      }
+    }
+  });
+  editEd.addEventListener('contextmenu',function(e){
+    e.preventDefault();
+    var sel=window.getSelection();
+    if(sel.isCollapsed||!sel.rangeCount)return;
+    var range=sel.getRangeAt(0);
+    if(!editEd.contains(range.commonAncestorContainer))return;
+    window._selRange=range.cloneRange();
+    var menu=document.getElementById('ctx-menu');
+    var x=e.clientX,y=e.clientY;
+    var menuW=menu.offsetWidth||160,menuH=menu.offsetHeight||200;
+    menu.style.left=Math.max(8,Math.min(x,window.innerWidth-menuW-12))+'px';
+    menu.style.top=Math.max(8,Math.min(y,window.innerHeight-menuH-12))+'px';
+    menu.classList.add('show');
+  });
   document.getElementById('edit-save-btn').onclick=async function(){
     var newHtml=document.getElementById('edit-editor').innerHTML;
     var newText=document.getElementById('edit-editor').innerText.trim();
@@ -421,7 +481,7 @@ function renderExtractList(){
   c.innerHTML='';
   wMarks.forEach(function(m){
     var d=document.createElement('div');d.className='extract-item word-type';
-    d.innerHTML='<div class="extract-word">\u2605 '+escHtml(m.word)+'</div><div class="extract-meta">'+(m.type==='hard'?'\u26A0 \u96BE\u70B9':'\u80CC\u666F')+(m.extra?' \u2014 '+escHtml(m.extra):'')+'</div>';
+    var zhHint='';if(wordList&&wordList.length){for(var wi=0;wi<wordList.length;wi++){if(wordList[wi].vi===m.word&&wordList[wi].zh){zhHint=' <span style="color:#7c3aed;font-size:.72rem">['+escHtml(wordList[wi].zh)+']</span>';break;}}}d.innerHTML='<div class="extract-word">\u2605 '+escHtml(m.word)+zhHint+'</div><div class="extract-meta">'+(m.type==='hard'?'\u26A0 \u96BE\u70B9':'\u80CC\u666F')+(m.extra?' \u2014 '+escHtml(m.extra):'')+'</div>';
     c.appendChild(d);
   });
   gMarks.forEach(function(m){
@@ -446,7 +506,7 @@ function renderTestResults(){var empty=document.getElementById('test-empty');var
 
 var currentAudio=null;
 function tts(text){if(!text)return;if(currentAudio){currentAudio.pause();currentAudio=null;}var url='https://translate.google.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q='+encodeURIComponent(text);currentAudio=new Audio(url);currentAudio.play().catch(function(){});}
-function ttsCard(btn,text){if(!text)return;if(currentAudio){currentAudio.pause();currentAudio=null;}var url='https://translate.google.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q='+encodeURIComponent(text);currentAudio=new Audio(url);currentAudio.play().catch(function(){});var orig=btn.textContent;btn.textContent='\u23F8';currentAudio.onended=function(){btn.textContent=orig;};}
+function ttsCard(btn,text){if(!text)return;if(currentAudio){if(currentAudio._btn===btn){if(currentAudio.paused){currentAudio.play();btn.textContent='\u23F8';currentAudio.onpause=function(){btn.textContent='\uD83C\uDFA4';};currentAudio.onended=function(){btn.textContent='\uD83C\uDFA4';};}else{currentAudio.pause();btn.textContent='\uD83C\uDFA4';}}else{currentAudio.pause();if(currentAudio._btn)currentAudio._btn.textContent='\uD83C\uDFA4';currentAudio=null;}}var url='https://translate.google.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q='+encodeURIComponent(text);currentAudio=new Audio(url);currentAudio._btn=btn;btn.textContent='\u23F8';currentAudio.onpause=function(){btn.textContent='\uD83C\uDFA4';};currentAudio.onended=function(){btn.textContent='\uD83C\uDFA4';};currentAudio.play().catch(function(){});}
 
 // ===== 工具函数 =====
 
