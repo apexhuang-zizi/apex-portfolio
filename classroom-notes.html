@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
@@ -157,12 +157,23 @@ firebase.initializeApp(firebaseConfig);
 var db=firebase.firestore(),auth=firebase.auth();
 var currentUser=null,currentTextbook='',currentUnit='',currentTab='notes',wordList=[],extractedDialogue=[],records=[],marks=[];
 var UNIT_MAP={VSL1:['U1','U2','U3','U4','U5','U6','U7','U8','U9','U10','U11','U12'],VSL2:['U1','U2','U3','U4','U5','U6','U7','U8','U9','U10','U11','U12']};
-auth.onAuthStateChanged(function(u){if(u){currentUser=u;document.getElementById('user-display').textContent='\uD83D\uDC64 '+(u.displayName||u.email||'\u7528\u6237');}else{auth.signInAnonymously().then(function(c){currentUser=c.user;document.getElementById('user-display').textContent='\uD83D\uDC64 \u5BA2\u4EBA';}).catch(function(){document.getElementById('user-display').textContent='\uD83D\uDC64 \u5BA2\u4EBA';});}});
+auth.onAuthStateChanged(function(u){if(u){currentUser=u;document.getElementById('user-display').textContent='\uD83D\uDC64 '+(u.displayName||u.email||'\u7528\u6237');}else{auth.signInAnonymously().then(function(c){currentUser=c.user;document.getElementById('user-display').textContent='\uD83D\uDC64 \u5BA2\u4EBA';}).catch(function(){document.getElementById('user-display').textContent='\uD83D\uDC64 \u5BA2\u4EBA';});
+
+// 读取URL参数中的用户名
+(function readUrlParams(){
+  var params=new URLSearchParams(window.location.search);
+  var user=params.get('user');
+  if(user){
+    window._urlUser=user;
+    document.getElementById('user-display').textContent='👤 '+decodeURIComponent(user);
+  }
+})();
+}});
 document.getElementById('textbook-sel').addEventListener('change',function(e){currentTextbook=e.target.value;var us=document.getElementById('unit-sel');us.innerHTML='<option value="">-- \u5355\u5143 --</option>';if(!currentTextbook){us.disabled=true;document.getElementById('btn-extract-words').disabled=true;document.getElementById('btn-extract-dialogue').disabled=true;return;}us.disabled=false;UNIT_MAP[currentTextbook].forEach(function(u){var o=document.createElement('option');o.value=u;o.textContent=u;us.appendChild(o);});document.getElementById('btn-extract-words').disabled=true;document.getElementById('btn-extract-dialogue').disabled=true;});
 document.getElementById('unit-sel').addEventListener('change',function(e){currentUnit=e.target.value;var hasUnit=!!currentUnit;document.getElementById('btn-extract-words').disabled=!hasUnit;document.getElementById('btn-extract-dialogue').disabled=!hasUnit;if(hasUnit)loadAllData();else{wordList=[];extractedDialogue=[];records=[];marks=[];renderWordList();renderWhiteboard();renderExtractList();}});
 async function loadAllData(){if(!currentUser||!currentTextbook||!currentUnit)return;try{var snap=await db.collection('cn_records').where('userId','==',currentUser.uid).where('textbook','==',currentTextbook).where('unit','==',currentUnit).get();records=[];snap.forEach(function(d){var item={id:d.id};var data=d.data();for(var k in data)item[k]=data[k];records.push(item);});var mSnap=await db.collection('cn_marks').where('userId','==',currentUser.uid).where('textbook','==',currentTextbook).where('unit','==',currentUnit).get();marks=[];mSnap.forEach(function(d){var item={id:d.id};var data=d.data();for(var k in data)item[k]=data[k];marks.push(item);});renderWordList();renderWhiteboard();renderExtractList();}catch(e){console.error(e);}}
-async function extractWords(){if(!currentTextbook||!currentUnit)return;var vocab=currentTextbook==='VSL1'?window._vsl1Vocab:window._vsl2Vocab;if(!vocab){alert('\u8BCD\u5E93\u672A\u52A0\u8F7D\uFF0C\u8BF7\u5237\u65B0\u91CD\u8BD5');return;}var unitNum=parseInt(currentUnit.replace('U',''));var unitData=vocab.find(function(u){return u.id===unitNum;});if(!unitData){alert('\u672A\u627E\u5230\u8BE5\u5355\u5143\u8BCD\u5E93');return;}wordList=(unitData.words||[]).map(function(w){return{vi:w.vi||w.word||'',zh:w.zh||w.chinese||'',extracted:true};});renderWordList();}
-async function extractDialogue(){if(!currentTextbook||!currentUnit)return;var unitNum=parseInt(currentUnit.replace('U',''));try{var snap=await db.collection('vietnamese_dialogues').where('textbook','==',currentTextbook).where('unit','==',unitNum).get();extractedDialogue=[];snap.forEach(function(d){var data=d.data();if(data.topic&&data.topic.indexOf(currentTextbook)!==-1){var item={id:d.id};for(var k in data)item[k]=data[k];extractedDialogue.push(item);}});if(!extractedDialogue.length)alert('\u672A\u627E\u5230\u8BE5\u5355\u5143\u7684\u8BFE\u6587\u5185\u5BB9');renderWhiteboard();}catch(e){console.error(e);alert('\u63D0\u53D6\u8BFE\u6587\u5931\u8D25');}}
+async function extractWords(){if(!currentTextbook||!currentUnit)return;var unitNum=parseInt(currentUnit.replace('U',''));try{var dbReq=indexedDB.open('VietnameseVocabDB',1);dbReq.onsuccess=function(e){var db=e.target.result;if(!db.objectStoreNames.contains('vocab_chunks')){alert('\u8BCD\u5E93\u672A\u521D\u59CB\u5316\uFF0C\u8BF7\u5148\u5728\u9996\u9875\u540C\u6B65\u6570\u636E');return;}var tx=db.transaction(['vocab_chunks'],'readonly');var store=tx.objectStore('vocab_chunks');var getAllReq=store.getAll();getAllReq.onsuccess=function(ev){var chunks=ev.target.result||[];var allWords=[];chunks.forEach(function(chunk){if(chunk.words&&Array.isArray(chunk.words)){allWords=allWords.concat(chunk.words);}});var unitWords=allWords.filter(function(w){return w.unit===currentUnit||w.unit===unitNum;});if(!unitWords.length){alert('\u672A\u627E\u5230\u8BE5\u5355\u5143\u7684\u5355\u8BCD');wordList=[];}else{wordList=unitWords.map(function(w){return{vi:w.vi||w.word||'',zh:w.zh||w.chinese||'',extracted:true};});}renderWordList();};getAllReq.onerror=function(){alert('\u8BFB\u53D6\u8BCD\u5E93\u5931\u8D25');};};dbReq.onerror=function(){alert('\u6253\u5F00\u8BCD\u5E93\u6570\u636E\u5E93\u5931\u8D25');};}catch(e){console.error(e);alert('\u63D0\u53D6\u5355\u8BCD\u5931\u8D25');}}
+async function extractDialogue(){if(!currentTextbook||!currentUnit)return;var unitNum=parseInt(currentUnit.replace('U',''));try{var dbReq=indexedDB.open('vnDialoguesDB',1);dbReq.onsuccess=function(e){var db=e.target.result;if(!db.objectStoreNames.contains('dialogues')){alert('\u5BF9\u8BDD\u6570\u636E\u5E93\u672A\u521D\u59CB\u5316\uFF0C\u8BF7\u5148\u5728\u9996\u9875\u540C\u6B65\u6570\u636E');return;}var tx=db.transaction(['dialogues'],'readonly');var store=tx.objectStore('dialogues');var getReq=store.get('vnDialogues');getReq.onsuccess=function(ev){var dialogues=ev.target.result;if(!Array.isArray(dialogues)){alert('\u672C\u5730\u5B58\u50A8\u4E2D\u672A\u627E\u5230\u5BF9\u8BDD\u6570\u636E');extractedDialogue=[];}else{extractedDialogue=dialogues.filter(function(d){return d.topic&&d.topic.includes(currentTextbook)&&d.topic.includes('Bài '+unitNum);});if(!extractedDialogue.length){alert('\u672A\u627E\u5230\u8BE5\u5355\u5143\u7684\u8BFE\u6587\u5185\u5BB9');}}renderWhiteboard();};getReq.onerror=function(){alert('\u8BFB\u53D6\u5BF9\u8BDD\u6570\u636E\u5931\u8D25');};};dbReq.onerror=function(){alert('\u6253\u5F00\u5BF9\u8BDD\u6570\u636E\u5E93\u5931\u8D25');};}catch(e){console.error(e);alert('\u63D0\u53D6\u8BFE\u6587\u5931\u8D25');}}
 function renderWordList(){var c=document.getElementById('word-list');if(!wordList.length){c.innerHTML='<div class="wb-empty">\u9009\u62E9\u8BFE\u672C\u548C\u5355\u5143\u540E<br>\u70B9\u51FB\u300C\u63D0\u53D6\u5355\u8BCD\u300D\u6309\u94AE</div>';return;}c.innerHTML='';wordList.forEach(function(w,i){var d=document.createElement('div');d.className='word-item';d.innerHTML='<span class="word-vi">'+escHtml(w.vi)+'</span><span class="word-zh">'+escHtml(w.zh)+'</span><button class="tts-btn" onclick="event.stopPropagation();tts(\''+w.vi.replace(/'/g,"\\'")+'\')">\uD83C\uDFA4</button>';d.onclick=function(){d.classList.toggle('show-zh');};c.appendChild(d);});}
 
 // ===== 右键菜单 & 富文本标记 =====
@@ -214,13 +225,30 @@ async function ctxMark(type){
   // 写入富文本 DOM
   wrapSelection(range,type,extra);
   window._selRange=null;
-  // 存入数据库
-  if(!currentUser||!currentTextbook||!currentUnit)return;
-  try{
-    var doc=await db.collection('cn_marks').add({userId:currentUser.uid,textbook:currentTextbook,unit:currentUnit,tabType:currentTab,word:word,type:type,extra:extra,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
-    marks.push({id:doc.id,userId:currentUser.uid,textbook:currentTextbook,unit:currentUnit,tabType:currentTab,word:word,type:type,extra:extra});
+  // 存入数据库（先检查用户状态）
+  if(!currentUser||!currentUser.uid){
+    console.warn('\u7528\u6237\u672A\u767B\u5F55\uFF0C\u6807\u8BB0\u5C06\u4EC5\u672C\u5730\u4FDD\u5B58');
     renderExtractList();
-  }catch(e){console.error(e);}
+    return;
+  }
+  if(!currentTextbook||!currentUnit){
+    console.warn('\u8BFE\u7A0B\u4FE1\u606F\u4E0D\u5B8C\u6574');
+    return;
+  }
+  try{
+    var doc=await db.collection('cn_marks').add({
+      userId:currentUser.uid,
+      textbook:currentTextbook,
+      unit:currentUnit,
+      tabType:currentTab,
+      word:word,
+      type:type,
+      extra:extra||null,
+      createdAt:firebase.firestore.FieldValue.serverTimestamp()
+    });
+    marks.push({id:doc.id,userId:currentUser.uid,textbook:currentTextbook,unit:currentUnit,tabType:currentTab,word:word,type:type,extra:extra||null});
+    renderExtractList();
+  }catch(e){console.error('\u4FDD\u5B58\u6807\u8BB0\u5931\u8D25:',e);alert('\u4FDD\u5B58\u6807\u8BB0\u5931\u8D25\uFF0C\u8BF7\u68C0\u67E5\u7F51\u7EDC');}
 }
 
 // wrapSelection：用 <span> 包裹当前选区并恢复光标
@@ -259,13 +287,29 @@ async function submitSentence(){
   // 取纯文本供统计
   var text=editor.innerText.trim();
   if(!text){alert('\u8BF7\u8F93\u5165\u5185\u5BB9');return;}
-  if(!currentUser||!currentTextbook||!currentUnit){alert('\u8BF7\u5148\u9009\u62E9\u8BFE\u672C\u548C\u5355\u5143');return;}
+  // 检查用户状态
+  if(!currentUser||!currentUser.uid){
+    alert('\u7528\u6237\u672A\u767B\u5F55\uFF0C\u5185\u5BB9\u5C06\u4EC5\u672C\u5730\u4FDD\u5B58');
+    records.unshift({id:'local_'+Date.now(),userId:'local',textbook:currentTextbook||'',unit:currentUnit||'',tabType:currentTab,textVi:text,html:html});
+    editor.innerHTML='';
+    renderWhiteboard();
+    return;
+  }
+  if(!currentTextbook||!currentUnit){alert('\u8BF7\u5148\u9009\u62E9\u8BFE\u672C\u548C\u5355\u5143');return;}
   try{
-    var doc=await db.collection('cn_records').add({userId:currentUser.uid,textbook:currentTextbook,unit:currentUnit,tabType:currentTab,textVi:text,html:html,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+    var doc=await db.collection('cn_records').add({
+      userId:currentUser.uid,
+      textbook:currentTextbook,
+      unit:currentUnit,
+      tabType:currentTab,
+      textVi:text,
+      html:html,
+      createdAt:firebase.firestore.FieldValue.serverTimestamp()
+    });
     records.unshift({id:doc.id,userId:currentUser.uid,textbook:currentTextbook,unit:currentUnit,tabType:currentTab,textVi:text,html:html});
     editor.innerHTML='';
     renderWhiteboard();
-  }catch(e){console.error(e);alert('\u4FDD\u5B58\u5931\u8D25');}
+  }catch(e){console.error('\u4FDD\u5B58\u5931\u8D25:',e);alert('\u4FDD\u5B58\u5931\u8D25\uFF0C\u8BF7\u68C0\u67E5\u7F51\u7EDC\u8FDE\u63A5');}
 }
 
 function clearInput(){
