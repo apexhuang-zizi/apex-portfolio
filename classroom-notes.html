@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
@@ -157,8 +157,6 @@ firebase.initializeApp(firebaseConfig);
 var db=firebase.firestore(),auth=firebase.auth();
 var currentUser=null,currentTextbook='',currentUnit='',currentTab='notes',wordList=[],extractedDialogue=[],records=[],marks=[];
 var UNIT_MAP={VSL1:['U1','U2','U3','U4','U5','U6','U7','U8','U9','U10','U11','U12'],VSL2:['U1','U2','U3','U4','U5','U6','U7','U8','U9','U10','U11','U12']};
-auth.onAuthStateChanged(function(u){if(u){currentUser=u;document.getElementById('user-display').textContent='\uD83D\uDC64 '+(u.displayName||u.email||'\u7528\u6237');}else{auth.signInAnonymously().then(function(c){currentUser=c.user;document.getElementById('user-display').textContent='\uD83D\uDC64 \u5BA2\u4EBA';}).catch(function(){document.getElementById('user-display').textContent='\uD83D\uDC64 \u5BA2\u4EBA';});
-
 // 读取URL参数中的用户名
 (function readUrlParams(){
   var params=new URLSearchParams(window.location.search);
@@ -168,6 +166,9 @@ auth.onAuthStateChanged(function(u){if(u){currentUser=u;document.getElementById(
     document.getElementById('user-display').textContent='👤 '+decodeURIComponent(user);
   }
 })();
+auth.onAuthStateChanged(function(u){if(u){currentUser=u;document.getElementById('user-display').textContent='\uD83D\uDC64 '+(window._urlUser||u.displayName||u.email||'\u7528\u6237');}else{auth.signInAnonymously().then(function(c){currentUser=c.user;document.getElementById('user-display').textContent='\uD83D\uDC64 '+(window._urlUser||'\u5BA2\u4EBA');}).catch(function(){document.getElementById('user-display').textContent='\uD83D\uDC64 '+(window._urlUser||'\u5BA2\u4EBA');});
+
+
 }});
 document.getElementById('textbook-sel').addEventListener('change',function(e){currentTextbook=e.target.value;var us=document.getElementById('unit-sel');us.innerHTML='<option value="">-- \u5355\u5143 --</option>';if(!currentTextbook){us.disabled=true;document.getElementById('btn-extract-words').disabled=true;document.getElementById('btn-extract-dialogue').disabled=true;return;}us.disabled=false;UNIT_MAP[currentTextbook].forEach(function(u){var o=document.createElement('option');o.value=u;o.textContent=u;us.appendChild(o);});document.getElementById('btn-extract-words').disabled=true;document.getElementById('btn-extract-dialogue').disabled=true;});
 document.getElementById('unit-sel').addEventListener('change',function(e){currentUnit=e.target.value;var hasUnit=!!currentUnit;document.getElementById('btn-extract-words').disabled=!hasUnit;document.getElementById('btn-extract-dialogue').disabled=!hasUnit;if(hasUnit)loadAllData();else{wordList=[];extractedDialogue=[];records=[];marks=[];renderWordList();renderWhiteboard();renderExtractList();}});
