@@ -416,11 +416,13 @@ window._vsl1Vocab=null;window._vsl2Vocab=null;
 <script src="vsl1-vocab.js" onerror="console.warn('vsl1-vocab.js not found')"></script>
 <script src="vsl2-vocab.js" onerror="console.warn('vsl2-vocab.js not found')"></script>
 <script>
-if(typeof VN_VOCAB!=='undefined')window._vsl1Vocab=VSL1_VOCAB;
-if(typeof VSL2_VOCAB!=='undefined')window._vsl2Vocab=VSL2_VOCAB;
+if(typeof VN_VOCAB!=='undefined')window._vsl1Vocab=VN_VOCAB.vsl1||VN_VOCAB;
+if(typeof VN_VOCAB!=='undefined')window._vsl2Vocab=VN_VOCAB.vsl2||VN_VOCAB;
 </script>
 </body>
 </html>
+
+
 
 
 
