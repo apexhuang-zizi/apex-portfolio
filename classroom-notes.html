@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
@@ -23,8 +23,8 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .btn-extract:hover{background:var(--pri-d)}
 .btn-extract:disabled{background:#94a3b8;cursor:not-allowed}
 .main-wrap{display:flex;flex:1;overflow:hidden}
-.side-l{width:16%;min-width:140px;max-width:220px;background:var(--sf);border-right:1px solid var(--bd);display:flex;flex-direction:column;overflow:hidden}
-.side-h{padding:.5rem .7rem;font-weight:700;font-size:.83rem;border-bottom:1px solid var(--bd);background:var(--bg);flex-shrink:0}
+.side-l{width:16%;min-width:140px;max-width:220px;background:var(--sf);border-right:2px solid #cbd5e1;display:flex;flex-direction:column;overflow:hidden;box-shadow:2px 0 8px rgba(0,0,0,.06)}
+.side-h{padding:.5rem .7rem;font-weight:700;font-size:.83rem;border-bottom:2px solid #cbd5e1;background:linear-gradient(135deg,#f1f5f9,#e2e8f0);flex-shrink:0;border-radius:0}
 .word-list{flex:1;overflow-y:auto;padding:.3rem}
 .word-item{padding:.38rem .6rem;cursor:pointer;border-radius:6px;font-size:.82rem;transition:background .15s;display:flex;justify-content:space-between;align-items:center;gap:.2rem}
 .word-item:hover{background:var(--bg)}
@@ -35,7 +35,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .word-item.show-zh .word-zh{display:block}
 .tts-btn{background:none;border:none;cursor:pointer;font-size:.9rem;padding:0 .15rem;opacity:.55;flex-shrink:0}
 .tts-btn:hover{opacity:1}
-.center-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.center-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;border-left:2px solid #cbd5e1;border-right:2px solid #cbd5e1;box-shadow:inset 0 0 0 0}
 .tabs{display:flex;background:var(--sf);border-bottom:2px solid var(--bd);padding:0 .4rem;flex-shrink:0}
 .tab{padding:.5rem .9rem;cursor:pointer;font-size:.87rem;font-weight:500;color:var(--tx-m);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s}
 .tab:hover{color:var(--pri)}
@@ -65,7 +65,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .btn-submit:hover{background:var(--pri-d)}
 .btn-sm{background:none;border:1px solid var(--bd);border-radius:8px;padding:.38rem .7rem;cursor:pointer;font-size:.83rem;color:var(--tx-m)}
 .btn-sm:hover{background:var(--bg)}
-.side-r{width:18%;min-width:150px;max-width:260px;background:var(--sf);border-left:1px solid var(--bd);display:flex;flex-direction:column;overflow:hidden}
+.side-r{width:18%;min-width:150px;max-width:260px;background:var(--sf);border-left:2px solid #cbd5e1;display:flex;flex-direction:column;overflow:hidden;box-shadow:-2px 0 8px rgba(0,0,0,.06)}
 .side-r .side-h{display:flex;justify-content:space-between;align-items:center}
 .extract-list{flex:1;overflow-y:auto;padding:.35rem}
 .extract-item{padding:.35rem .55rem;border-radius:6px;font-size:.8rem;margin-bottom:.28rem}
@@ -98,7 +98,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 
 /* 白板 tooltip */
 .wb-tooltip{position:fixed;background:#1e293b;color:#fff;border-radius:6px;padding:.35rem .6rem;font-size:.75rem;max-width:220px;z-index:9999;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.3);line-height:1.5}
-.wb-tooltip .tt-label{font-size:.65rem;color:#94a3b8;margin-bottom:.15rem;text-transform:uppercase}
+.btn-test-inline{background:var(--ok);color:#fff;border:none;border-radius:8px;padding:.38rem .9rem;cursor:pointer;font-size:.85rem;font-weight:700;white-space:nowrap;transition:background .15s}.btn-test-inline:hover{background:#16a34a}.btn-test-inline:disabled{background:#94a3b8;cursor:not-allowed}
 </style>
 </head>
 <body>
@@ -111,6 +111,8 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 <div class="sel-group"><label>单元:</label><select class="sel-sm" id="unit-sel" disabled><option value="">-- 先选课本 --</option></select></div>
 <button class="btn-extract" id="btn-extract-words" disabled onclick="extractWords()">📖 提取单词</button>
 <button class="btn-extract" id="btn-extract-dialogue" disabled onclick="extractDialogue()">💬 提取课文</button>
+<div style="flex:1"></div>
+<button class="btn-test-inline" id="btn-enter-test" disabled onclick="enterTest()">🎯 进入测试</button>
 </div>
 <div class="main-wrap">
 <div class="side-l"><div class="side-h">📚 单词表</div><div class="word-list" id="word-list"><div class="wb-empty">选择课本和单元后<br>点击「提取单词」按钮</div></div></div>
@@ -124,9 +126,9 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 <div class="content-area" id="content-area"><div class="whiteboard" id="whiteboard"><div class="wb-empty">在下方输入框录入内容...</div></div>
 <div class="input-area" id="input-area"><div class="input-header"><label id="input-label">✍️ 录入内容</label><button class="collapse-btn" id="collapse-btn" onclick="toggleInputCollapse()" title="隐藏/展开">▼</button></div><div class="input-main"><div class="input-box" id="sentence-input" contenteditable="true" data-placeholder="输入内容，选中文字后右键标记..."></div><div class="input-actions"><button class="btn-sm" onclick="clearInput()">🗑️ 清空</button><button class="btn-submit" onclick="submitSentence()">📤 提交</button></div></div></div>
 </div>
-<div class="test-area" id="test-area"><div class="test-empty" id="test-empty"><div style="font-size:2rem;margin-bottom:.5rem">📝</div>点击右侧「进入测试」开始</div><div id="test-results" style="flex:1"></div></div>
+<div class="test-area" id="test-area"><div id="test-results" style="flex:1"></div></div>
 </div>
-<div class="side-r"><div class="side-h">⭐ 重点提取</div><div class="extract-list" id="extract-list"><div class="wb-empty" style="padding:1rem;font-size:.8rem">标记的词语和语法<br>将自动汇聚到这里</div></div><div class="side-r-footer"><button class="btn-test" onclick="enterTest()">🎯 进入测试</button></div></div>
+<div class="side-r"><div class="side-h">⭐ 重点提取</div><div class="extract-list" id="extract-list"><div class="wb-empty" style="padding:1rem;font-size:.8rem">标记的词语和语法<br>将自动汇聚到这里</div></div><div class="side-r-footer" style="display:none"></div></div>
 </div>
 
 <!-- 右键菜单 -->
@@ -155,12 +157,24 @@ firebase.initializeApp(firebaseConfig);
 var db=firebase.firestore(),auth=firebase.auth();
 var currentUser=null,currentTextbook='',currentUnit='',currentTab='notes',wordList=[],extractedDialogue=[],records=[],marks=[];
 var UNIT_MAP={VSL1:['U1','U2','U3','U4','U5','U6','U7','U8','U9','U10','U11','U12'],VSL2:['U1','U2','U3','U4','U5','U6','U7','U8','U9','U10','U11','U12']};
-auth.onAuthStateChanged(function(u){if(u){currentUser=u;document.getElementById('user-display').textContent='\uD83D\uDC64 '+(u.displayName||u.email||'\u7528\u6237');}else{auth.signInAnonymously().then(function(c){currentUser=c.user;document.getElementById('user-display').textContent='\uD83D\uDC64 \u5BA2\u4EBA';}).catch(function(){document.getElementById('user-display').textContent='\uD83D\uDC64 \u5BA2\u4EBA';});}});
+// 读取URL参数中的用户名
+(function readUrlParams(){
+  var params=new URLSearchParams(window.location.search);
+  var user=params.get('user');
+  if(user){
+    window._urlUser=user;
+    document.getElementById('user-display').textContent='👤 '+decodeURIComponent(user);
+  }
+})();
+auth.onAuthStateChanged(function(u){if(u){currentUser=u;document.getElementById('user-display').textContent='\uD83D\uDC64 '+(window._urlUser||u.displayName||u.email||'\u7528\u6237');}else{auth.signInAnonymously().then(function(c){currentUser=c.user;document.getElementById('user-display').textContent='\uD83D\uDC64 '+(window._urlUser||'\u5BA2\u4EBA');}).catch(function(){document.getElementById('user-display').textContent='\uD83D\uDC64 '+(window._urlUser||'\u5BA2\u4EBA');});
+
+
+}});
 document.getElementById('textbook-sel').addEventListener('change',function(e){currentTextbook=e.target.value;var us=document.getElementById('unit-sel');us.innerHTML='<option value="">-- \u5355\u5143 --</option>';if(!currentTextbook){us.disabled=true;document.getElementById('btn-extract-words').disabled=true;document.getElementById('btn-extract-dialogue').disabled=true;return;}us.disabled=false;UNIT_MAP[currentTextbook].forEach(function(u){var o=document.createElement('option');o.value=u;o.textContent=u;us.appendChild(o);});document.getElementById('btn-extract-words').disabled=true;document.getElementById('btn-extract-dialogue').disabled=true;});
 document.getElementById('unit-sel').addEventListener('change',function(e){currentUnit=e.target.value;var hasUnit=!!currentUnit;document.getElementById('btn-extract-words').disabled=!hasUnit;document.getElementById('btn-extract-dialogue').disabled=!hasUnit;if(hasUnit)loadAllData();else{wordList=[];extractedDialogue=[];records=[];marks=[];renderWordList();renderWhiteboard();renderExtractList();}});
 async function loadAllData(){if(!currentUser||!currentTextbook||!currentUnit)return;try{var snap=await db.collection('cn_records').where('userId','==',currentUser.uid).where('textbook','==',currentTextbook).where('unit','==',currentUnit).get();records=[];snap.forEach(function(d){var item={id:d.id};var data=d.data();for(var k in data)item[k]=data[k];records.push(item);});var mSnap=await db.collection('cn_marks').where('userId','==',currentUser.uid).where('textbook','==',currentTextbook).where('unit','==',currentUnit).get();marks=[];mSnap.forEach(function(d){var item={id:d.id};var data=d.data();for(var k in data)item[k]=data[k];marks.push(item);});renderWordList();renderWhiteboard();renderExtractList();}catch(e){console.error(e);}}
-async function extractWords(){if(!currentTextbook||!currentUnit)return;var vocab=currentTextbook==='VSL1'?window._vsl1Vocab:window._vsl2Vocab;if(!vocab){alert('\u8BCD\u5E93\u672A\u52A0\u8F7D\uFF0C\u8BF7\u5237\u65B0\u91CD\u8BD5');return;}var unitNum=parseInt(currentUnit.replace('U',''));var unitData=vocab.find(function(u){return u.id===unitNum;});if(!unitData){alert('\u672A\u627E\u5230\u8BE5\u5355\u5143\u8BCD\u5E93');return;}wordList=(unitData.words||[]).map(function(w){return{vi:w.vi||w.word||'',zh:w.zh||w.chinese||'',extracted:true};});renderWordList();}
-async function extractDialogue(){if(!currentTextbook||!currentUnit)return;var unitNum=parseInt(currentUnit.replace('U',''));try{var snap=await db.collection('vietnamese_dialogues').where('textbook','==',currentTextbook).where('unit','==',unitNum).get();extractedDialogue=[];snap.forEach(function(d){var data=d.data();if(data.topic&&data.topic.indexOf(currentTextbook)!==-1){var item={id:d.id};for(var k in data)item[k]=data[k];extractedDialogue.push(item);}});if(!extractedDialogue.length)alert('\u672A\u627E\u5230\u8BE5\u5355\u5143\u7684\u8BFE\u6587\u5185\u5BB9');renderWhiteboard();}catch(e){console.error(e);alert('\u63D0\u53D6\u8BFE\u6587\u5931\u8D25');}}
+async function extractWords(){if(!currentTextbook||!currentUnit)return;var unitNum=parseInt(currentUnit.replace('U',''));try{var dbReq=indexedDB.open('VietnameseVocabDB',1);dbReq.onsuccess=function(e){var db=e.target.result;if(!db.objectStoreNames.contains('vocab_chunks')){alert('\u8BCD\u5E93\u672A\u521D\u59CB\u5316\uFF0C\u8BF7\u5148\u5728\u9996\u9875\u540C\u6B65\u6570\u636E');return;}var tx=db.transaction(['vocab_chunks'],'readonly');var store=tx.objectStore('vocab_chunks');var getAllReq=store.getAll();getAllReq.onsuccess=function(ev){var chunks=ev.target.result||[];var allWords=[];chunks.forEach(function(chunk){if(chunk.words&&Array.isArray(chunk.words)){allWords=allWords.concat(chunk.words);}});var unitWords=allWords.filter(function(w){return w.unit===currentUnit||w.unit===unitNum;});if(!unitWords.length){alert('\u672A\u627E\u5230\u8BE5\u5355\u5143\u7684\u5355\u8BCD');wordList=[];}else{wordList=unitWords.map(function(w){return{vi:w.vi||w.word||'',zh:w.zh||w.chinese||'',extracted:true};});}renderWordList();};getAllReq.onerror=function(){alert('\u8BFB\u53D6\u8BCD\u5E93\u5931\u8D25');};};dbReq.onerror=function(){alert('\u6253\u5F00\u8BCD\u5E93\u6570\u636E\u5E93\u5931\u8D25');};}catch(e){console.error(e);alert('\u63D0\u53D6\u5355\u8BCD\u5931\u8D25');}}
+async function extractDialogue(){if(!currentTextbook||!currentUnit)return;var unitNum=parseInt(currentUnit.replace('U',''));try{var dbReq=indexedDB.open('vnDialoguesDB',1);dbReq.onsuccess=function(e){var db=e.target.result;if(!db.objectStoreNames.contains('dialogues')){alert('\u5BF9\u8BDD\u6570\u636E\u5E93\u672A\u521D\u59CB\u5316\uFF0C\u8BF7\u5148\u5728\u9996\u9875\u540C\u6B65\u6570\u636E');return;}var tx=db.transaction(['dialogues'],'readonly');var store=tx.objectStore('dialogues');var getReq=store.get('vnDialogues');getReq.onsuccess=function(ev){var dialogues=ev.target.result;if(!Array.isArray(dialogues)){alert('\u672C\u5730\u5B58\u50A8\u4E2D\u672A\u627E\u5230\u5BF9\u8BDD\u6570\u636E');extractedDialogue=[];}else{extractedDialogue=dialogues.filter(function(d){return d.topic&&d.topic.includes(currentTextbook)&&d.topic.includes('Bài '+unitNum);});if(!extractedDialogue.length){alert('\u672A\u627E\u5230\u8BE5\u5355\u5143\u7684\u8BFE\u6587\u5185\u5BB9');}}renderWhiteboard();};getReq.onerror=function(){alert('\u8BFB\u53D6\u5BF9\u8BDD\u6570\u636E\u5931\u8D25');};};dbReq.onerror=function(){alert('\u6253\u5F00\u5BF9\u8BDD\u6570\u636E\u5E93\u5931\u8D25');};}catch(e){console.error(e);alert('\u63D0\u53D6\u8BFE\u6587\u5931\u8D25');}}
 function renderWordList(){var c=document.getElementById('word-list');if(!wordList.length){c.innerHTML='<div class="wb-empty">\u9009\u62E9\u8BFE\u672C\u548C\u5355\u5143\u540E<br>\u70B9\u51FB\u300C\u63D0\u53D6\u5355\u8BCD\u300D\u6309\u94AE</div>';return;}c.innerHTML='';wordList.forEach(function(w,i){var d=document.createElement('div');d.className='word-item';d.innerHTML='<span class="word-vi">'+escHtml(w.vi)+'</span><span class="word-zh">'+escHtml(w.zh)+'</span><button class="tts-btn" onclick="event.stopPropagation();tts(\''+w.vi.replace(/'/g,"\\'")+'\')">\uD83C\uDFA4</button>';d.onclick=function(){d.classList.toggle('show-zh');};c.appendChild(d);});}
 
 // ===== 右键菜单 & 富文本标记 =====
@@ -168,6 +182,26 @@ function renderWordList(){var c=document.getElementById('word-list');if(!wordLis
 // 存储当前选区（Range 对象），用于在 DOM 修改后恢复
 window._selRange = null;
 
+// 每次松开鼠标/松开选择时：保存当前选区（供右键菜单和标记使用）
+document.getElementById('sentence-input').addEventListener('mouseup',function(e){
+  var sel=window.getSelection();
+  if(!sel.isCollapsed&&sel.rangeCount){
+    var range=sel.getRangeAt(0);
+    if(this.contains(range.commonAncestorContainer)){
+      window._selRange=range.cloneRange();
+    }
+  }
+});
+document.addEventListener('selectionchange',function(){
+  var sel=window.getSelection();
+  if(!sel.isCollapsed&&sel.rangeCount){
+    var range=sel.getRangeAt(0);
+    var inp=document.getElementById('sentence-input');
+    if(inp&&inp.contains(range.commonAncestorContainer)){
+      window._selRange=range.cloneRange();
+    }
+  }
+});
 // 鼠标右键：弹出自定义菜单
 document.getElementById('sentence-input').addEventListener('contextmenu',function(e){
   e.preventDefault();
@@ -179,8 +213,9 @@ document.getElementById('sentence-input').addEventListener('contextmenu',functio
   window._selRange=range.cloneRange();
   var menu=document.getElementById('ctx-menu');
   var x=e.clientX,y=e.clientY;
-  menu.style.left=Math.min(x,window.innerWidth-menu.offsetWidth-8)+'px';
-  menu.style.top=Math.min(y,window.innerHeight-menu.offsetHeight-8)+'px';
+  var menuW=menu.offsetWidth||160,menuH=menu.offsetHeight||200;
+  menu.style.left=Math.max(8,Math.min(x,window.innerWidth-menuW-12))+'px';
+  menu.style.top=Math.max(8,Math.min(y,window.innerHeight-menuH-12))+'px';
   menu.classList.add('show');
 });
 
@@ -212,13 +247,30 @@ async function ctxMark(type){
   // 写入富文本 DOM
   wrapSelection(range,type,extra);
   window._selRange=null;
-  // 存入数据库
-  if(!currentUser||!currentTextbook||!currentUnit)return;
-  try{
-    var doc=await db.collection('cn_marks').add({userId:currentUser.uid,textbook:currentTextbook,unit:currentUnit,tabType:currentTab,word:word,type:type,extra:extra,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
-    marks.push({id:doc.id,userId:currentUser.uid,textbook:currentTextbook,unit:currentUnit,tabType:currentTab,word:word,type:type,extra:extra});
+  // 存入数据库（先检查用户状态）
+  if(!currentUser||!currentUser.uid){
+    console.warn('\u7528\u6237\u672A\u767B\u5F55\uFF0C\u6807\u8BB0\u5C06\u4EC5\u672C\u5730\u4FDD\u5B58');
     renderExtractList();
-  }catch(e){console.error(e);}
+    return;
+  }
+  if(!currentTextbook||!currentUnit){
+    console.warn('\u8BFE\u7A0B\u4FE1\u606F\u4E0D\u5B8C\u6574');
+    return;
+  }
+  try{
+    var doc=await db.collection('cn_marks').add({
+      userId:currentUser.uid,
+      textbook:currentTextbook,
+      unit:currentUnit,
+      tabType:currentTab,
+      word:word,
+      type:type,
+      extra:extra||null,
+      createdAt:firebase.firestore.FieldValue.serverTimestamp()
+    });
+    marks.push({id:doc.id,userId:currentUser.uid,textbook:currentTextbook,unit:currentUnit,tabType:currentTab,word:word,type:type,extra:extra||null});
+    renderExtractList();
+  }catch(e){console.error('\u4FDD\u5B58\u6807\u8BB0\u5931\u8D25:',e);alert('\u4FDD\u5B58\u6807\u8BB0\u5931\u8D25\uFF0C\u8BF7\u68C0\u67E5\u7F51\u7EDC');}
 }
 
 // wrapSelection：用 <span> 包裹当前选区并恢复光标
@@ -240,10 +292,10 @@ function wrapSelection(range,type,extra){
     sp.dataset.extra=(extra||'');
     range.surroundContents(sp);
   }
-  // 选中新 span
+  // 选中新 span，保持词后位置，方便继续分段选择
   sel.removeAllRanges();
   var newRange=document.createRange();
-  newRange.selectNodeContents(document.getElementById('sentence-input'));
+  newRange.selectNodeContents(sp);
   newRange.collapse(false);
   sel.addRange(newRange);
 }
@@ -256,14 +308,44 @@ async function submitSentence(){
   var html=editor.innerHTML.trim();
   // 取纯文本供统计
   var text=editor.innerText.trim();
+  // 自动附中文翻译（已知词在句中出现时附翻译标题）
+  if(wordList&&wordList.length){
+    var done={};
+    wordList.forEach(function(w){
+      if(!w.vi||done[w.vi])return;
+      var ve=w.vi.replace(/[.*+?^\x24{}()|[\]\\]/g,function(m){return'\\'+m;});
+      var re=new RegExp(ve,'gi');
+      if(re.test(text)){
+        done[w.vi]=true;
+        var zh=w.zh||'';
+        html=html.replace(re,zh?function(m){return'<span class="auto-zh" title="'+zh+'">'+m+'</span>';}:function(m){return'<span class="auto-zh">'+m+'</span>';});
+      }
+    });
+  }
   if(!text){alert('\u8BF7\u8F93\u5165\u5185\u5BB9');return;}
-  if(!currentUser||!currentTextbook||!currentUnit){alert('\u8BF7\u5148\u9009\u62E9\u8BFE\u672C\u548C\u5355\u5143');return;}
+  // 检查用户状态
+  if(!currentUser||!currentUser.uid){
+    alert('\u7528\u6237\u672A\u767B\u5F55\uFF0C\u5185\u5BB9\u5C06\u4EC5\u672C\u5730\u4FDD\u5B58');
+    records.unshift({id:'local_'+Date.now(),userId:'local',textbook:currentTextbook||'',unit:currentUnit||'',tabType:currentTab,textVi:text,html:html});
+    editor.innerHTML='';
+    renderWhiteboard();
+    return;
+  }
+  if(!currentTextbook||!currentUnit){alert('\u8BF7\u5148\u9009\u62E9\u8BFE\u672C\u548C\u5355\u5143');return;}
   try{
-    var doc=await db.collection('cn_records').add({userId:currentUser.uid,textbook:currentTextbook,unit:currentUnit,tabType:currentTab,textVi:text,html:html,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+    var doc=await db.collection('cn_records').add({
+      userId:currentUser.uid,
+      textbook:currentTextbook,
+      unit:currentUnit,
+      tabType:currentTab,
+      textVi:text,
+      html:html,
+      createdAt:firebase.firestore.FieldValue.serverTimestamp()
+    });
     records.unshift({id:doc.id,userId:currentUser.uid,textbook:currentTextbook,unit:currentUnit,tabType:currentTab,textVi:text,html:html});
     editor.innerHTML='';
     renderWhiteboard();
-  }catch(e){console.error(e);alert('\u4FDD\u5B58\u5931\u8D25');}
+  }catch(e){console.error('\u4FDD\u5B58\u5931\u8D25:',e);alert('\u4FDD\u5B58\u5931\u8D25\uFF0C\u8BF7\u68C0\u67E5\u7F51\u7EDC\u8FDE\u63A5');}
 }
 
 function clearInput(){
@@ -294,7 +376,7 @@ function renderDialogueTab(wb){
   wb.innerHTML='';
   var globalIdx=0;
   extractedDialogue.forEach(function(dlg){
-    var text=dlg.content||dlg.textVi||dlg.text||'';
+    var text=dlg.textVi||dlg.text||'';
     var lines=text.split('\n');
     lines.forEach(function(line){
       if(line.trim()===''&&globalIdx>0){var spacer=document.createElement('div');spacer.style.height='.4rem';wb.appendChild(spacer);return;}
@@ -349,6 +431,31 @@ async function editRecord(id){
   overlay.appendChild(box);
   document.body.appendChild(overlay);
   document.getElementById('edit-editor').focus();
+  // 让编辑弹窗内的 contenteditable 也支持右键标记
+  var editEd=document.getElementById('edit-editor');
+  editEd.addEventListener('mouseup',function(e){
+    var sel=window.getSelection();
+    if(!sel.isCollapsed&&sel.rangeCount){
+      var range=sel.getRangeAt(0);
+      if(editEd.contains(range.commonAncestorContainer)){
+        window._selRange=range.cloneRange();
+      }
+    }
+  });
+  editEd.addEventListener('contextmenu',function(e){
+    e.preventDefault();
+    var sel=window.getSelection();
+    if(sel.isCollapsed||!sel.rangeCount)return;
+    var range=sel.getRangeAt(0);
+    if(!editEd.contains(range.commonAncestorContainer))return;
+    window._selRange=range.cloneRange();
+    var menu=document.getElementById('ctx-menu');
+    var x=e.clientX,y=e.clientY;
+    var menuW=menu.offsetWidth||160,menuH=menu.offsetHeight||200;
+    menu.style.left=Math.max(8,Math.min(x,window.innerWidth-menuW-12))+'px';
+    menu.style.top=Math.max(8,Math.min(y,window.innerHeight-menuH-12))+'px';
+    menu.classList.add('show');
+  });
   document.getElementById('edit-save-btn').onclick=async function(){
     var newHtml=document.getElementById('edit-editor').innerHTML;
     var newText=document.getElementById('edit-editor').innerText.trim();
@@ -374,7 +481,7 @@ function renderExtractList(){
   c.innerHTML='';
   wMarks.forEach(function(m){
     var d=document.createElement('div');d.className='extract-item word-type';
-    d.innerHTML='<div class="extract-word">\u2605 '+escHtml(m.word)+'</div><div class="extract-meta">'+(m.type==='hard'?'\u26A0 \u96BE\u70B9':'\u80CC\u666F')+(m.extra?' \u2014 '+escHtml(m.extra):'')+'</div>';
+    var zhHint='';if(wordList&&wordList.length){for(var wi=0;wi<wordList.length;wi++){if(wordList[wi].vi===m.word&&wordList[wi].zh){zhHint=' <span style="color:#7c3aed;font-size:.72rem">['+escHtml(wordList[wi].zh)+']</span>';break;}}}d.innerHTML='<div class="extract-word">\u2605 '+escHtml(m.word)+zhHint+'</div><div class="extract-meta">'+(m.type==='hard'?'\u26A0 \u96BE\u70B9':'\u80CC\u666F')+(m.extra?' \u2014 '+escHtml(m.extra):'')+'</div>';
     c.appendChild(d);
   });
   gMarks.forEach(function(m){
@@ -399,7 +506,7 @@ function renderTestResults(){var empty=document.getElementById('test-empty');var
 
 var currentAudio=null;
 function tts(text){if(!text)return;if(currentAudio){currentAudio.pause();currentAudio=null;}var url='https://translate.google.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q='+encodeURIComponent(text);currentAudio=new Audio(url);currentAudio.play().catch(function(){});}
-function ttsCard(btn,text){if(!text)return;if(currentAudio){currentAudio.pause();currentAudio=null;}var url='https://translate.google.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q='+encodeURIComponent(text);currentAudio=new Audio(url);currentAudio.play().catch(function(){});var orig=btn.textContent;btn.textContent='\u23F8';currentAudio.onended=function(){btn.textContent=orig;};}
+function ttsCard(btn,text){if(!text)return;if(currentAudio){if(currentAudio._btn===btn){if(currentAudio.paused){currentAudio.play();btn.textContent='\u23F8';currentAudio.onpause=function(){btn.textContent='\uD83C\uDFA4';};currentAudio.onended=function(){btn.textContent='\uD83C\uDFA4';};}else{currentAudio.pause();btn.textContent='\uD83C\uDFA4';}}else{currentAudio.pause();if(currentAudio._btn)currentAudio._btn.textContent='\uD83C\uDFA4';currentAudio=null;}}var url='https://translate.google.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q='+encodeURIComponent(text);currentAudio=new Audio(url);currentAudio._btn=btn;btn.textContent='\u23F8';currentAudio.onpause=function(){btn.textContent='\uD83C\uDFA4';};currentAudio.onended=function(){btn.textContent='\uD83C\uDFA4';};currentAudio.play().catch(function(){});}
 
 // ===== 工具函数 =====
 
@@ -416,13 +523,8 @@ window._vsl1Vocab=null;window._vsl2Vocab=null;
 <script src="vsl1-vocab.js" onerror="console.warn('vsl1-vocab.js not found')"></script>
 <script src="vsl2-vocab.js" onerror="console.warn('vsl2-vocab.js not found')"></script>
 <script>
-if(typeof VN_VOCAB!=='undefined')window._vsl1Vocab=VN_VOCAB.vsl1||VN_VOCAB;
-if(typeof VN_VOCAB!=='undefined')window._vsl2Vocab=VN_VOCAB.vsl2||VN_VOCAB;
+if(typeof VSL1_VOCAB!=='undefined')window._vsl1Vocab=VSL1_VOCAB;
+if(typeof VSL2_VOCAB!=='undefined')window._vsl2Vocab=VSL2_VOCAB;
 </script>
 </body>
 </html>
-
-
-
-
-
