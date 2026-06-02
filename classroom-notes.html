@@ -170,17 +170,110 @@ auth.onAuthStateChanged(function(u){if(u){currentUser=u;document.getElementById(
 
 
 }});
-document.getElementById('textbook-sel').addEventListener('change',function(e){currentTextbook=e.target.value;var us=document.getElementById('unit-sel');us.innerHTML='<option value="">-- \u5355\u5143 --</option>';if(!currentTextbook){us.disabled=true;document.getElementById('btn-extract-words').disabled=true;document.getElementById('btn-extract-dialogue').disabled=true;return;}us.disabled=false;UNIT_MAP[currentTextbook].forEach(function(u){var o=document.createElement('option');o.value=u;o.textContent=u;us.appendChild(o);});document.getElementById('btn-extract-words').disabled=true;document.getElementById('btn-extract-dialogue').disabled=true;});
-document.getElementById('unit-sel').addEventListener('change',function(e){currentUnit=e.target.value;var hasUnit=!!currentUnit;document.getElementById('btn-extract-words').disabled=!hasUnit;document.getElementById('btn-extract-dialogue').disabled=!hasUnit;if(hasUnit)loadAllData();else{wordList=[];extractedDialogue=[];records=[];marks=[];renderWordList();renderWhiteboard();renderExtractList();}});
+document.getElementById('textbook-sel').addEventListener('change',function(e){
+  currentTextbook=e.target.value;
+  localStorage.setItem('classroom_notes_last_textbook', currentTextbook);
+  var us=document.getElementById('unit-sel');
+  us.innerHTML='<option value="">-- \u5355\u5143 --</option>';
+  if(!currentTextbook){
+    us.disabled=true;
+    document.getElementById('btn-extract-words').disabled=true;
+    document.getElementById('btn-extract-dialogue').disabled=true;
+    return;
+  }
+  us.disabled=false;
+  UNIT_MAP[currentTextbook].forEach(function(u){
+    var o=document.createElement('option');
+    o.value=u;
+    o.textContent=u;
+    us.appendChild(o);
+  });
+  document.getElementById('btn-extract-words').disabled=true;
+  document.getElementById('btn-extract-dialogue').disabled=true;
+});
+document.getElementById('unit-sel').addEventListener('change',function(e){
+  currentUnit=e.target.value;
+  localStorage.setItem('classroom_notes_last_unit', currentUnit);
+  var hasUnit=!!currentUnit;
+  document.getElementById('btn-extract-words').disabled=!hasUnit;
+  document.getElementById('btn-extract-dialogue').disabled=!hasUnit;
+  if(hasUnit)loadAllData();
+  else{
+    wordList=[];
+    extractedDialogue=[];
+    records=[];
+    marks=[];
+    renderWordList();
+    renderWhiteboard();
+    renderExtractList();
+  }
+});
 async function loadAllData(){if(!currentUser||!currentTextbook||!currentUnit)return;try{var snap=await db.collection('cn_records').where('userId','==',currentUser.uid).where('textbook','==',currentTextbook).where('unit','==',currentUnit).get();records=[];snap.forEach(function(d){var item={id:d.id};var data=d.data();for(var k in data)item[k]=data[k];records.push(item);});var mSnap=await db.collection('cn_marks').where('userId','==',currentUser.uid).where('textbook','==',currentTextbook).where('unit','==',currentUnit).get();marks=[];mSnap.forEach(function(d){var item={id:d.id};var data=d.data();for(var k in data)item[k]=data[k];marks.push(item);});renderWordList();renderWhiteboard();renderExtractList();}catch(e){console.error(e);}}
-async function extractWords(){if(!currentTextbook||!currentUnit)return;var unitNum=parseInt(currentUnit.replace('U',''));try{var dbReq=indexedDB.open('VietnameseVocabDB',1);dbReq.onsuccess=function(e){var db=e.target.result;if(!db.objectStoreNames.contains('vocab_chunks')){alert('\u8BCD\u5E93\u672A\u521D\u59CB\u5316\uFF0C\u8BF7\u5148\u5728\u9996\u9875\u540C\u6B65\u6570\u636E');return;}var tx=db.transaction(['vocab_chunks'],'readonly');var store=tx.objectStore('vocab_chunks');var getAllReq=store.getAll();getAllReq.onsuccess=function(ev){var chunks=ev.target.result||[];var allWords=[];chunks.forEach(function(chunk){if(chunk.words&&Array.isArray(chunk.words)){allWords=allWords.concat(chunk.words);}});var unitWords=allWords.filter(function(w){return w.unit===currentUnit||w.unit===unitNum;});if(!unitWords.length){alert('\u672A\u627E\u5230\u8BE5\u5355\u5143\u7684\u5355\u8BCD');wordList=[];}else{wordList=unitWords.map(function(w){return{vi:w.vi||w.word||'',zh:w.zh||w.chinese||'',extracted:true};});}renderWordList();};getAllReq.onerror=function(){alert('\u8BFB\u53D6\u8BCD\u5E93\u5931\u8D25');};};dbReq.onerror=function(){alert('\u6253\u5F00\u8BCD\u5E93\u6570\u636E\u5E93\u5931\u8D25');};}catch(e){console.error(e);alert('\u63D0\u53D6\u5355\u8BCD\u5931\u8D25');}}
-async function extractDialogue(){if(!currentTextbook||!currentUnit)return;var unitNum=parseInt(currentUnit.replace('U',''));try{var dbReq=indexedDB.open('vnDialoguesDB',1);dbReq.onsuccess=function(e){var db=e.target.result;if(!db.objectStoreNames.contains('dialogues')){alert('\u5BF9\u8BDD\u6570\u636E\u5E93\u672A\u521D\u59CB\u5316\uFF0C\u8BF7\u5148\u5728\u9996\u9875\u540C\u6B65\u6570\u636E');return;}var tx=db.transaction(['dialogues'],'readonly');var store=tx.objectStore('dialogues');var getReq=store.get('vnDialogues');getReq.onsuccess=function(ev){var dialogues=ev.target.result;if(!Array.isArray(dialogues)){alert('\u672C\u5730\u5B58\u50A8\u4E2D\u672A\u627E\u5230\u5BF9\u8BDD\u6570\u636E');extractedDialogue=[];}else{extractedDialogue=dialogues.filter(function(d){return d.topic&&d.topic.includes(currentTextbook)&&d.topic.includes('Bài '+unitNum);});if(!extractedDialogue.length){alert('\u672A\u627E\u5230\u8BE5\u5355\u5143\u7684\u8BFE\u6587\u5185\u5BB9');}}renderWhiteboard();};getReq.onerror=function(){alert('\u8BFB\u53D6\u5BF9\u8BDD\u6570\u636E\u5931\u8D25');};};dbReq.onerror=function(){alert('\u6253\u5F00\u5BF9\u8BDD\u6570\u636E\u5E93\u5931\u8D25');};}catch(e){console.error(e);alert('\u63D0\u53D6\u8BFE\u6587\u5931\u8D25');}}
-function renderWordList(){var c=document.getElementById('word-list');if(!wordList.length){c.innerHTML='<div class="wb-empty">\u9009\u62E9\u8BFE\u672C\u548C\u5355\u5143\u540E<br>\u70B9\u51FB\u300C\u63D0\u53D6\u5355\u8BCD\u300D\u6309\u94AE</div>';return;}c.innerHTML='';wordList.forEach(function(w,i){var d=document.createElement('div');d.className='word-item';d.innerHTML='<span class="word-vi">'+escHtml(w.vi)+'</span><span class="word-zh">'+escHtml(w.zh)+'</span><button class="tts-btn" onclick="event.stopPropagation();tts(\''+w.vi.replace(/'/g,"\\'")+'\')">\uD83C\uDFA4</button>';d.onclick=function(){d.classList.toggle('show-zh');};c.appendChild(d);});}
+async function extractWords(){if(!currentTextbook||!currentUnit)return;var vocab=currentTextbook==='VSL1'?window._vsl1Vocab:window._vsl2Vocab;if(!vocab){alert('Vocabulary not loaded. Please refresh.');return;}var unitNum=parseInt(currentUnit.replace('U',''));var unitWords=vocab.filter(function(w){return w[3]===unitNum||w[4]===unitNum;});if(!unitWords.length){alert('No words found for this unit');wordList=[];}else{wordList=unitWords.map(function(w){return{vi:w[0]||'',zh:w[1]||'',extracted:true};});}renderWordList();}async function extractDialogue(){
+  if(!currentTextbook||!currentUnit)return;
+  var unitNum=parseInt(currentUnit.replace('U',''));
+  try{
+    var dbReq=indexedDB.open('vnDialoguesDB',1);
+    dbReq.onsuccess=function(e){
+      var db=e.target.result;
+      if(!db.objectStoreNames.contains('dialogues')){
+        alert('Dialogue DB not initialized');
+        return;
+      }
+      var tx=db.transaction(['dialogues'],'readonly');
+      var store=tx.objectStore('dialogues');
+      var getReq=store.get('vnDialogues');
+      getReq.onsuccess=function(ev){
+        var result=ev.target.result;
+        var dialogues=result&&result.data?result.data:result;
+        if(!Array.isArray(dialogues)){
+          alert('No dialogue data found');
+          extractedDialogue=[];
+        }else{
+          extractedDialogue=dialogues.filter(function(d){
+            if (!d.topic) return false;
+            // Case-insensitive matching for textbook, allowing optional spaces (e.g. VSL1 and VSL 1)
+            var tbPattern = currentTextbook.replace(/([A-Za-z]+)(\d+)/, '$1\\s*$2');
+            var textbookRegex = new RegExp(tbPattern + '(?![0-9])', 'i');
+            var matchTextbook = textbookRegex.test(d.topic);
+            
+            // Case-insensitive matching for unit, ensuring word boundary and digit exactness (e.g. U1 won't match U11)
+            var unitRegex = new RegExp('(bài|bai)\\s*0*' + unitNum + '(?![0-9])', 'i');
+            var matchUnit = unitRegex.test(d.topic);
+            
+            return matchTextbook && matchUnit;
+          });
+          if(!extractedDialogue.length){
+            alert('No content for this unit');
+          } else {
+            // Automatically switch to the dialogue tab to display the content
+            switchTab('dialogue');
+          }
+        }
+        renderWhiteboard();
+      };
+      getReq.onerror=function(){
+        alert('Failed to read dialogue');
+      };
+    };
+    dbReq.onerror=function(){
+      alert('Failed to open dialogue DB');
+    };
+  }catch(e){
+    console.error(e);
+    alert('Extract dialogue failed');
+  }
+}function renderWordList(){var c=document.getElementById('word-list');if(!wordList.length){c.innerHTML='<div class="wb-empty">\u9009\u62E9\u8BFE\u672C\u548C\u5355\u5143\u540E<br>\u70B9\u51FB\u300C\u63D0\u53D6\u5355\u8BCD\u300D\u6309\u94AE</div>';return;}c.innerHTML='';wordList.forEach(function(w,i){var d=document.createElement('div');d.className='word-item';d.innerHTML='<span class="word-vi">'+escHtml(w.vi)+'</span><span class="word-zh">'+escHtml(w.zh)+'</span><button class="tts-btn" onclick="event.stopPropagation();tts(\''+w.vi.replace(/'/g,"\\'")+'\')">\uD83C\uDFA4</button>';d.onclick=function(){d.classList.toggle('show-zh');};c.appendChild(d);});}
 
 // ===== 右键菜单 & 富文本标记 =====
 
 // 存储当前选区（Range 对象），用于在 DOM 修改后恢复
 window._selRange = null;
+
+// 实时自动保存录入框草稿
+document.getElementById('sentence-input').addEventListener('input',function(){
+  localStorage.setItem('classroom_notes_draft', this.innerHTML);
+});
 
 // 每次松开鼠标/松开选择时：保存当前选区（供右键菜单和标记使用）
 document.getElementById('sentence-input').addEventListener('mouseup',function(e){
@@ -328,6 +421,7 @@ async function submitSentence(){
     alert('\u7528\u6237\u672A\u767B\u5F55\uFF0C\u5185\u5BB9\u5C06\u4EC5\u672C\u5730\u4FDD\u5B58');
     records.unshift({id:'local_'+Date.now(),userId:'local',textbook:currentTextbook||'',unit:currentUnit||'',tabType:currentTab,textVi:text,html:html});
     editor.innerHTML='';
+    localStorage.removeItem('classroom_notes_draft');
     renderWhiteboard();
     return;
   }
@@ -344,12 +438,14 @@ async function submitSentence(){
     });
     records.unshift({id:doc.id,userId:currentUser.uid,textbook:currentTextbook,unit:currentUnit,tabType:currentTab,textVi:text,html:html});
     editor.innerHTML='';
+    localStorage.removeItem('classroom_notes_draft');
     renderWhiteboard();
   }catch(e){console.error('\u4FDD\u5B58\u5931\u8D25:',e);alert('\u4FDD\u5B58\u5931\u8D25\uFF0C\u8BF7\u68C0\u67E5\u7F51\u7EDC\u8FDE\u63A5');}
 }
 
 function clearInput(){
   document.getElementById('sentence-input').innerHTML='';
+  localStorage.removeItem('classroom_notes_draft');
 }
 
 // ===== 白板渲染 & tooltip =====
@@ -375,16 +471,67 @@ function renderDialogueTab(wb){
   if(!extractedDialogue.length){wb.innerHTML='<div class="wb-empty">\u70B9\u51FB\u4E0A\u65B9\u300C\u63D0\u53D6\u8BFE\u6587\u300D\u6309\u94AE<br>\u67E5\u770B\u8BE5\u5355\u5143\u7684\u5BF9\u8BDD\u5185\u5BB9</div>';return;}
   wb.innerHTML='';
   var globalIdx=0;
-  extractedDialogue.forEach(function(dlg){
-    var text=dlg.textVi||dlg.text||'';
-    var lines=text.split('\n');
+  
+  extractedDialogue.forEach(function(dlg, dlgIdx){
+    // If there are multiple dialogues, put an empty line/spacer between dialogues
+    if (dlgIdx > 0 && globalIdx > 0) {
+      var docSpacer = document.createElement('div');
+      docSpacer.style.height = '1.2rem';
+      wb.appendChild(docSpacer);
+    }
+
+    var text = dlg.content || dlg.textVi || dlg.text || '';
+    var lines = text.split('\n');
+    var processedLines = [];
+    
     lines.forEach(function(line){
-      if(line.trim()===''&&globalIdx>0){var spacer=document.createElement('div');spacer.style.height='.4rem';wb.appendChild(spacer);return;}
+      var tLine = line.trim();
+      if (tLine === '') {
+        processedLines.push('');
+        return;
+      }
+      
+      // 去除括号（英文或中文括号）内的中文翻译
+      var cleanLine = tLine.replace(/\s*[\(（][^\)）]*[\u4e00-\u9fff]+[^\)）]*[\)）]/g, '').trim();
+      
+      // 如果去掉括号后，仍然包含中文字符，说明是一行纯中文翻译，跳过
+      if (/[\u4e00-\u9fff]/.test(cleanLine)) {
+        return;
+      }
+      
+      // 此时剩下的一定是越南文行
+      processedLines.push(cleanLine);
+    });
+
+    // 过滤连续的空行，只保留单个空行
+    var finalLines = [];
+    processedLines.forEach(function(line) {
+      if (line === '') {
+        if (finalLines.length > 0 && finalLines[finalLines.length - 1] !== '') {
+          finalLines.push('');
+        }
+      } else {
+        finalLines.push(line);
+      }
+    });
+    // 去除末尾空行
+    if (finalLines.length > 0 && finalLines[finalLines.length - 1] === '') {
+      finalLines.pop();
+    }
+
+    // 渲染每一行
+    finalLines.forEach(function(line){
+      if(line === '' && globalIdx > 0){
+        var spacer = document.createElement('div');
+        spacer.style.height = '.8rem';
+        wb.appendChild(spacer);
+        return;
+      }
       globalIdx++;
-      var card=document.createElement('div');
-      card.className='sentence-card';
-      card.innerHTML='<span class="row-num">'+globalIdx+'.</span>'+escHtml(line)+
-        '<div class="card-actions"><button class="sentence-btn" onclick="ttsCard(this,\''+line.replace(/'/g,"\\'")+'\')">\uD83C\uDFA4</button><button class="sentence-btn readonly-btn">\u270F\uFE0F</button><button class="sentence-btn readonly-btn">\uD83D\uDDD1</button></div>';
+      var card = document.createElement('div');
+      card.className = 'sentence-card';
+      card.innerHTML = '<span class="row-num">' + globalIdx + '.</span>' + escHtml(line) +
+        '<div class="card-actions"><button class="sentence-btn" onclick="ttsCard(this,\'' + line.replace(/'/g, "\\'") + '\')">\uD83C\uDFA4</button><button class="sentence-btn readonly-btn">\u270F\uFE0F</button><button class="sentence-btn readonly-btn">\uD83D\uDDD1</button></div>';
       wb.appendChild(card);
     });
   });
@@ -512,9 +659,52 @@ function ttsCard(btn,text){if(!text)return;if(currentAudio){if(currentAudio._btn
 
 function escHtml(str){if(!str)return'';return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
-// ===== URL 参数初始化 =====
+// ===== URL 参数与本地缓存及草稿初始化 =====
 
-var params=new URLSearchParams(window.location.search);var tb=params.get('textbook');var un=params.get('unit');if(tb&&UNIT_MAP[tb]){document.getElementById('textbook-sel').value=tb;document.getElementById('textbook-sel').dispatchEvent(new Event('change'));if(un){var timer=setInterval(function(){var us=document.getElementById('unit-sel');if(us.querySelector('option[value="'+un+'"]')){us.value=un;us.dispatchEvent(new Event('change'));clearInterval(timer);}},100);}}
+(function initSelectionAndDraft(){
+  var params=new URLSearchParams(window.location.search);
+  var tb=params.get('textbook');
+  var un=params.get('unit');
+  
+  if(tb&&UNIT_MAP[tb]){
+    document.getElementById('textbook-sel').value=tb;
+    document.getElementById('textbook-sel').dispatchEvent(new Event('change'));
+    if(un){
+      var timer=setInterval(function(){
+        var us=document.getElementById('unit-sel');
+        if(us.querySelector('option[value="'+un+'"]')){
+          us.value=un;
+          us.dispatchEvent(new Event('change'));
+          clearInterval(timer);
+        }
+      },100);
+    }
+  } else {
+    // URL 没有传参，尝试从 localStorage 恢复上次的选择
+    var savedTb=localStorage.getItem('classroom_notes_last_textbook');
+    var savedUn=localStorage.getItem('classroom_notes_last_unit');
+    if(savedTb&&UNIT_MAP[savedTb]){
+      document.getElementById('textbook-sel').value=savedTb;
+      document.getElementById('textbook-sel').dispatchEvent(new Event('change'));
+      if(savedUn){
+        var timer=setInterval(function(){
+          var us=document.getElementById('unit-sel');
+          if(us.querySelector('option[value="'+savedUn+'"]')){
+            us.value=savedUn;
+            us.dispatchEvent(new Event('change'));
+            clearInterval(timer);
+          }
+        },100);
+      }
+    }
+  }
+  
+  // 恢复输入框草稿
+  var savedDraft = localStorage.getItem('classroom_notes_draft');
+  if (savedDraft) {
+    document.getElementById('sentence-input').innerHTML = savedDraft;
+  }
+})();
 
 // ===== 词库加载 =====
 
@@ -523,8 +713,7 @@ window._vsl1Vocab=null;window._vsl2Vocab=null;
 <script src="vsl1-vocab.js" onerror="console.warn('vsl1-vocab.js not found')"></script>
 <script src="vsl2-vocab.js" onerror="console.warn('vsl2-vocab.js not found')"></script>
 <script>
-if(typeof VSL1_VOCAB!=='undefined')window._vsl1Vocab=VSL1_VOCAB;
-if(typeof VSL2_VOCAB!=='undefined')window._vsl2Vocab=VSL2_VOCAB;
+if(typeof VN_VOCAB!=='undefined'){window._vsl1Vocab=VN_VOCAB['vsl1']||VN_VOCAB;window._vsl2Vocab=VN_VOCAB['vsl2']||VN_VOCAB;}
 </script>
 </body>
 </html>
