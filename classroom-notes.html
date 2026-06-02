@@ -156,6 +156,7 @@ var firebaseConfig={apiKey:"AIzaSyCMPFTNEBWXA_EnkF7Yk__F1gdHYfPg8kM",authDomain:
 firebase.initializeApp(firebaseConfig);
 var db=firebase.firestore(),auth=firebase.auth();
 var currentUser=null,currentTextbook='',currentUnit='',currentTab='notes',wordList=[],extractedDialogue=[],records=[],marks=[];
+window._isInitializing=true;
 var UNIT_MAP={VSL1:['U1','U2','U3','U4','U5','U6','U7','U8','U9','U10','U11','U12'],VSL2:['U1','U2','U3','U4','U5','U6','U7','U8','U9','U10','U11','U12']};
 // 读取URL参数中的用户名
 (function readUrlParams(){
@@ -195,12 +196,14 @@ document.getElementById('unit-sel').addEventListener('change',function(e){
   currentUnit=e.target.value;
   localStorage.setItem('classroom_notes_last_unit', currentUnit);
   
-  // 清理上一单元提取的数据缓存
-  wordList=[];
-  extractedDialogue=[];
-  localStorage.removeItem('classroom_notes_word_list');
-  localStorage.removeItem('classroom_notes_extracted_dialogue');
-  renderWordList();
+  // 只有在非初始化（即用户手动切换单元）时，才清理提取的数据缓存
+  if (!window._isInitializing) {
+    wordList=[];
+    extractedDialogue=[];
+    localStorage.removeItem('classroom_notes_word_list');
+    localStorage.removeItem('classroom_notes_extracted_dialogue');
+    renderWordList();
+  }
   
   var hasUnit=!!currentUnit;
   document.getElementById('btn-extract-words').disabled=!hasUnit;
@@ -745,7 +748,11 @@ function escHtml(str){if(!str)return'';return String(str).replace(/&/g,'&amp;').
             setTimeout(restoreTab, 100);
           }
         },100);
+      } else {
+        window._isInitializing = false;
       }
+    } else {
+      window._isInitializing = false;
     }
   }
   
@@ -757,6 +764,7 @@ function escHtml(str){if(!str)return'';return String(str).replace(/&/g,'&amp;').
       renderWordList();
       renderWhiteboard();
     }
+    window._isInitializing = false;
   }
 })();
 
