@@ -194,22 +194,27 @@ document.getElementById('textbook-sel').addEventListener('change',function(e){
 document.getElementById('unit-sel').addEventListener('change',function(e){
   currentUnit=e.target.value;
   localStorage.setItem('classroom_notes_last_unit', currentUnit);
+  
+  // 清理上一单元提取的数据缓存
+  wordList=[];
+  extractedDialogue=[];
+  localStorage.removeItem('classroom_notes_word_list');
+  localStorage.removeItem('classroom_notes_extracted_dialogue');
+  renderWordList();
+  
   var hasUnit=!!currentUnit;
   document.getElementById('btn-extract-words').disabled=!hasUnit;
   document.getElementById('btn-extract-dialogue').disabled=!hasUnit;
   if(hasUnit)loadAllData();
   else{
-    wordList=[];
-    extractedDialogue=[];
     records=[];
     marks=[];
-    renderWordList();
     renderWhiteboard();
     renderExtractList();
   }
 });
 async function loadAllData(){if(!currentUser||!currentTextbook||!currentUnit)return;try{var snap=await db.collection('cn_records').where('userId','==',currentUser.uid).where('textbook','==',currentTextbook).where('unit','==',currentUnit).get();records=[];snap.forEach(function(d){var item={id:d.id};var data=d.data();for(var k in data)item[k]=data[k];records.push(item);});var mSnap=await db.collection('cn_marks').where('userId','==',currentUser.uid).where('textbook','==',currentTextbook).where('unit','==',currentUnit).get();marks=[];mSnap.forEach(function(d){var item={id:d.id};var data=d.data();for(var k in data)item[k]=data[k];marks.push(item);});renderWordList();renderWhiteboard();renderExtractList();}catch(e){console.error(e);}}
-async function extractWords(){if(!currentTextbook||!currentUnit)return;var vocab=currentTextbook==='VSL1'?window._vsl1Vocab:window._vsl2Vocab;if(!vocab){alert('Vocabulary not loaded. Please refresh.');return;}var unitNum=parseInt(currentUnit.replace('U',''));var unitWords=vocab.filter(function(w){return w[3]===unitNum||w[4]===unitNum;});if(!unitWords.length){alert('No words found for this unit');wordList=[];}else{wordList=unitWords.map(function(w){return{vi:w[0]||'',zh:w[1]||'',extracted:true};});}renderWordList();}async function extractDialogue(){
+async function extractWords(){if(!currentTextbook||!currentUnit)return;var vocab=currentTextbook==='VSL1'?window._vsl1Vocab:window._vsl2Vocab;if(!vocab){alert('Vocabulary not loaded. Please refresh.');return;}var unitNum=parseInt(currentUnit.replace('U',''));var unitWords=vocab.filter(function(w){return w[3]===unitNum||w[4]===unitNum;});if(!unitWords.length){alert('No words found for this unit');wordList=[];}else{wordList=unitWords.map(function(w){return{vi:w[0]||'',zh:w[1]||'',extracted:true};});}localStorage.setItem('classroom_notes_word_list', JSON.stringify(wordList));renderWordList();}async function extractDialogue(){
   if(!currentTextbook||!currentUnit)return;
   var unitNum=parseInt(currentUnit.replace('U',''));
   try{
@@ -243,6 +248,7 @@ async function extractWords(){if(!currentTextbook||!currentUnit)return;var vocab
             
             return matchTextbook && matchUnit;
           });
+          localStorage.setItem('classroom_notes_extracted_dialogue', JSON.stringify(extractedDialogue));
           if(!extractedDialogue.length){
             alert('No content for this unit');
           } else {
@@ -640,7 +646,29 @@ function renderExtractList(){
 
 // ===== 页签切换 =====
 
-function switchTab(tab){currentTab=tab;document.querySelectorAll('.tab').forEach(function(t){t.classList.toggle('active',t.dataset.tab===tab);});var ca=document.getElementById('content-area'),ta=document.getElementById('test-area'),ia=document.getElementById('input-area'),il=document.getElementById('input-label');if(tab==='test'){ca.style.display='none';ta.classList.add('active');renderTestResults();}else{ta.classList.remove('active');ca.style.display='flex';ia.style.display='flex';var labels={notes:'\u5F55\u5165\u7B14\u8BB0',exercises:'\u5F55\u5165\u7EC3\u4E60',dialogue:'\u8BFE\u6587\u5185\u5BB9\uFF08\u53EA\u8BFB\uFF09'};il.textContent=labels[tab]||'\u5F55\u5165\u5185\u5BB9';if(tab==='dialogue'){ia.classList.add('collapsed');}else{ia.classList.remove('collapsed');}renderWhiteboard();}}
+function switchTab(tab){
+  currentTab=tab;
+  localStorage.setItem('classroom_notes_last_tab', tab);
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.toggle('active',t.dataset.tab===tab);});
+  var ca=document.getElementById('content-area'),ta=document.getElementById('test-area'),ia=document.getElementById('input-area'),il=document.getElementById('input-label');
+  if(tab==='test'){
+    ca.style.display='none';
+    ta.classList.add('active');
+    renderTestResults();
+  }else{
+    ta.classList.remove('active');
+    ca.style.display='flex';
+    ia.style.display='flex';
+    var labels={notes:'\u5F55\u5165\u7B14\u8BB0',exercises:'\u5F55\u5165\u7EC3\u4E60',dialogue:'\u8BFE\u6587\u5185\u5BB9\uFF08\u53EA\u8BFB\uFF09'};
+    il.textContent=labels[tab]||'\u5F55\u5165\u5185\u5BB9';
+    if(tab==='dialogue'){
+      ia.classList.add('collapsed');
+    }else{
+      ia.classList.remove('collapsed');
+    }
+    renderWhiteboard();
+  }
+}
 
 function toggleInputCollapse(){document.getElementById('input-area').classList.toggle('collapsed');}
 function enterTest(){if(!currentTextbook||!currentUnit){alert('\u8BF7\u5148\u9009\u62E9\u8BFE\u672C\u548C\u5355\u5143');return;}switchTab('test');}
@@ -666,6 +694,22 @@ function escHtml(str){if(!str)return'';return String(str).replace(/&/g,'&amp;').
   var tb=params.get('textbook');
   var un=params.get('unit');
   
+  // 恢复输入框草稿
+  var savedDraft = localStorage.getItem('classroom_notes_draft');
+  if (savedDraft) {
+    document.getElementById('sentence-input').innerHTML = savedDraft;
+  }
+  
+  // 恢复上次提取的单词列表和课文缓存
+  var savedWords = localStorage.getItem('classroom_notes_word_list');
+  if (savedWords) {
+    try { wordList = JSON.parse(savedWords); } catch(e){}
+  }
+  var savedDlg = localStorage.getItem('classroom_notes_extracted_dialogue');
+  if (savedDlg) {
+    try { extractedDialogue = JSON.parse(savedDlg); } catch(e){}
+  }
+  
   if(tb&&UNIT_MAP[tb]){
     document.getElementById('textbook-sel').value=tb;
     document.getElementById('textbook-sel').dispatchEvent(new Event('change'));
@@ -676,6 +720,9 @@ function escHtml(str){if(!str)return'';return String(str).replace(/&/g,'&amp;').
           us.value=un;
           us.dispatchEvent(new Event('change'));
           clearInterval(timer);
+          
+          // 在课本和单元加载完后，恢复页签
+          setTimeout(restoreTab, 100);
         }
       },100);
     }
@@ -693,16 +740,23 @@ function escHtml(str){if(!str)return'';return String(str).replace(/&/g,'&amp;').
             us.value=savedUn;
             us.dispatchEvent(new Event('change'));
             clearInterval(timer);
+            
+            // 在课本和单元加载完后，恢复页签
+            setTimeout(restoreTab, 100);
           }
         },100);
       }
     }
   }
   
-  // 恢复输入框草稿
-  var savedDraft = localStorage.getItem('classroom_notes_draft');
-  if (savedDraft) {
-    document.getElementById('sentence-input').innerHTML = savedDraft;
+  function restoreTab(){
+    var savedTab = localStorage.getItem('classroom_notes_last_tab');
+    if(savedTab){
+      switchTab(savedTab);
+    } else {
+      renderWordList();
+      renderWhiteboard();
+    }
   }
 })();
 
