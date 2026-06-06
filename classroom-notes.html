@@ -47,6 +47,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .sentence-card{background:var(--sf);border-radius:8px;padding:.65rem .9rem;margin-bottom:.45rem;box-shadow:0 1px 3px rgba(0,0,0,.08);font-size:.9rem;line-height:1.7}
 .sentence-card .row-num{display:inline-block;min-width:1.4rem;font-weight:700;color:var(--pri);margin-right:.4rem}
 .card-actions{display:flex;gap:.35rem;justify-content:flex-end;margin-top:.35rem}
+.dlg-section-header{font-weight:700;color:var(--pri);font-size:.95rem;margin:1.2rem 0 .5rem;padding-bottom:.35rem;border-bottom:2px solid var(--pri)}
 .sentence-btn{background:none;border:1px solid var(--bd);border-radius:6px;padding:.18rem .5rem;cursor:pointer;font-size:.77rem;color:var(--tx-m);transition:all .15s}
 .sentence-btn:hover{background:var(--bg)}
 .sentence-btn.readonly-btn{opacity:.4;cursor:default}
@@ -758,7 +759,7 @@ function renderWhiteboard(){
     var card=document.createElement('div');
     card.className='sentence-card';
     card.innerHTML='<span class="row-num">'+(idx+1)+'.</span>'+(rec.html||escHtml(rec.textVi||''))+
-      '<div class="card-actions"><button class="sentence-btn" onclick="ttsCard(this,\''+(rec.textVi||'').replace(/'/g,"\\'")+'\')">\uD83C\uDFA4</button><button class="sentence-btn" onclick="editRecord(\''+rec.id+'\')">\u270F\uFE0F</button><button class="sentence-btn" onclick="delRecord(\''+rec.id+'\')">\uD83D\uDDD1</button></div>';
+      '<div class="card-actions"><button class="sentence-btn" onclick="ttsCard(this,\''+(rec.textVi||'').replace(/'/g,"\\'")+'\')">\uD83D\uDD0A</button><button class="sentence-btn" onclick="editRecord(\''+rec.id+'\')">\u270F\uFE0F</button><button class="sentence-btn" onclick="delRecord(\''+rec.id+'\')">\uD83D\uDDD1</button></div>';
     wb.appendChild(card);
   });
   // 绑定白板 tooltip 事件
@@ -772,10 +773,11 @@ function renderDialogueTab(wb){
   
   extractedDialogue.forEach(function(dlg, dlgIdx){
     // If there are multiple dialogues, put an empty line/spacer between dialogues
-    if (dlgIdx > 0 && globalIdx > 0) {
-      var docSpacer = document.createElement('div');
-      docSpacer.style.height = '1.2rem';
-      wb.appendChild(docSpacer);
+    if (extractedDialogue.length > 1) {
+      var dlgHeader = document.createElement('div');
+      dlgHeader.className = 'dlg-section-header';
+      dlgHeader.textContent = '📖 Đoạn ' + (dlgIdx + 1);
+      wb.appendChild(dlgHeader);
     }
 
     var text = dlg.content || dlg.textVi || dlg.text || '';
@@ -1174,9 +1176,9 @@ async function submitTest(){
 
 // ===== 音频 =====
 
-var currentAudio=null;
-function tts(text){if(!text)return;if(currentAudio){currentAudio.pause();currentAudio=null;}var url='https://translate.google.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q='+encodeURIComponent(text);currentAudio=new Audio(url);currentAudio.play().catch(function(){});}
-function ttsCard(btn,text){if(!text)return;if(currentAudio){if(currentAudio._btn===btn){if(currentAudio.paused){currentAudio.play();btn.textContent='\u23F8';currentAudio.onpause=function(){btn.textContent='\uD83C\uDFA4';};currentAudio.onended=function(){btn.textContent='\uD83C\uDFA4';};}else{currentAudio.pause();btn.textContent='\uD83C\uDFA4';}}else{currentAudio.pause();if(currentAudio._btn)currentAudio._btn.textContent='\uD83C\uDFA4';currentAudio=null;}}var url='https://translate.google.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q='+encodeURIComponent(text);currentAudio=new Audio(url);currentAudio._btn=btn;btn.textContent='\u23F8';currentAudio.onpause=function(){btn.textContent='\uD83C\uDFA4';};currentAudio.onended=function(){btn.textContent='\uD83C\uDFA4';};currentAudio.play().catch(function(){});}
+var currentTts=null,currentTtsBtn=null;
+function tts(text){if(!text)return;speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(text);u.lang='vi-VN';u.rate=.9;speechSynthesis.speak(u);}
+function ttsCard(btn,text){if(!text)return;if(currentTts&&currentTtsBtn===btn){if(speechSynthesis.speaking){speechSynthesis.pause();btn.textContent='\uD83D\uDD0A';return;}if(speechSynthesis.paused){speechSynthesis.resume();btn.textContent='\u23F8\uFE0F';return;}}speechSynthesis.cancel();if(currentTtsBtn)currentTtsBtn.textContent='\uD83D\uDD0A';var u=new SpeechSynthesisUtterance(text);u.lang='vi-VN';u.rate=.9;currentTts=u;currentTtsBtn=btn;btn.textContent='\u23F8\uFE0F';u.onend=function(){btn.textContent='\uD83D\uDD0A';currentTts=null;currentTtsBtn=null;};u.onerror=function(){btn.textContent='\uD83D\uDD0A';currentTts=null;currentTtsBtn=null;};speechSynthesis.speak(u);}
 
 // ===== 工具函数 =====
 
