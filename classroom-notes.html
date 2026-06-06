@@ -41,6 +41,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .tab:hover{color:var(--pri)}
 .tab.active{color:var(--pri);border-bottom-color:var(--pri);font-weight:700}
 .content-area{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.test-area{display:none;flex:1;flex-direction:column;overflow:hidden}
 .whiteboard{flex:1;overflow-y:auto;padding:.7rem;background:var(--bg)}
 .wb-empty{text-align:center;color:var(--tx-m);padding:2rem;font-size:.87rem}
 .sentence-card{background:var(--sf);border-radius:8px;padding:.65rem .9rem;margin-bottom:.45rem;box-shadow:0 1px 3px rgba(0,0,0,.08);font-size:.9rem;line-height:1.7}
@@ -109,8 +110,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 <div class="selector-bar">
 <div class="sel-group"><label>课本:</label><select class="sel-sm" id="textbook-sel"><option value="">-- 课本 --</option><option value="VSL1">VSL1</option><option value="VSL2">VSL2</option></select></div>
 <div class="sel-group"><label>单元:</label><select class="sel-sm" id="unit-sel" disabled><option value="">-- 先选课本 --</option></select></div>
-<button class="btn-extract" id="btn-extract-words" disabled onclick="extractWords()">📖 提取单词</button>
-<button class="btn-extract" id="btn-extract-dialogue" disabled onclick="extractDialogue()">💬 提取课文</button>
+<button class="btn-extract" id="btn-sync-extract" disabled onclick="syncExtract()">🔄 同步提取</button>
 <div style="flex:1"></div>
 <button class="btn-test-inline" id="btn-enter-test" disabled onclick="enterTest()">🎯 进入测试</button>
 </div>
@@ -126,7 +126,25 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 <div class="content-area" id="content-area"><div class="whiteboard" id="whiteboard"><div class="wb-empty">在下方输入框录入内容...</div></div>
 <div class="input-area" id="input-area"><div class="input-header"><label id="input-label">✍️ 录入内容</label><button class="collapse-btn" id="collapse-btn" onclick="toggleInputCollapse()" title="隐藏/展开">▼</button></div><div class="input-main"><div class="input-box" id="sentence-input" contenteditable="true" data-placeholder="输入内容，选中文字后右键标记..."></div><div class="input-actions"><button class="btn-sm" onclick="clearInput()">🗑️ 清空</button><button class="btn-submit" onclick="submitSentence()">📤 提交</button></div></div></div>
 </div>
-<div class="test-area" id="test-area"><div id="test-results" style="flex:1"></div></div>
+<div class="test-area" id="test-area">
+  <div id="test-empty" class="wb-empty" style="display:block;padding:2rem;text-align:center">暂无测试记录<br>点击下方按钮创建新测试</div>
+  <div id="test-results" style="flex:1"></div>
+  <div id="test-input-area" style="display:none;padding:1rem;border-top:1px solid var(--bd)">
+    <div style="font-weight:700;margin-bottom:.5rem">📝 新建测试</div>
+    <div style="display:flex;gap:.5rem;margin-bottom:.5rem">
+      <input type="number" id="test-score" placeholder="分数 (0-100)" style="width:100px;padding:.3rem;border:1px solid var(--bd);border-radius:6px" min="0" max="100">
+      <input type="text" id="test-weak" placeholder="弱项 (可选，用逗号分隔)" style="flex:1;padding:.3rem;border:1px solid var(--bd);border-radius:6px">
+    </div>
+    <textarea id="test-analysis" placeholder="测试分析/备注..." style="width:100%;min-height:80px;padding:.5rem;border:1px solid var(--bd);border-radius:6px;resize:vertical;font-family:inherit"></textarea>
+    <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:.5rem">
+      <button class="btn-sm" onclick="cancelTest()">取消</button>
+      <button class="btn-submit" onclick="submitTest()">保存测试</button>
+    </div>
+  </div>
+  <div style="padding:1rem;border-top:1px solid var(--bd);text-align:center">
+    <button class="btn-submit" id="btn-new-test" onclick="showTestInput()">➕ 新建测试</button>
+  </div>
+</div>
 </div>
 <div class="side-r"><div class="side-h">⭐ 重点提取</div><div class="extract-list" id="extract-list"><div class="wb-empty" style="padding:1rem;font-size:.8rem">标记的词语和语法<br>将自动汇聚到这里</div></div><div class="side-r-footer" style="display:none"></div></div>
 </div>
@@ -157,6 +175,15 @@ firebase.initializeApp(firebaseConfig);
 var db=firebase.firestore(),auth=firebase.auth();
 var currentUser=null,currentTextbook='',currentUnit='',currentTab='notes',wordList=[],extractedDialogue=[],records=[],marks=[];
 window._isInitializing=true;
+// 获取固定用户标识（优先使用URL参数中的用户名，其次是本地存储的固定ID）
+function getFixedUserId(){
+  if(window._urlUser) return 'user_' + window._urlUser;
+  var savedId = localStorage.getItem('classroom_notes_fixed_user_id');
+  if(savedId) return savedId;
+  var newId = 'anon_' + Date.now() + '_' + Math.random().toString(36).substr(2,9);
+  localStorage.setItem('classroom_notes_fixed_user_id', newId);
+  return newId;
+}
 var UNIT_MAP={VSL1:['U1','U2','U3','U4','U5','U6','U7','U8','U9','U10','U11','U12'],VSL2:['U1','U2','U3','U4','U5','U6','U7','U8','U9','U10','U11','U12']};
 // 读取URL参数中的用户名
 (function readUrlParams(){
@@ -178,8 +205,7 @@ document.getElementById('textbook-sel').addEventListener('change',function(e){
   us.innerHTML='<option value="">-- \u5355\u5143 --</option>';
   if(!currentTextbook){
     us.disabled=true;
-    document.getElementById('btn-extract-words').disabled=true;
-    document.getElementById('btn-extract-dialogue').disabled=true;
+    document.getElementById('btn-sync-extract').disabled=true;
     return;
   }
   us.disabled=false;
@@ -189,8 +215,7 @@ document.getElementById('textbook-sel').addEventListener('change',function(e){
     o.textContent=u;
     us.appendChild(o);
   });
-  document.getElementById('btn-extract-words').disabled=true;
-  document.getElementById('btn-extract-dialogue').disabled=true;
+  document.getElementById('btn-sync-extract').disabled=true;
 });
 document.getElementById('unit-sel').addEventListener('change',function(e){
   currentUnit=e.target.value;
@@ -206,8 +231,7 @@ document.getElementById('unit-sel').addEventListener('change',function(e){
   }
   
   var hasUnit=!!currentUnit;
-  document.getElementById('btn-extract-words').disabled=!hasUnit;
-  document.getElementById('btn-extract-dialogue').disabled=!hasUnit;
+  document.getElementById('btn-sync-extract').disabled=!hasUnit;
   if(hasUnit)loadAllData();
   else{
     records=[];
@@ -216,8 +240,177 @@ document.getElementById('unit-sel').addEventListener('change',function(e){
     renderExtractList();
   }
 });
-async function loadAllData(){if(!currentUser||!currentTextbook||!currentUnit)return;try{var snap=await db.collection('cn_records').where('userId','==',currentUser.uid).where('textbook','==',currentTextbook).where('unit','==',currentUnit).get();records=[];snap.forEach(function(d){var item={id:d.id};var data=d.data();for(var k in data)item[k]=data[k];records.push(item);});var mSnap=await db.collection('cn_marks').where('userId','==',currentUser.uid).where('textbook','==',currentTextbook).where('unit','==',currentUnit).get();marks=[];mSnap.forEach(function(d){var item={id:d.id};var data=d.data();for(var k in data)item[k]=data[k];marks.push(item);});renderWordList();renderWhiteboard();renderExtractList();}catch(e){console.error(e);}}
-async function extractWords(){if(!currentTextbook||!currentUnit)return;var vocab=currentTextbook==='VSL1'?window._vsl1Vocab:window._vsl2Vocab;if(!vocab){alert('Vocabulary not loaded. Please refresh.');return;}var unitNum=parseInt(currentUnit.replace('U',''));var unitWords=vocab.filter(function(w){return w[3]===unitNum||w[4]===unitNum;});if(!unitWords.length){alert('No words found for this unit');wordList=[];}else{wordList=unitWords.map(function(w){return{vi:w[0]||'',zh:w[1]||'',extracted:true};});}localStorage.setItem('classroom_notes_word_list', JSON.stringify(wordList));renderWordList();}async function extractDialogue(){
+async function loadAllData(){if(!currentTextbook||!currentUnit)return;
+  
+  // 获取固定用户标识
+  var fixedUserId = getFixedUserId();
+  
+  // 1. 先从本地存储恢复缓存
+  var localKey = 'classroom_notes_records_' + currentTextbook + '_' + currentUnit;
+  var localMarksKey = 'classroom_notes_marks_' + currentTextbook + '_' + currentUnit;
+  var localRecords = [], localMarks = [];
+  
+  try {
+    var savedRecs = localStorage.getItem(localKey);
+    if(savedRecs) localRecords = JSON.parse(savedRecs);
+  } catch(e) { console.warn('本地记录解析失败', e); }
+  
+  try {
+    var savedMarks = localStorage.getItem(localMarksKey);
+    if(savedMarks) localMarks = JSON.parse(savedMarks);
+  } catch(e) { console.warn('本地标记解析失败', e); }
+  
+  // 2. 用本地数据先渲染，提高感知速度
+  records = localRecords;
+  marks = localMarks;
+  renderWordList();
+  renderWhiteboard();
+  renderExtractList();
+  
+  // 3. 从 Firebase 增量同步（使用固定用户标识）
+  try {
+    // 获取云端记录
+    var snap = await db.collection('cn_records')
+      .where('textbook','==',currentTextbook)
+      .where('unit','==',currentUnit)
+      .get();
+    
+    var cloudRecords = [];
+    snap.forEach(function(d){
+      var item = {id: d.id};
+      var data = d.data();
+      for(var k in data) item[k] = data[k];
+      cloudRecords.push(item);
+    });
+    
+    // 合并：以云端为准，本地补充（本地可能有未同步的）
+    var recordMap = {};
+    localRecords.forEach(function(r) { if(r.id) recordMap[r.id] = r; });
+    cloudRecords.forEach(function(r) { if(r.id) recordMap[r.id] = r; });
+    records = Object.values(recordMap);
+    
+    // 获取云端标记
+    var mSnap = await db.collection('cn_marks')
+      .where('textbook','==',currentTextbook)
+      .where('unit','==',currentUnit)
+      .get();
+    
+    var cloudMarks = [];
+    mSnap.forEach(function(d){
+      var item = {id: d.id};
+      var data = d.data();
+      for(var k in data) item[k] = data[k];
+      cloudMarks.push(item);
+    });
+    
+    // 合并标记
+    var markMap = {};
+    localMarks.forEach(function(m) { if(m.id) markMap[m.id] = m; });
+    cloudMarks.forEach(function(m) { if(m.id) markMap[m.id] = m; });
+    marks = Object.values(markMap);
+    
+    // 4. 保存合并后的数据到本地存储
+    localStorage.setItem(localKey, JSON.stringify(records));
+    localStorage.setItem(localMarksKey, JSON.stringify(marks));
+    
+    // 5. 重新渲染
+    renderWordList();
+    renderWhiteboard();
+    renderExtractList();
+    
+  } catch(e) {
+    console.error('云端同步失败，使用本地数据:', e);
+  }
+}
+
+// 同步提取：串联 提取单词 → 提取课文 → 提取记录
+async function syncExtract(){
+  if(!currentTextbook||!currentUnit){
+    alert('请先选择课本和单元');
+    return;
+  }
+  var btn = document.getElementById('btn-sync-extract');
+  btn.disabled = true;
+  btn.textContent = '⏳ 提取中...';
+  try {
+    // === 段落1：提取单词 ===
+    await extractWords();
+    // === 段落2：提取课文 ===
+    await extractDialogueAsync();
+    // === 段落3：提取记录 ===
+    await extractRecords();
+    btn.textContent = '✅ 提取完成';
+    setTimeout(function(){ btn.textContent = '🔄 同步提取'; btn.disabled = false; }, 2000);
+  } catch(e) {
+    console.error('同步提取失败:', e);
+    alert('同步提取失败: ' + (e.message || '未知错误'));
+    btn.textContent = '🔄 同步提取';
+    btn.disabled = false;
+  }
+}
+
+async function extractWords(){if(!currentTextbook||!currentUnit)return;var vocab=currentTextbook==='VSL1'?window._vsl1Vocab:window._vsl2Vocab;if(!vocab){alert('Vocabulary not loaded. Please refresh.');return;}var unitNum=parseInt(currentUnit.replace('U',''));var unitWords=vocab.filter(function(w){return w[3]===unitNum||w[4]===unitNum;});if(!unitWords.length){alert('No words found for this unit');wordList=[];}else{wordList=unitWords.map(function(w){return{vi:w[0]||'',zh:w[1]||'',extracted:true};});}localStorage.setItem('classroom_notes_word_list', JSON.stringify(wordList));renderWordList();}// === 段落2：提取课文（Promise wrapper for IndexedDB） ===
+function extractDialogueAsync(){
+  return new Promise(function(resolve){
+    if(!currentTextbook||!currentUnit){ resolve(); return; }
+    var unitNum=parseInt(currentUnit.replace('U',''));
+    try{
+      var dbReq=indexedDB.open('vnDialoguesDB',1);
+      dbReq.onsuccess=function(e){
+        var db=e.target.result;
+        if(!db.objectStoreNames.contains('dialogues')){
+          alert('Dialogue DB not initialized');
+          resolve();
+          return;
+        }
+        var tx=db.transaction(['dialogues'],'readonly');
+        var store=tx.objectStore('dialogues');
+        var getReq=store.get('vnDialogues');
+        getReq.onsuccess=function(ev){
+          var result=ev.target.result;
+          var dialogues=result&&result.data?result.data:result;
+          if(!Array.isArray(dialogues)){
+            alert('No dialogue data found');
+            extractedDialogue=[];
+          }else{
+            extractedDialogue=dialogues.filter(function(d){
+              if (!d.topic) return false;
+              var tbPattern = currentTextbook.replace(/([A-Za-z]+)(\d+)/, '$1\\s*$2');
+              var textbookRegex = new RegExp(tbPattern + '(?![0-9])', 'i');
+              var matchTextbook = textbookRegex.test(d.topic);
+              var unitRegex = new RegExp('(bài|bai)\\s*0*' + unitNum + '(?![0-9])', 'i');
+              var matchUnit = unitRegex.test(d.topic);
+              return matchTextbook && matchUnit;
+            });
+            localStorage.setItem('classroom_notes_extracted_dialogue', JSON.stringify(extractedDialogue));
+            if(!extractedDialogue.length){
+              alert('No content for this unit');
+            } else {
+              switchTab('dialogue');
+            }
+          }
+          renderWhiteboard();
+          resolve();
+        };
+        getReq.onerror=function(){
+          alert('Failed to read dialogue');
+          resolve();
+        };
+      };
+      dbReq.onerror=function(){
+        alert('Failed to open IndexedDB');
+        resolve();
+      };
+    }catch(err){
+      console.error(err);
+      alert('Error: '+err.message);
+      resolve();
+    }
+  });
+}
+
+// 原始 extractDialogue（保留供直接调用，内部逻辑同上）
+async function extractDialogue(){
   if(!currentTextbook||!currentUnit)return;
   var unitNum=parseInt(currentUnit.replace('U',''));
   try{
@@ -272,7 +465,68 @@ async function extractWords(){if(!currentTextbook||!currentUnit)return;var vocab
     console.error(e);
     alert('Extract dialogue failed');
   }
-}function renderWordList(){var c=document.getElementById('word-list');if(!wordList.length){c.innerHTML='<div class="wb-empty">\u9009\u62E9\u8BFE\u672C\u548C\u5355\u5143\u540E<br>\u70B9\u51FB\u300C\u63D0\u53D6\u5355\u8BCD\u300D\u6309\u94AE</div>';return;}c.innerHTML='';wordList.forEach(function(w,i){var d=document.createElement('div');d.className='word-item';d.innerHTML='<span class="word-vi">'+escHtml(w.vi)+'</span><span class="word-zh">'+escHtml(w.zh)+'</span><button class="tts-btn" onclick="event.stopPropagation();tts(\''+w.vi.replace(/'/g,"\\'")+'\')">\uD83C\uDFA4</button>';d.onclick=function(){d.classList.toggle('show-zh');};c.appendChild(d);});}
+}
+
+// 从云端提取历史记录
+async function extractRecords(){
+  if(!currentTextbook||!currentUnit){
+    alert('请先选择课本和单元');
+    return;
+  }
+  try{
+    var fixedUserId = getFixedUserId();
+    // 不用 userId 过滤（不同会话 UID 不统一），JS 端排序
+    var snapshot = await db.collection('cn_records')
+      .where('textbook', '==', currentTextbook)
+      .where('unit', '==', currentUnit)
+      .get();
+    
+    if(snapshot.empty){
+      alert('该单元暂无历史记录');
+      return;
+    }
+    
+    var downloadedRecords = [];
+    snapshot.forEach(function(doc){
+      var data = doc.data();
+      downloadedRecords.push({
+        id: doc.id,
+        userId: data.userId,
+        textbook: data.textbook,
+        unit: data.unit,
+        tabType: data.tabType || 'notes',
+        textVi: data.textVi || '',
+        html: data.html || '',
+        createdAt: data.createdAt ? data.createdAt.toDate().toISOString() : new Date().toISOString()
+      });
+    });
+    
+    // JS 端按时间倒序排列
+    downloadedRecords.sort(function(a,b){ return b.createdAt.localeCompare(a.createdAt); });
+    
+    // 合并到本地记录（避免重复）
+    var existingIds = {};
+    records.forEach(function(r){ existingIds[r.id] = true; });
+    
+    var newRecords = downloadedRecords.filter(function(r){ return !existingIds[r.id]; });
+    if(newRecords.length > 0){
+      records = records.concat(newRecords);
+      // 合并后也按时间排序
+      records.sort(function(a,b){ return (a.createdAt||'').localeCompare(b.createdAt||''); });
+      var localKey = 'classroom_notes_records_' + currentTextbook + '_' + currentUnit;
+      localStorage.setItem(localKey, JSON.stringify(records));
+      alert('成功下载 ' + newRecords.length + ' 条记录');
+      renderWhiteboard();
+    } else {
+      alert('所有记录已同步，无新记录');
+    }
+  }catch(e){
+    console.error('提取记录失败:', e);
+    alert('提取记录失败: ' + (e.message || '未知错误'));
+  }
+}
+
+function renderWordList(){var c=document.getElementById('word-list');if(!wordList.length){c.innerHTML='<div class="wb-empty">\u9009\u62E9\u8BFE\u672C\u548C\u5355\u5143\u540E<br>\u70B9\u51FB\u300C\u63D0\u53D6\u5355\u8BCD\u300D\u6309\u94AE</div>';return;}c.innerHTML='';wordList.forEach(function(w,i){var d=document.createElement('div');d.className='word-item';d.innerHTML='<span class="word-vi">'+escHtml(w.vi)+'</span><span class="word-zh">'+escHtml(w.zh)+'</span><button class="tts-btn" onclick="event.stopPropagation();tts(\''+w.vi.replace(/'/g,"\\'")+'\')">\uD83D\uDD0A</button>';d.onclick=function(){d.classList.toggle('show-zh');};c.appendChild(d);});}
 
 // ===== 右键菜单 & 富文本标记 =====
 
@@ -349,19 +603,32 @@ async function ctxMark(type){
   // 写入富文本 DOM
   wrapSelection(range,type,extra);
   window._selRange=null;
-  // 存入数据库（先检查用户状态）
-  if(!currentUser||!currentUser.uid){
-    console.warn('\u7528\u6237\u672A\u767B\u5F55\uFF0C\u6807\u8BB0\u5C06\u4EC5\u672C\u5730\u4FDD\u5B58');
-    renderExtractList();
-    return;
-  }
+  
+  // 先保存到本地存储
+  var fixedUserId = getFixedUserId();
+  var newMark = {
+    id: 'local_mark_' + Date.now(),
+    userId: fixedUserId,
+    textbook: currentTextbook || '',
+    unit: currentUnit || '',
+    tabType: currentTab,
+    word: word,
+    type: type,
+    extra: extra || null
+  };
+  marks.push(newMark);
+  var localMarksKey = 'classroom_notes_marks_' + (currentTextbook || 'unknown') + '_' + (currentUnit || 'unknown');
+  localStorage.setItem(localMarksKey, JSON.stringify(marks));
+  renderExtractList();
+  
+  // 存入数据库
   if(!currentTextbook||!currentUnit){
     console.warn('\u8BFE\u7A0B\u4FE1\u606F\u4E0D\u5B8C\u6574');
     return;
   }
   try{
     var doc=await db.collection('cn_marks').add({
-      userId:currentUser.uid,
+      userId:fixedUserId,
       textbook:currentTextbook,
       unit:currentUnit,
       tabType:currentTab,
@@ -370,9 +637,14 @@ async function ctxMark(type){
       extra:extra||null,
       createdAt:firebase.firestore.FieldValue.serverTimestamp()
     });
-    marks.push({id:doc.id,userId:currentUser.uid,textbook:currentTextbook,unit:currentUnit,tabType:currentTab,word:word,type:type,extra:extra||null});
+    // 更新本地标记的ID为云端ID
+    newMark.id = doc.id;
+    localStorage.setItem(localMarksKey, JSON.stringify(marks));
     renderExtractList();
-  }catch(e){console.error('\u4FDD\u5B58\u6807\u8BB0\u5931\u8D25:',e);alert('\u4FDD\u5B58\u6807\u8BB0\u5931\u8D25\uFF0C\u8BF7\u68C0\u67E5\u7F51\u7EDC');}
+  }catch(e){
+    console.error('\u4FDD\u5B58\u6807\u8BB0\u5931\u8D25:',e);
+    alert('\u4FDD\u5B58\u6807\u8BB0\u5931\u8D25\uFF0C\u6807\u8BB0\u5DF2\u4FDD\u5B58\u5728\u672C\u5730');
+  }
 }
 
 // wrapSelection：用 <span> 包裹当前选区并恢复光标
@@ -425,19 +697,27 @@ async function submitSentence(){
     });
   }
   if(!text){alert('\u8BF7\u8F93\u5165\u5185\u5BB9');return;}
-  // 检查用户状态
-  if(!currentUser||!currentUser.uid){
-    alert('\u7528\u6237\u672A\u767B\u5F55\uFF0C\u5185\u5BB9\u5C06\u4EC5\u672C\u5730\u4FDD\u5B58');
-    records.unshift({id:'local_'+Date.now(),userId:'local',textbook:currentTextbook||'',unit:currentUnit||'',tabType:currentTab,textVi:text,html:html});
-    editor.innerHTML='';
-    localStorage.removeItem('classroom_notes_draft');
-    renderWhiteboard();
-    return;
-  }
+  
+  var fixedUserId = getFixedUserId();
+  var newRecord = {
+    id: 'local_' + Date.now(),
+    userId: fixedUserId,
+    textbook: currentTextbook || '',
+    unit: currentUnit || '',
+    tabType: currentTab,
+    textVi: text,
+    html: html
+  };
+  
+  // 先保存到本地存储（确保数据不丢失）
+  records.push(newRecord);
+  var localKey = 'classroom_notes_records_' + (currentTextbook || 'unknown') + '_' + (currentUnit || 'unknown');
+  localStorage.setItem(localKey, JSON.stringify(records));
+  
   if(!currentTextbook||!currentUnit){alert('\u8BF7\u5148\u9009\u62E9\u8BFE\u672C\u548C\u5355\u5143');return;}
   try{
     var doc=await db.collection('cn_records').add({
-      userId:currentUser.uid,
+      userId:fixedUserId,
       textbook:currentTextbook,
       unit:currentUnit,
       tabType:currentTab,
@@ -445,11 +725,20 @@ async function submitSentence(){
       html:html,
       createdAt:firebase.firestore.FieldValue.serverTimestamp()
     });
-    records.unshift({id:doc.id,userId:currentUser.uid,textbook:currentTextbook,unit:currentUnit,tabType:currentTab,textVi:text,html:html});
+    // 更新本地记录的ID为云端ID
+    newRecord.id = doc.id;
+    localStorage.setItem(localKey, JSON.stringify(records));
+    
     editor.innerHTML='';
     localStorage.removeItem('classroom_notes_draft');
     renderWhiteboard();
-  }catch(e){console.error('\u4FDD\u5B58\u5931\u8D25:',e);alert('\u4FDD\u5B58\u5931\u8D25\uFF0C\u8BF7\u68C0\u67E5\u7F51\u7EDC\u8FDE\u63A5');}
+  }catch(e){
+    console.error('\u4FDD\u5B58\u5931\u8D25:',e);
+    alert('\u4FDD\u5B58\u5931\u8D25\uFF0C\u5185\u5BB9\u5DF2\u4FDD\u5B58\u5728\u672C\u5730');
+    editor.innerHTML='';
+    localStorage.removeItem('classroom_notes_draft');
+    renderWhiteboard();
+  }
 }
 
 function clearInput(){
@@ -539,8 +828,8 @@ function renderDialogueTab(wb){
       globalIdx++;
       var card = document.createElement('div');
       card.className = 'sentence-card';
-      card.innerHTML = '<span class="row-num">' + globalIdx + '.</span>' + escHtml(line) +
-        '<div class="card-actions"><button class="sentence-btn" onclick="ttsCard(this,\'' + line.replace(/'/g, "\\'") + '\')">\uD83C\uDFA4</button><button class="sentence-btn readonly-btn">\u270F\uFE0F</button><button class="sentence-btn readonly-btn">\uD83D\uDDD1</button></div>';
+      card.innerHTML = '<span class="row-num">' + globalIdx + '.</span><span class="dlg-text">' + escHtml(line) + '</span>' +
+        '<div class="card-actions"><button class="sentence-btn" onclick="ttsCard(this,\'' + line.replace(/'/g, "\\'") + '\')">\uD83D\uDD0A</button><button class="sentence-btn" onclick="editDialogueLine(this)">\u270F\uFE0F</button></div>';
       wb.appendChild(card);
     });
   });
@@ -616,16 +905,151 @@ async function editRecord(id){
     var newHtml=document.getElementById('edit-editor').innerHTML;
     var newText=document.getElementById('edit-editor').innerText.trim();
     if(!newText){alert('\u5185\u5BB9\u4E0D\u80FD\u4E3A\u7A7A');return;}
+    
+    // 先更新本地数据
+    rec.textVi=newText;rec.html=newHtml;
+    var localKey = 'classroom_notes_records_' + (currentTextbook || 'unknown') + '_' + (currentUnit || 'unknown');
+    localStorage.setItem(localKey, JSON.stringify(records));
+    overlay.remove();
+    renderWhiteboard();
+    
     try{
       await db.collection('cn_records').doc(id).update({textVi:newText,html:newHtml,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
-      rec.textVi=newText;rec.html=newHtml;
-      overlay.remove();
-      renderWhiteboard();
-    }catch(e){console.error(e);alert('\u4FEE\u6539\u5931\u8D25');}
+    }catch(e){
+      console.error(e);
+      alert('\u4FEE\u6539\u5DF2\u4FDD\u5B58\u5728\u672C\u5730\uFF0C\u4E91\u7AEF\u540C\u6B65\u5931\u8D25');
+    }
   };
 }
 
-async function delRecord(id){if(!confirm('\u786E\u8BA4\u5220\u9664\uFF1F'))return;try{await db.collection('cn_records').doc(id).delete();records=records.filter(function(r){return r.id!==id;});renderWhiteboard();}catch(e){console.error(e);alert('\u5220\u9664\u5931\u8D25');}}
+async function delRecord(id){if(!confirm('\u786E\u8BA4\u5220\u9664\uFF1F'))return;
+  // 先更新本地数据
+  records=records.filter(function(r){return r.id!==id;});
+  var localKey = 'classroom_notes_records_' + (currentTextbook || 'unknown') + '_' + (currentUnit || 'unknown');
+  localStorage.setItem(localKey, JSON.stringify(records));
+  renderWhiteboard();
+  
+  try{
+    await db.collection('cn_records').doc(id).delete();
+  }catch(e){
+    console.error(e);
+    alert('\u5220\u9664\u5DF2\u4FDD\u5B58\u5728\u672C\u5730\uFF0C\u4E91\u7AEF\u540C\u6B65\u5931\u8D25');
+  }
+}
+
+// ===== 课文行编辑 =====
+
+function editDialogueLine(btn){
+  var card = btn.closest('.sentence-card');
+  var textSpan = card.querySelector('.dlg-text');
+  if(!textSpan) return;
+  
+  // 如果已经在编辑中，保存
+  var editor = card.querySelector('.dlg-editor');
+  if(editor){
+    saveDialogueLine(card, editor);
+    return;
+  }
+  
+  // 进入编辑模式
+  var originalText = textSpan.textContent;
+  textSpan.style.display = 'none';
+  
+  var editorDiv = document.createElement('div');
+  editorDiv.className = 'dlg-editor';
+  editorDiv.contentEditable = true;
+  editorDiv.style.cssText = 'border:2px solid #6366f1;border-radius:6px;padding:.3rem .5rem;font-size:.9rem;line-height:1.6;outline:none;min-height:1.5rem;background:#fff;';
+  editorDiv.textContent = originalText;
+  
+  // 插入编辑框
+  textSpan.parentNode.insertBefore(editorDiv, textSpan.nextSibling);
+  editorDiv.focus();
+  
+  // 添加右键菜单支持（与笔记页面相同）
+  editorDiv.addEventListener('mouseup', function(e){
+    var sel = window.getSelection();
+    if(!sel.isCollapsed && sel.rangeCount){
+      var range = sel.getRangeAt(0);
+      if(editorDiv.contains(range.commonAncestorContainer)){
+        window._selRange = range.cloneRange();
+      }
+    }
+  });
+  
+  editorDiv.addEventListener('contextmenu', function(e){
+    e.preventDefault();
+    var sel = window.getSelection();
+    if(sel.isCollapsed || !sel.rangeCount) return;
+    var range = sel.getRangeAt(0);
+    if(!editorDiv.contains(range.commonAncestorContainer)) return;
+    window._selRange = range.cloneRange();
+    var menu = document.getElementById('ctx-menu');
+    var x = e.clientX, y = e.clientY;
+    var menuW = menu.offsetWidth || 160, menuH = menu.offsetHeight || 200;
+    menu.style.left = Math.max(8, Math.min(x, window.innerWidth - menuW - 12)) + 'px';
+    menu.style.top = Math.max(8, Math.min(y, window.innerHeight - menuH - 12)) + 'px';
+    menu.classList.add('show');
+  });
+  
+  // 更改按钮为保存图标
+  btn.textContent = '\u2705';
+  btn.onclick = function() { saveDialogueLine(card, editorDiv); };
+  
+  // 点击外部保存
+  function outsideClick(e){
+    if(!card.contains(e.target)){
+      saveDialogueLine(card, editorDiv);
+      document.removeEventListener('click', outsideClick);
+    }
+  }
+  setTimeout(function(){
+    document.addEventListener('click', outsideClick);
+  }, 100);
+}
+
+function saveDialogueLine(card, editor){
+  var newText = editor.innerText.trim();
+  if(!newText){
+    alert('\u5185\u5BB9\u4E0D\u80FD\u4E3A\u7A7A');
+    return;
+  }
+  
+  var textSpan = card.querySelector('.dlg-text');
+  textSpan.textContent = newText;
+  textSpan.style.display = '';
+  editor.remove();
+  
+  // 恢复编辑按钮
+  var editBtn = card.querySelector('.sentence-btn[onclick^="editDialogueLine"]');
+  if(editBtn){
+    editBtn.textContent = '\u270F\uFE0F';
+    editBtn.onclick = function() { editDialogueLine(this); };
+  }
+  
+  // 更新 extractedDialogue 数据
+  var rowNum = card.querySelector('.row-num');
+  if(rowNum){
+    var idx = parseInt(rowNum.textContent) - 1;
+    // 找到对应的 dialogue 和行索引
+    var currentIdx = 0;
+    for(var i = 0; i < extractedDialogue.length; i++){
+      var lines = (extractedDialogue[i].content || extractedDialogue[i].textVi || extractedDialogue[i].text || '').split('\n');
+      for(var j = 0; j < lines.length; j++){
+        if(currentIdx === idx){
+          lines[j] = newText;
+          var dlg = extractedDialogue[i];
+          dlg.content = lines.join('\n');
+          dlg.textVi = dlg.content;
+          dlg.text = dlg.content;
+          // 保存到本地存储
+          localStorage.setItem('classroom_notes_extracted_dialogue', JSON.stringify(extractedDialogue));
+          return;
+        }
+        if(lines[j].trim()) currentIdx++;
+      }
+    }
+  }
+}
 
 // ===== 右侧重点提取 =====
 
@@ -656,10 +1080,11 @@ function switchTab(tab){
   var ca=document.getElementById('content-area'),ta=document.getElementById('test-area'),ia=document.getElementById('input-area'),il=document.getElementById('input-label');
   if(tab==='test'){
     ca.style.display='none';
-    ta.classList.add('active');
+    ia.style.display='none';
+    ta.style.display='flex';
     renderTestResults();
   }else{
-    ta.classList.remove('active');
+    ta.style.display='none';
     ca.style.display='flex';
     ia.style.display='flex';
     var labels={notes:'\u5F55\u5165\u7B14\u8BB0',exercises:'\u5F55\u5165\u7EC3\u4E60',dialogue:'\u8BFE\u6587\u5185\u5BB9\uFF08\u53EA\u8BFB\uFF09'};
@@ -679,6 +1104,73 @@ function enterTest(){if(!currentTextbook||!currentUnit){alert('\u8BF7\u5148\u900
 // ===== 测试 =====
 
 function renderTestResults(){var empty=document.getElementById('test-empty');var c=document.getElementById('test-results');var testRecs=records.filter(function(r){return r.tabType==='test';});if(!testRecs.length){empty.style.display='block';c.innerHTML='';return;}empty.style.display='none';c.innerHTML='';testRecs.forEach(function(rec){var card=document.createElement('div');card.className='test-result-card';var score=rec.score||0;var cls=score>=80?'high':score>=60?'mid':'low';card.innerHTML='<div class="test-result-score '+cls+'">'+score+'\u5206</div><div style="font-size:.85rem;color:var(--tx-m);margin-bottom:.5rem">'+(rec.date||'')+' '+(rec.weakAreas?'\u5F31\u9879: '+rec.weakAreas:'')+'</div><div style="font-size:.87rem">'+(rec.analysis||'')+'</div>';c.appendChild(card);});}
+
+// 显示测试录入表单
+function showTestInput(){
+  document.getElementById('test-input-area').style.display='block';
+  document.getElementById('btn-new-test').style.display='none';
+  document.getElementById('test-empty').style.display='none';
+}
+
+// 取消测试录入
+function cancelTest(){
+  document.getElementById('test-input-area').style.display='none';
+  document.getElementById('btn-new-test').style.display='inline-block';
+  document.getElementById('test-score').value='';
+  document.getElementById('test-weak').value='';
+  document.getElementById('test-analysis').value='';
+  renderTestResults();
+}
+
+// 提交测试记录
+async function submitTest(){
+  var score=parseInt(document.getElementById('test-score').value)||0;
+  var weakAreas=document.getElementById('test-weak').value.trim();
+  var analysis=document.getElementById('test-analysis').value.trim();
+  
+  if(score<0||score>100){alert('分数必须在0-100之间');return;}
+  
+  var fixedUserId=getFixedUserId();
+  var newRecord={
+    id:'local_'+Date.now(),
+    userId:fixedUserId,
+    textbook:currentTextbook||'',
+    unit:currentUnit||'',
+    tabType:'test',
+    score:score,
+    weakAreas:weakAreas,
+    analysis:analysis,
+    date:new Date().toLocaleDateString('zh-CN')
+  };
+  
+  records.push(newRecord);
+  var localKey='classroom_notes_records_'+(currentTextbook||'unknown')+'_'+(currentUnit||'unknown');
+  localStorage.setItem(localKey,JSON.stringify(records));
+  
+  if(!currentTextbook||!currentUnit){alert('请先选择课本和单元');return;}
+  try{
+    var doc=await db.collection('cn_records').add({
+      userId:fixedUserId,
+      textbook:currentTextbook,
+      unit:currentUnit,
+      tabType:'test',
+      score:score,
+      weakAreas:weakAreas,
+      analysis:analysis,
+      date:newRecord.date,
+      createdAt:firebase.firestore.FieldValue.serverTimestamp()
+    });
+    newRecord.id=doc.id;
+    localStorage.setItem(localKey,JSON.stringify(records));
+    cancelTest();
+    renderTestResults();
+  }catch(e){
+    console.error('保存测试失败:',e);
+    alert('保存失败，测试已保存在本地');
+    cancelTest();
+    renderTestResults();
+  }
+}
 
 // ===== 音频 =====
 
@@ -760,11 +1252,18 @@ function escHtml(str){if(!str)return'';return String(str).replace(/&/g,'&amp;').
     var savedTab = localStorage.getItem('classroom_notes_last_tab');
     if(savedTab){
       switchTab(savedTab);
-    } else {
-      renderWordList();
-      renderWhiteboard();
     }
+    // 无论是否从 localStorage 恢复了页签，都强制渲染单词列表和白板
+    // 确保所有缓存的数据都能被正确地渲染到 DOM
+    renderWordList();
+    renderWhiteboard();
+
     window._isInitializing = false;
+    
+    // 初始化完成后，尝试从云端同步数据（增量）
+    if(currentTextbook && currentUnit && currentUser){
+      loadAllData();
+    }
   }
 })();
 
