@@ -164,7 +164,11 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
       <div class="wb-empty" style="padding:.5rem;font-size:.78rem;color:#94a3b8">标记的难点词将在这里</div>
     </div>
   </div>
-  
+  <div class="extract-section">
+    <div class="extract-section-title">难点</div>
+    <div class="extract-list" id="extract-hard">
+      <div class="wb-empty" style="padding:.5rem;font-size:.78rem;color:#94a3b8">标记的难点词将在这里</div>
+    </div>
   </div>
   <div class="extract-section">
     <div class="extract-section-title">注释</div>
@@ -578,23 +582,18 @@ document.getElementById('sentence-input').addEventListener('mouseup',function(e)
     var range=sel.getRangeAt(0);
     if(this.contains(range.commonAncestorContainer)){
       window._selRange=range.cloneRange();
-      // Ctrl 多选：追加到 selectedWords
-      if(e.ctrlKey){
-        var w=range.toString().trim();
-        if(w&&selectedWords.indexOf(w)===-1){selectedWords.push(w);}
-      }
     }
   }
 });
-// 主输入框：鼠标释放时保存选区 + Ctrl 多选
-document.getElementById('sentence-input').addEventListener('mouseup', function(e){
+document.addEventListener('selectionchange',function(e){
   var sel=window.getSelection();
   if(!sel.isCollapsed&&sel.rangeCount){
     var range=sel.getRangeAt(0);
-    if(this.contains(range.commonAncestorContainer)){
+    var inp=document.getElementById('sentence-input');
+    if(inp&&inp.contains(range.commonAncestorContainer)){
       window._selRange=range.cloneRange();
       // Ctrl 多选：追加到 selectedWords
-      if(e.ctrlKey){
+      if(e.ctrlKey||window.event&&window.event.ctrlKey){
         var w=range.toString().trim();
         if(w&&selectedWords.indexOf(w)===-1){selectedWords.push(w);}
       }
@@ -616,10 +615,6 @@ document.getElementById('sentence-input').addEventListener('contextmenu',functio
   menu.style.left=Math.max(8,Math.min(x,window.innerWidth-menuW-12))+'px';
   menu.style.top=Math.max(8,Math.min(y,window.innerHeight-menuH-12))+'px';
   menu.classList.add('show');
-  // 显示已选词数量
-  if(selectedWords.length>0){
-    console.log('[右键] 当前已选词:', selectedWords);
-  }
 });
 
 // 点击其他区域关闭菜单
@@ -678,16 +673,6 @@ async function ctxMarkSingle(word,type){
   
   // 先保存到本地存储
   var fixedUserId=getFixedUserId();
-  // 查找中文翻译
-  var zhHint='';
-  if(wordList&&wordList.length){
-    for(var wi=0;wi<wordList.length;wi++){
-      if(wordList[wi].vi===word){
-        zhHint=wordList[wi].zh||'';
-        break;
-      }
-    }
-  }
   var newMark={
     id:'local_mark_'+Date.now()+'_'+Math.random().toString(36).substr(2,5),
     userId:fixedUserId,
@@ -696,8 +681,7 @@ async function ctxMarkSingle(word,type){
     tabType:currentTab,
     word:word,
     type:type,
-    extra:extra||null,
-    zh:zhHint||null
+    extra:extra||null
   };
   // 去重
   var dup=marks.some(function(m){return m.word===word&&m.type===type;});
@@ -966,22 +950,17 @@ async function editRecord(id){
       var range=sel.getRangeAt(0);
       if(editEd.contains(range.commonAncestorContainer)){
         window._selRange=range.cloneRange();
-        // Ctrl 多选：追加到 selectedWords
-        if(e.ctrlKey){
-          var w=range.toString().trim();
-          if(w&&selectedWords.indexOf(w)===-1){selectedWords.push(w);}
-        }
       }
     }
   });
-    // 编辑框也支持 Ctrl 多选（用 mouseup 事件检测 ctrlKey）
-  editEd.addEventListener('mouseup',function(e){
+    // 编辑框也支持 Ctrl 多选
+  editEd.addEventListener('selectionchange',function(e){
     var sel=window.getSelection();
     if(!sel.isCollapsed&&sel.rangeCount){
       var range=sel.getRangeAt(0);
       if(editEd.contains(range.commonAncestorContainer)){
         window._selRange=range.cloneRange();
-        if(e.ctrlKey){
+        if(e.ctrlKey||window.event&&window.event.ctrlKey){
           var w=range.toString().trim();
           if(w&&selectedWords.indexOf(w)===-1){selectedWords.push(w);}
         }
@@ -1074,11 +1053,6 @@ function editDialogueLine(btn){
       var range = sel.getRangeAt(0);
       if(editorDiv.contains(range.commonAncestorContainer)){
         window._selRange = range.cloneRange();
-        // Ctrl 多选：追加到 selectedWords
-        if(e.ctrlKey){
-          var w=range.toString().trim();
-          if(w&&selectedWords.indexOf(w)===-1){selectedWords.push(w);}
-        }
       }
     }
   });
@@ -1190,10 +1164,8 @@ function renderExtractList(){
     if(!inWordList&&cHard){
       var d=document.createElement('div');
       d.className='extract-item word-type';
-      // 优先使用 marks 中存储的 zh，其次使用 zhHint
-      var displayZh=m.zh||zhHint||'';
       d.innerHTML='<div class="extract-word">'+escHtml(m.word)+'</div>'+
-        (displayZh?'<div class="extract-zh">'+escHtml(displayZh)+'</div>':'')+
+        (zhHint?'<span class="extract-zh">'+escHtml(zhHint)+'</span>':'')+
         '<div class="extract-meta" style="display:none">难点</div>';
       cHard.appendChild(d);
     }
