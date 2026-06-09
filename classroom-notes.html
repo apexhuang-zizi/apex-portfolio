@@ -76,6 +76,12 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .extract-item.word-type{background:#ede9fe;border-left:3px solid var(--pri)}
 .extract-item.grammar-type{background:#fef9c3;border-left:3px solid #ca8a04}
 .word-selected{background:rgba(99,102,241,.15);border-radius:2px;outline:2px solid #6366f1}
+    .word-marked{font-weight:700;color:#2563eb;text-decoration:underline;text-decoration-color:#93c5fd}
+    .extract-section .extract-item{padding:.32rem .55rem;font-size:.79rem;margin-bottom:.22rem}
+    .extract-item .extract-word{font-weight:600;margin-bottom:.05rem}
+    .extract-item .extract-zh{font-size:.7rem;color:#64748b;margin-top:.08rem;display:block}
+    .note-type{background:#f0fdf4;border-left:3px solid #22c55e}
+
 .extract-word{font-weight:600;margin-bottom:.1rem}
 .extract-meta{font-size:.7rem;color:var(--tx-m)}
 .side-r-footer{padding:.45rem;border-top:1px solid var(--bd);flex-shrink:0}
@@ -159,6 +165,18 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
     </div>
   </div>
   <div class="extract-section">
+    <div class="extract-section-title">难点</div>
+    <div class="extract-list" id="extract-hard">
+      <div class="wb-empty" style="padding:.5rem;font-size:.78rem;color:#94a3b8">标记的难点词将在这里</div>
+    </div>
+  </div>
+  <div class="extract-section">
+    <div class="extract-section-title">注释</div>
+    <div class="extract-list" id="extract-note">
+      <div class="wb-empty" style="padding:.5rem;font-size:.78rem;color:#94a3b8">注释内容将在这里</div>
+    </div>
+  </div>
+  <div class="extract-section">
     <div class="extract-section-title">语法</div>
     <div class="extract-list" id="extract-grammar">
       <div class="wb-empty" style="padding:.5rem;font-size:.78rem;color:#94a3b8">标记的语法点将在这里</div>
@@ -192,7 +210,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 var firebaseConfig={apiKey:"AIzaSyCMPFTNEBWXA_EnkF7Yk__F1gdHYfPg8kM",authDomain:"vietnames-data.firebaseapp.com",projectId:"vietnames-data",storageBucket:"vietnames-data.firebasestorage.app",messagingSenderId:"1234567890",appId:"1:1234567890:web:abcdef1234567890"};
 firebase.initializeApp(firebaseConfig);
 var db=firebase.firestore(),auth=firebase.auth();
-var currentUser=null,currentTextbook='',currentUnit='',currentTab='notes',wordList=[],extractedDialogue=[],records=[],marks=[];
+var currentUser=null,currentTextbook='',currentUnit='',currentTab='notes',wordList=[],extractedDialogue=[],records=[],marks=[],selectedWords=[];
 window._isInitializing=true;
 // 获取固定用户标识（优先使用URL参数中的用户名，其次是本地存储的固定ID）
 function getFixedUserId(){
@@ -545,7 +563,7 @@ async function extractRecords(){
   }
 }
 
-function renderWordList(){var c=document.getElementById('word-list');if(!wordList.length){c.innerHTML='<div class="wb-empty">\u9009\u62E9\u8BFE\u672C\u548C\u5355\u5143\u540E<br>\u70B9\u51FB\u300C\u63D0\u53D6\u5355\u8BCD\u300D\u6309\u94AE</div>';return;}c.innerHTML='';wordList.forEach(function(w,i){var d=document.createElement('div');d.className='word-item';d.innerHTML='<span class="word-vi">'+escHtml(w.vi)+'</span><span class="word-zh">'+escHtml(w.zh)+'</span><button class="tts-btn" onclick="event.stopPropagation();tts(\''+w.vi.replace(/'/g,"\\'")+'\')">\uD83D\uDD0A</button>';d.onclick=function(){d.classList.toggle('show-zh');};c.appendChild(d);});}
+function renderWordList(){var c=document.getElementById('word-list');if(!wordList.length){c.innerHTML='<div class="wb-empty">选择课本和单元后<br>点击「提取单词」按钮</div>';return;}c.innerHTML='';wordList.forEach(function(w,i){var d=document.createElement('div');d.className='word-item';var isMarked=marks.some(function(m){return m.word===w.vi&&(m.type==='hard'||m.type==='bg');});if(isMarked)d.classList.add('word-marked');d.innerHTML='<span class="word-vi">'+escHtml(w.vi)+'</span><span class="word-zh">'+escHtml(w.zh)+'</span><button class="tts-btn" onclick="event.stopPropagation();tts(\''+w.vi.replace(/'/g,'\\\'')+'\')">🔊</button>';d.onclick=function(){d.classList.toggle('show-zh');};c.appendChild(d);});}
 
 // ===== 右键菜单 & 富文本标记 =====
 
@@ -567,13 +585,18 @@ document.getElementById('sentence-input').addEventListener('mouseup',function(e)
     }
   }
 });
-document.addEventListener('selectionchange',function(){
+document.addEventListener('selectionchange',function(e){
   var sel=window.getSelection();
   if(!sel.isCollapsed&&sel.rangeCount){
     var range=sel.getRangeAt(0);
     var inp=document.getElementById('sentence-input');
     if(inp&&inp.contains(range.commonAncestorContainer)){
       window._selRange=range.cloneRange();
+      // Ctrl 多选：追加到 selectedWords
+      if(e.ctrlKey||window.event&&window.event.ctrlKey){
+        var w=range.toString().trim();
+        if(w&&selectedWords.indexOf(w)===-1){selectedWords.push(w);}
+      }
     }
   }
 });
@@ -604,65 +627,87 @@ document.addEventListener('click',function(e){
 // ctxMark：根据类型弹出输入框或直接标记，然后写入 DOM + 数据库
 async function ctxMark(type){
   document.getElementById('ctx-menu').classList.remove('show');
-  var range=window._selRange;
-  if(!range)return;
-  var extra=null;
-  if(type==='note'){
-    extra=prompt('\u8BF7\u8F93\u5165\u6CE8\u91CA\u5185\u5BB9:');
-    if(extra===null)return;
-  }else if(type==='antonym'){
-    extra=prompt('\u8BF7\u8F93\u5165\u53CD\u4E49\u8BCD:');
-    if(extra===null)return;
-  }else if(type==='synonym'){
-    extra=prompt('\u8BF7\u8F93\u5165\u540C\u4E49\u8BCD:');
-    if(extra===null)return;
-  }
-  var word=range.toString().trim();
-  if(!word)return;
-  // 写入富文本 DOM
-  wrapSelection(range,type,extra);
-  window._selRange=null;
   
-  // 先保存到本地存储
-  var fixedUserId = getFixedUserId();
-  var newMark = {
-    id: 'local_mark_' + Date.now(),
-    userId: fixedUserId,
-    textbook: currentTextbook || '',
-    unit: currentUnit || '',
-    tabType: currentTab,
-    word: word,
-    type: type,
-    extra: extra || null
-  };
-  marks.push(newMark);
-  var localMarksKey = 'classroom_notes_marks_' + (currentTextbook || 'unknown') + '_' + (currentUnit || 'unknown');
-  localStorage.setItem(localMarksKey, JSON.stringify(marks));
-  renderExtractList();
-  
-  // 存入数据库
-  if(!currentTextbook||!currentUnit){
-    console.warn('\u8BFE\u7A0B\u4FE1\u606F\u4E0D\u5B8C\u6574');
+  // 批量标记模式：如果 selectedWords 有内容
+  if(selectedWords.length>0){
+    var wordsToMark=selectedWords.slice();
+    selectedWords=[];
+    for(var wi=0;wi<wordsToMark.length;wi++){
+      var w=wordsToMark[wi].trim();
+      if(!w)continue;
+      await ctxMarkSingle(w,type);
+    }
+    renderExtractList();
+    renderWordList();
     return;
   }
-  try{
-    var doc=await db.collection('cn_marks').add({
-      userId:fixedUserId,
-      textbook:currentTextbook,
-      unit:currentUnit,
-      tabType:currentTab,
-      word:word,
-      type:type,
-      extra:extra||null,
-      createdAt:firebase.firestore.FieldValue.serverTimestamp()
-    });
-    // 更新本地标记的ID为云端ID
-    newMark.id = doc.id;
-    localStorage.setItem(localMarksKey, JSON.stringify(marks));
-    renderExtractList();
-  }catch(e){
-    console.error('\u4FDD\u5B58\u6807\u8BB0\u5931\u8D25:',e);
-    alert('\u4FDD\u5B58\u6807\u8BB0\u5931\u8D25\uFF0C\u6807\u8BB0\u5DF2\u4FDD\u5B58\u5728\u672C\u5730');
+  
+  // 单次标记模式
+  var range=window._selRange;
+  if(!range)return;
+  var word=range.toString().trim();
+  if(!word)return;
+  await ctxMarkSingle(word,type);
+  window._selRange=null;
+  renderExtractList();
+  renderWordList();
+}
+
+async function ctxMarkSingle(word,type){
+  var extra=null;
+  if(type==='note'){
+    extra=prompt('请输入注释内容:');
+    if(extra===null)return;
+  }else if(type==='antonym'){
+    extra=prompt('请输入反义词:');
+    if(extra===null)return;
+  }else if(type==='synonym'){
+    extra=prompt('请输入同义词:');
+    if(extra===null)return;
+  }
+  
+  // 写入富文本 DOM（如果 _selRange 存在）
+  if(window._selRange){
+    wrapSelection(window._selRange,type,extra);
+  }
+  
+  // 先保存到本地存储
+  var fixedUserId=getFixedUserId();
+  var newMark={
+    id:'local_mark_'+Date.now()+'_'+Math.random().toString(36).substr(2,5),
+    userId:fixedUserId,
+    textbook:currentTextbook||'',
+    unit:currentUnit||'',
+    tabType:currentTab,
+    word:word,
+    type:type,
+    extra:extra||null
+  };
+  // 去重
+  var dup=marks.some(function(m){return m.word===word&&m.type===type;});
+  if(!dup){marks.push(newMark);}
+  
+  var localMarksKey='classroom_notes_marks_'+(currentTextbook||'unknown')+'_'+(currentUnit||'unknown');
+  localStorage.setItem(localMarksKey,JSON.stringify(marks));
+  
+  // 存入数据库
+  if(currentTextbook&&currentUnit){
+    try{
+      var doc=await db.collection('cn_marks').add({
+        userId:fixedUserId,
+        textbook:currentTextbook,
+        unit:currentUnit,
+        tabType:currentTab,
+        word:word,
+        type:type,
+        extra:extra||null,
+        createdAt:firebase.firestore.FieldValue.serverTimestamp()
+      });
+      newMark.id=doc.id;
+      localStorage.setItem(localMarksKey,JSON.stringify(marks));
+    }catch(e){
+      console.error('保存标记失败:',e);
+    }
   }
 }
 
@@ -908,6 +953,21 @@ async function editRecord(id){
       }
     }
   });
+    // 编辑框也支持 Ctrl 多选
+  editEd.addEventListener('selectionchange',function(e){
+    var sel=window.getSelection();
+    if(!sel.isCollapsed&&sel.rangeCount){
+      var range=sel.getRangeAt(0);
+      if(editEd.contains(range.commonAncestorContainer)){
+        window._selRange=range.cloneRange();
+        if(e.ctrlKey||window.event&&window.event.ctrlKey){
+          var w=range.toString().trim();
+          if(w&&selectedWords.indexOf(w)===-1){selectedWords.push(w);}
+        }
+      }
+    }
+  });
+  
   editEd.addEventListener('contextmenu',function(e){
     e.preventDefault();
     var sel=window.getSelection();
@@ -1076,48 +1136,81 @@ function saveDialogueLine(card, editor){
 
 function renderExtractList(){
   var cHard=document.getElementById('extract-hard');
+  var cNote=document.getElementById('extract-note');
   var cGrammar=document.getElementById('extract-grammar');
-  var wMarks=marks.filter(function(m){return m.type==='hard'||m.type==='bg';});
+  var hMarks=marks.filter(function(m){return m.type==='hard'||m.type==='bg';});
+  var nMarks=marks.filter(function(m){return m.type==='note';});
   var gMarks=marks.filter(function(m){return m.type==='grammar';});
   
+  // 难点词：只显示不在 wordList 中的词
   var seenHard={};
-  var seenGrammar={};
-  
-  if(!wMarks.length&&!gMarks.length){
-    if(cHard)cHard.innerHTML='<div class="wb-empty" style="padding:.5rem;font-size:.78rem;color:#94a3b8">标记的词语和语法将自动汇聚到这里</div>';
-    if(cGrammar)cGrammar.innerHTML='';
-    return;
-  }
-  
   if(cHard)cHard.innerHTML='';
-  if(cGrammar)cGrammar.innerHTML='';
-  
-  wMarks.forEach(function(m){
+  hMarks.forEach(function(m){
     if(seenHard[m.word])return;
     seenHard[m.word]=true;
-    var d=document.createElement('div');d.className='extract-item word-type';
+    // 检查是否在单词表中
+    var inWordList=false;
     var zhHint='';
     if(wordList&&wordList.length){
       for(var wi=0;wi<wordList.length;wi++){
-        if(wordList[wi].vi===m.word&&wordList[wi].zh){
-          zhHint=' <span style="color:#7c3aed;font-size:.72rem">['+escHtml(wordList[wi].zh)+']</span>';
+        if(wordList[wi].vi===m.word){
+          inWordList=true;
+          zhHint=wordList[wi].zh||'';
           break;
         }
       }
     }
-    d.innerHTML='<div class="extract-word">'+escHtml(m.word)+zhHint+'</div>'+
-      '<div class="extract-meta">'+(m.type==='hard'?'⚠ 难点':'背景')+(m.extra?' — '+escHtml(m.extra):'')+'</div>';
-    if(cHard)cHard.appendChild(d);
+    // 只在不在单词表中时显示到难点栏
+    if(!inWordList&&cHard){
+      var d=document.createElement('div');
+      d.className='extract-item word-type';
+      d.innerHTML='<div class="extract-word">'+escHtml(m.word)+'</div>'+
+        (zhHint?'<span class="extract-zh">'+escHtml(zhHint)+'</span>':'')+
+        '<div class="extract-meta" style="display:none">难点</div>';
+      cHard.appendChild(d);
+    }
   });
+  if(cHard&&!cHard.children.length){
+    cHard.innerHTML='<div class="wb-empty" style="padding:.5rem;font-size:.78rem;color:#94a3b8">标记的难点词将在这里</div>';
+  }
   
+  // 注释：显示所有 note 类型标记
+  var seenNote={};
+  if(cNote)cNote.innerHTML='';
+  nMarks.forEach(function(m){
+    if(seenNote[m.word])return;
+    seenNote[m.word]=true;
+    if(cNote){
+      var d=document.createElement('div');
+      d.className='extract-item note-type';
+      d.innerHTML='<div class="extract-word">'+escHtml(m.word)+'</div>'+
+        '<div class="extract-meta">'+(m.extra||'无注释')+'</div>'+
+        '<div class="extract-meta" style="display:none">注释</div>';
+      cNote.appendChild(d);
+    }
+  });
+  if(cNote&&!cNote.children.length){
+    cNote.innerHTML='<div class="wb-empty" style="padding:.5rem;font-size:.78rem;color:#94a3b8">注释内容将在这里</div>';
+  }
+  
+  // 语法点
+  var seenGrammar={};
+  if(cGrammar)cGrammar.innerHTML='';
   gMarks.forEach(function(m){
     if(seenGrammar[m.word])return;
     seenGrammar[m.word]=true;
-    var d=document.createElement('div');d.className='extract-item grammar-type';
-    d.innerHTML='<div class="extract-word">'+escHtml(m.word)+'</div>'+
-      '<div class="extract-meta">语法'+(m.extra?' — '+escHtml(m.extra):'')+'</div>';
-    if(cGrammar)cGrammar.appendChild(d);
+    if(cGrammar){
+      var d=document.createElement('div');
+      d.className='extract-item grammar-type';
+      d.innerHTML='<div class="extract-word">'+escHtml(m.word)+'</div>'+
+        (m.extra?'<div class="extract-meta">'+escHtml(m.extra)+'</div>':'')+
+        '<div class="extract-meta" style="display:none">语法</div>';
+      cGrammar.appendChild(d);
+    }
   });
+  if(cGrammar&&!cGrammar.children.length){
+    cGrammar.innerHTML='<div class="wb-empty" style="padding:.5rem;font-size:.78rem;color:#94a3b8">标记的语法点将在这里</div>';
+  }
 }
 
 // ===== 页签切换 =====
