@@ -659,13 +659,13 @@ function wrapSelection(range,type,extra){
     var sp=document.createElement('span');
     sp.className=cls;
     sp.dataset.extra=(extra||'');
-    range.surroundContents(sp);
+    try{range.surroundContents(sp);}catch(e){console.warn('surroundContents failed:',e);}
   }else{
     // 语法/难点：样式标记
     var sp=document.createElement('span');
     sp.className=cls;
     sp.dataset.extra=(extra||'');
-    range.surroundContents(sp);
+    try{range.surroundContents(sp);}catch(e){console.warn('surroundContents failed:',e);}
   }
   // 选中新 span，保持词后位置，方便继续分段选择
   sel.removeAllRanges();
