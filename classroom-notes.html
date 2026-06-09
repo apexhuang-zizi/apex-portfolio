@@ -869,12 +869,13 @@ async function editRecord(id){
   if(!rec)return;
   // 弹出编辑框，加载内容到临时编辑器
   var overlay=document.createElement('div');
+  overlay.id='edit-overlay';
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:5000;display:flex;align-items:center;justify-content:center;padding:1rem';
   var box=document.createElement('div');
   box.style.cssText='background:#fff;border-radius:12px;padding:1.2rem;width:100%;max-width:600px;max-height:80vh;display:flex;flex-direction:column;gap:.6rem;box-shadow:0 8px 32px rgba(0,0,0,.2)';
   box.innerHTML='<div style="font-weight:700;font-size:.95rem">\u7F16\u8F91\u5185\u5BB9</div>'+
     '<div id="edit-editor" contenteditable="true" style="border:2px solid #e2e8f0;border-radius:8px;padding:.5rem .7rem;min-height:120px;max-height:400px;overflow-y:auto;font-size:.9rem;line-height:1.6;outline:none" onfocus="this.style.borderColor=\'#6366f1\'" onblur="this.style.borderColor=\'#e2e8f0\'">'+rec.html+'</div>'+
-    '<div style="display:flex;gap:.5rem;justify-content:flex-end"><button onclick="this.closest(\'div\').parentNode.remove()" style="background:none;border:1px solid #e2e8f0;border-radius:8px;padding:.35rem .7rem;cursor:pointer;font-size:.83rem">\u53D6\u6D88</button><button id="edit-save-btn" style="background:#6366f1;color:#fff;border:none;border-radius:8px;padding:.35rem .8rem;cursor:pointer;font-size:.83rem;font-weight:600">\u4FDD\u5B58</button></div>';
+    '<div style="display:flex;gap:.5rem;justify-content:flex-end"><button onclick="document.getElementById(\'edit-overlay\').remove()" style="background:none;border:1px solid #e2e8f0;border-radius:8px;padding:.35rem .7rem;cursor:pointer;font-size:.83rem">\u53D6\u6D88</button><button id="edit-save-btn" style="background:#6366f1;color:#fff;border:none;border-radius:8px;padding:.35rem .8rem;cursor:pointer;font-size:.83rem;font-weight:600">\u4FDD\u5B58</button></div>';
   overlay.appendChild(box);
   document.body.appendChild(overlay);
   document.getElementById('edit-editor').focus();
