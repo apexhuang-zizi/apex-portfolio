@@ -90,7 +90,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 
 /* 右键菜单 */
 .ctx-wrap{position:relative;display:inline}
-.ctx-menu{display:none;position:fixed;background:var(--sf);border:1px solid var(--bd);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:2000;min-width:150px;padding:.3rem 0}
+.ctx-menu{display:none;position:fixed;background:var(--sf);border:1px solid var(--bd);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:99999;min-width:150px;padding:.3rem 0}
 .ctx-menu.show{display:block}
 .ctx-item{padding:.4rem .8rem;cursor:pointer;font-size:.82rem;transition:background .1s;position:relative;user-select:none}
 .ctx-item:hover{background:var(--bg)}
@@ -186,12 +186,6 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 <div class="ctx-item" onclick="ctxMark('hard')">⚠ 难点</div>
 <div class="ctx-sep"></div>
 <div class="ctx-item" onclick="ctxMark('note')">💬 注释</div>
-<div class="ctx-item has-sub" data-sub="relation-sub">🔗 关联
-  <div class="ctx-sub" id="relation-sub">
-    <div class="ctx-sub-item" onclick="event.stopPropagation();ctxMark('antonym')">↔ 反义词</div>
-    <div class="ctx-sub-item" onclick="event.stopPropagation();ctxMark('synonym')">↔ 同义词</div>
-  </div>
-</div>
 </div>
 
 <!-- 白板 tooltip 容器 -->
@@ -570,45 +564,36 @@ document.getElementById('sentence-input').addEventListener('input',function(){
 });
 
 // 每次松开鼠标/松开选择时：保存当前选区（供右键菜单和标记使用）
-document.getElementById('sentence-input').addEventListener('mouseup',function(e){
-  var sel=window.getSelection();
-  if(!sel.isCollapsed&&sel.rangeCount){
-    var range=sel.getRangeAt(0);
-    if(this.contains(range.commonAncestorContainer)){
-      window._selRange=range.cloneRange();
-    }
-  }
+document.getElementById('sentence-input').addEventListener('mouseup', function(e) {
+  handleMouseUp(e, this);
 });
-document.addEventListener('selectionchange',function(e){
-  var sel=window.getSelection();
-  if(!sel.isCollapsed&&sel.rangeCount){
-    var range=sel.getRangeAt(0);
-    var inp=document.getElementById('sentence-input');
-    if(inp&&inp.contains(range.commonAncestorContainer)){
-      window._selRange=range.cloneRange();
-      // Ctrl 多选：追加到 selectedWords
-      if(e.ctrlKey||window.event&&window.event.ctrlKey){
-        var w=range.toString().trim();
-        if(w&&selectedWords.indexOf(w)===-1){selectedWords.push(w);}
+// selectionchange：支持 sentence-input 和 editorDiv（通过 handleSelectionChange）
+document.addEventListener('selectionchange', function(e) {
+  var sel = window.getSelection();
+  if(!sel.isCollapsed && sel.rangeCount){
+    var range = sel.getRangeAt(0);
+    var inp = document.getElementById('sentence-input');
+    var editorDivs = document.querySelectorAll('.dlg-editor');
+    // 检查是否在 sentence-input 中
+    if(inp && inp.contains(range.commonAncestorContainer)){
+      handleSelectionChange(e, inp);
+    } else {
+      // 检查是否在任意 editorDiv 中
+      for(var i = 0; i < editorDivs.length; i++){
+        if(editorDivs[i].contains(range.commonAncestorContainer)){
+          handleSelectionChange(e, editorDivs[i]);
+          break;
+        }
       }
     }
+    // 检查是否在 editEd 中（编辑弹窗）
+    if(window.editEd && window.editEd.contains(range.commonAncestorContainer)){
+      handleSelectionChange(e, window.editEd);
+    }
   }
 });
-// 鼠标右键：弹出自定义菜单
-document.getElementById('sentence-input').addEventListener('contextmenu',function(e){
-  e.preventDefault();
-  var sel=window.getSelection();
-  if(sel.isCollapsed||!sel.rangeCount)return;
-  var range=sel.getRangeAt(0);
-  // 检查选区是否在 contenteditable 内
-  if(!this.contains(range.commonAncestorContainer))return;
-  window._selRange=range.cloneRange();
-  var menu=document.getElementById('ctx-menu');
-  var x=e.clientX,y=e.clientY;
-  var menuW=menu.offsetWidth||160,menuH=menu.offsetHeight||200;
-  menu.style.left=Math.max(8,Math.min(x,window.innerWidth-menuW-12))+'px';
-  menu.style.top=Math.max(8,Math.min(y,window.innerHeight-menuH-12))+'px';
-  menu.classList.add('show');
+document.getElementById('sentence-input').addEventListener('contextmenu', function(e) {
+  handleContextMenu(e, this);
 });
 
 // 点击其他区域关闭菜单
@@ -617,6 +602,57 @@ document.addEventListener('click',function(e){
     document.getElementById('ctx-menu').classList.remove('show');
   }
 });
+
+// ========================================
+// 共享鼠标事件处理函数（笔记录入框 + 编辑框）
+// ========================================
+
+// 共享 mouseup 处理：保存选区
+function handleMouseUp(e, inputElement) {
+  var sel = window.getSelection();
+  if(!sel.isCollapsed && sel.rangeCount){
+    var range = sel.getRangeAt(0);
+    if(inputElement.contains(range.commonAncestorContainer)){
+      window._selRange = range.cloneRange();
+    }
+  }
+}
+
+// 共享 contextmenu 处理：显示右键菜单
+function handleContextMenu(e, inputElement) {
+  e.preventDefault();
+  var sel = window.getSelection();
+  if(sel.isCollapsed || !sel.rangeCount) return;
+  var range = sel.getRangeAt(0);
+  if(!inputElement.contains(range.commonAncestorContainer)) return;
+  window._selRange = range.cloneRange();
+  var menu = document.getElementById('ctx-menu');
+  var x = e.clientX, y = e.clientY;
+  var menuW = menu.offsetWidth || 160, menuH = menu.offsetHeight || 200;
+  menu.style.left = Math.max(8, Math.min(x, window.innerWidth - menuW - 12)) + 'px';
+  menu.style.top = Math.max(8, Math.min(y, window.innerHeight - menuH - 12)) + 'px';
+  menu.classList.add('show');
+}
+
+// 全局 Ctrl 键状态跟踪（selectionchange 事件不携带 ctrlKey）
+document.addEventListener('keydown', function(e) { if(e.key === 'Control') window._ctrlPressed = true; });
+document.addEventListener('keyup', function(e) { if(e.key === 'Control') window._ctrlPressed = false; });
+
+// 共享 selectionchange 处理：Ctrl 多选
+function handleSelectionChange(e, inputElement) {
+  var sel = window.getSelection();
+  if(!sel.isCollapsed && sel.rangeCount){
+    var range = sel.getRangeAt(0);
+    if(inputElement.contains(range.commonAncestorContainer)){
+      window._selRange = range.cloneRange();
+      // Ctrl 多选：追加到 selectedWords（使用全局跟踪，因为 selectionchange 不携带 ctrlKey）
+      if(window._ctrlPressed){
+        var w = range.toString().trim();
+        if(w && selectedWords.indexOf(w) === -1){ selectedWords.push(w); }
+      }
+    }
+  }
+}
 
 // ctxMark：根据类型弹出输入框或直接标记，然后写入 DOM + 数据库
 async function ctxMark(type){
@@ -947,20 +983,7 @@ async function editRecord(id){
       }
     }
   });
-    // 编辑框也支持 Ctrl 多选
-  editEd.addEventListener('selectionchange',function(e){
-    var sel=window.getSelection();
-    if(!sel.isCollapsed&&sel.rangeCount){
-      var range=sel.getRangeAt(0);
-      if(editEd.contains(range.commonAncestorContainer)){
-        window._selRange=range.cloneRange();
-        if(e.ctrlKey||window.event&&window.event.ctrlKey){
-          var w=range.toString().trim();
-          if(w&&selectedWords.indexOf(w)===-1){selectedWords.push(w);}
-        }
-      }
-    }
-  });
+  // 编辑框的 selectionchange 已在 document 级别统一处理
   
   editEd.addEventListener('contextmenu',function(e){
     e.preventDefault();
@@ -1041,29 +1064,12 @@ function editDialogueLine(btn){
   editorDiv.focus();
   
   // 添加右键菜单支持（与笔记页面相同）
-  editorDiv.addEventListener('mouseup', function(e){
-    var sel = window.getSelection();
-    if(!sel.isCollapsed && sel.rangeCount){
-      var range = sel.getRangeAt(0);
-      if(editorDiv.contains(range.commonAncestorContainer)){
-        window._selRange = range.cloneRange();
-      }
-    }
+  editorDiv.addEventListener('mouseup', function(e) {
+    handleMouseUp(e, this);
   });
   
-  editorDiv.addEventListener('contextmenu', function(e){
-    e.preventDefault();
-    var sel = window.getSelection();
-    if(sel.isCollapsed || !sel.rangeCount) return;
-    var range = sel.getRangeAt(0);
-    if(!editorDiv.contains(range.commonAncestorContainer)) return;
-    window._selRange = range.cloneRange();
-    var menu = document.getElementById('ctx-menu');
-    var x = e.clientX, y = e.clientY;
-    var menuW = menu.offsetWidth || 160, menuH = menu.offsetHeight || 200;
-    menu.style.left = Math.max(8, Math.min(x, window.innerWidth - menuW - 12)) + 'px';
-    menu.style.top = Math.max(8, Math.min(y, window.innerHeight - menuH - 12)) + 'px';
-    menu.classList.add('show');
+  editorDiv.addEventListener('contextmenu', function(e) {
+    handleContextMenu(e, this);
   });
   
   // 更改按钮为保存图标
