@@ -165,12 +165,6 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
     </div>
   </div>
   <div class="extract-section">
-    <div class="extract-section-title">难点</div>
-    <div class="extract-list" id="extract-hard">
-      <div class="wb-empty" style="padding:.5rem;font-size:.78rem;color:#94a3b8">标记的难点词将在这里</div>
-    </div>
-  </div>
-  <div class="extract-section">
     <div class="extract-section-title">注释</div>
     <div class="extract-list" id="extract-note">
       <div class="wb-empty" style="padding:.5rem;font-size:.78rem;color:#94a3b8">注释内容将在这里</div>
@@ -1164,10 +1158,20 @@ function renderExtractList(){
     if(!inWordList&&cHard){
       var d=document.createElement('div');
       d.className='extract-item word-type';
-      d.innerHTML='<div class="extract-word">'+escHtml(m.word)+'</div>'+
-        (zhHint?'<span class="extract-zh">'+escHtml(zhHint)+'</span>':'')+
-        '<div class="extract-meta" style="display:none">难点</div>';
+      d.innerHTML='<div class="extract-word" style="display:flex;justify-content:space-between;align-items:center;gap:.5rem">'+
+        '<span style="font-weight:600">'+escHtml(m.word)+'</span>'+
+        '<span class="extract-zh" style="color:#64748b;font-size:.72rem;white-space:nowrap"></span>'+
+        '<div class="extract-meta" style="display:none">难点</div></div>';
       cHard.appendChild(d);
+      
+      // 异步翻译
+      (async function(dEl, word) {
+        var zh = await translateWord(word);
+        if (zh) {
+          var zhEl = dEl.querySelector('.extract-zh');
+          if (zhEl) zhEl.textContent = ' ' + zh;
+        }
+      })(d, m.word);
     }
   });
   if(cHard&&!cHard.children.length){
@@ -1323,6 +1327,21 @@ function ttsCard(btn,text){if(!text)return;if(currentTts&&currentTtsBtn===btn){i
 // ===== 工具函数 =====
 
 function escHtml(str){if(!str)return'';return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// Google Translate API (非官方，免费)
+async function translateWord(word) {
+  try {
+    var url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=vi&tl=zh-CN&dt=t&q=' + encodeURIComponent(word);
+    var resp = await fetch(url);
+    var data = await resp.json();
+    if (data && data[0] && data[0][0] && data[0][0][0]) {
+      return data[0][0][0];
+    }
+  } catch(e) {
+    console.error('Translation failed:', e);
+  }
+  return '';
+}
 
 // ===== URL 参数与本地缓存及草稿初始化 =====
 
