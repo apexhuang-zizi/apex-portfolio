@@ -110,6 +110,67 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 /* 白板 tooltip */
 .wb-tooltip{position:fixed;background:#1e293b;color:#fff;border-radius:6px;padding:.35rem .6rem;font-size:.75rem;max-width:220px;z-index:9999;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.3);line-height:1.5}
 .btn-test-inline{background:var(--ok);color:#fff;border:none;border-radius:8px;padding:.38rem .9rem;cursor:pointer;font-size:.85rem;font-weight:700;white-space:nowrap;transition:background .15s}.btn-test-inline:hover{background:#16a34a}.btn-test-inline:disabled{background:#94a3b8;cursor:not-allowed}
+
+/* ===== 测试试卷样式 ===== */
+.test-container{flex:1;overflow-y:auto;padding:1.5rem 2rem;background:var(--bg)}
+.test-container h2{font-size:1.3rem;color:var(--pri);margin-bottom:.8rem}
+.test-meta{display:flex;gap:1.5rem;color:var(--tx-m);font-size:.83rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.test-section{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:1.5rem;margin-bottom:1.2rem}
+.test-sec-title{font-weight:700;font-size:1rem;color:var(--pri);margin-bottom:.8rem;display:flex;align-items:center;gap:.5rem}
+.test-sec-title .badge{font-size:.72rem;background:#eef2ff;color:var(--pri);padding:.15rem .55rem;border-radius:10px;font-weight:600}
+.test-q{margin-bottom:.9rem;padding-left:.6rem;border-left:3px solid transparent;transition:border-color .15s}
+.test-q:hover{border-left-color:var(--pri)}
+.test-q-num{font-weight:700;color:var(--pri);font-size:.83rem;margin-right:.4rem}
+.test-q-text{font-size:.9rem;color:var(--tx);margin-bottom:.3rem}
+.test-q-hint{font-size:.78rem;color:var(--tx-m);margin-bottom:.3rem}
+.test-input{border:1.5px solid var(--bd);border-radius:8px;padding:.42rem .65rem;font-size:.88rem;width:100%;max-width:360px;outline:none;transition:border-color .15s;font-family:inherit}
+.test-input:focus{border-color:var(--pri)}
+.test-textarea{border:1.5px solid var(--bd);border-radius:8px;padding:.5rem .7rem;font-size:.88rem;width:100%;min-height:90px;resize:vertical;outline:none;transition:border-color .15s;font-family:inherit;line-height:1.6}
+.test-textarea:focus{border-color:var(--pri)}
+.test-actions{display:flex;gap:.6rem;justify-content:center;padding:1.2rem 0 2rem;flex-wrap:wrap}
+.btn-grade{background:var(--ok);color:#fff;border:none;border-radius:10px;padding:.55rem 1.5rem;cursor:pointer;font-size:.92rem;font-weight:700;transition:background .15s}
+.btn-grade:hover{background:#16a34a}
+.btn-grade:disabled{background:#94a3b8;cursor:not-allowed}
+.btn-export{background:var(--pri);color:#fff;border:none;border-radius:10px;padding:.55rem 1.2rem;cursor:pointer;font-size:.9rem;font-weight:600}
+.btn-export:hover{background:var(--pri-d)}
+.btn-gen{background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;border-radius:10px;padding:.6rem 1.8rem;cursor:pointer;font-size:.95rem;font-weight:700;transition:opacity .15s;box-shadow:0 2px 12px rgba(245,158,11,.3)}
+.btn-gen:hover{opacity:.9}
+.btn-gen:disabled{background:#94a3b8;box-shadow:none;cursor:not-allowed}
+
+/* Results */
+.result-card{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:1.5rem;margin-top:1.2rem}
+.result-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem}
+.result-score{font-size:2.5rem;font-weight:800}
+.result-score.high{color:var(--ok)}
+.result-score.mid{color:var(--amber)}
+.result-score.low{color:var(--er)}
+.result-detail{font-size:.87rem;color:var(--tx-m);line-height:1.7}
+.result-detail strong{color:var(--tx)}
+.result-weakness{background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:.8rem 1rem;margin-top:.8rem;font-size:.83rem;color:#991b1b;line-height:1.6}
+
+/* History */
+.test-history-card{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:1rem 1.2rem;margin-bottom:.7rem;cursor:pointer;transition:box-shadow .15s}
+.test-history-card:hover{box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.history-score{font-size:1.3rem;font-weight:800;display:inline-block;margin-right:.8rem}
+.history-score.high{color:var(--ok)}.history-score.mid{color:var(--amber)}.history-score.low{color:var(--er)}
+.history-meta{font-size:.78rem;color:var(--tx-m)}
+
+/* Loading spinner */
+.spinner{display:inline-block;width:1rem;height:1rem;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:.4rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Empty state */
+.test-empty-state{text-align:center;padding:3rem 2rem}
+.test-empty-state .icon{font-size:3rem;margin-bottom:.8rem}
+.test-empty-state p{color:var(--tx-m);font-size:.9rem;margin-bottom:.3rem}
+
+
+.test-input-inline{width:auto!important;min-width:80px;display:inline-block;vertical-align:middle;margin:0 4px;padding:2px 8px;font-size:inherit;border:none;border-bottom:2px dashed var(--accent, #4f46e5);border-radius:0;background:transparent;text-align:center}
+
+.word-bank{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;background:var(--bg-alt,#f8fafc);border:1px dashed var(--accent,#6366f1);border-radius:10px;margin-bottom:1rem}
+.word-bank-item{display:inline-block;padding:4px 12px;background:var(--bg,#fff);border:1px solid var(--border,#e2e8f0);border-radius:999px;font-size:.85rem;font-weight:600}
+.test-q-word{display:inline-block;font-weight:700;color:var(--accent,#6366f1);font-size:1.05rem;margin-right:4px}
+.test-q-zh{font-size:.8rem;color:var(--tx-m)}
 </style>
 </head>
 <body>
@@ -137,22 +198,33 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 <div class="input-area" id="input-area"><div class="input-header"><label id="input-label">✍️ 录入内容</label><button class="collapse-btn" id="collapse-btn" onclick="toggleInputCollapse()" title="隐藏/展开">▼</button></div><div class="input-main"><div class="input-box" id="sentence-input" contenteditable="true" data-placeholder="输入内容，选中文字后右键标记..."></div><div class="input-actions"><button class="btn-sm" onclick="clearInput()">🗑️ 清空</button><button class="btn-submit" onclick="submitSentence()">📤 提交</button></div></div></div>
 </div>
 <div class="test-area" id="test-area">
-  <div id="test-empty" class="wb-empty" style="display:block;padding:2rem;text-align:center">暂无测试记录<br>点击下方按钮创建新测试</div>
-  <div id="test-results" style="flex:1"></div>
-  <div id="test-input-area" style="display:none;padding:1rem;border-top:1px solid var(--bd)">
-    <div style="font-weight:700;margin-bottom:.5rem">📝 新建测试</div>
-    <div style="display:flex;gap:.5rem;margin-bottom:.5rem">
-      <input type="number" id="test-score" placeholder="分数 (0-100)" style="width:100px;padding:.3rem;border:1px solid var(--bd);border-radius:6px" min="0" max="100">
-      <input type="text" id="test-weak" placeholder="弱项 (可选，用逗号分隔)" style="flex:1;padding:.3rem;border:1px solid var(--bd);border-radius:6px">
-    </div>
-    <textarea id="test-analysis" placeholder="测试分析/备注..." style="width:100%;min-height:80px;padding:.5rem;border:1px solid var(--bd);border-radius:6px;resize:vertical;font-family:inherit"></textarea>
-    <div style="display:flex;gap:.5rem;justify-content:flex-end;margin-top:.5rem">
-      <button class="btn-sm" onclick="cancelTest()">取消</button>
-      <button class="btn-submit" onclick="submitTest()">保存测试</button>
-    </div>
+  <!-- 生成按钮 -->
+  <div id="test-gen-area" style="text-align:center;padding:2.5rem">
+    <p style="color:var(--tx-m);font-size:.95rem;margin-bottom:1rem">基于当前单元的学习内容，AI 自动生成测试试卷</p>
+    <button class="btn-gen" id="btn-generate-test" onclick="generateTestPaper()">🤖 AI 生成试卷</button>
+    <p style="font-size:.75rem;color:#94a3b8;margin-top:.8rem">需要 Gemini API Key · 使用前请确保已完成单词提取</p>
   </div>
-  <div style="padding:1rem;border-top:1px solid var(--bd);text-align:center">
-    <button class="btn-submit" id="btn-new-test" onclick="showTestInput()">➕ 新建测试</button>
+  <!-- 试卷容器 -->
+  <div id="test-paper-container" class="test-container" style="display:none"></div>
+  <!-- 加载状态 -->
+  <div id="test-loading" style="display:none;text-align:center;padding:3rem">
+    <div class="spinner" style="width:2rem;height:2rem;border-color:rgba(99,102,241,.3);border-top-color:#6366f1"></div>
+    <p style="color:var(--tx-m);margin-top:.8rem;font-size:.9rem" id="test-loading-msg">正在生成试卷...</p>
+  </div>
+  <!-- 空状态 -->
+  <div id="test-empty" style="text-align:center;padding:3rem 2rem;display:block">
+    <div style="font-size:3rem;margin-bottom:.8rem">📊</div>
+    <p style="color:var(--tx-m);font-size:.9rem">还没有测试记录</p>
+    <p style="color:#94a3b8;font-size:.8rem">点击上方按钮生成第一份测试</p>
+  </div>
+  <!-- 批改结果 -->
+  <div id="test-grading-result" style="display:none;padding:1.5rem 2rem;overflow-y:auto"></div>
+  <!-- 测试结果列表 -->
+  <div id="test-results" style="display:none;padding:1.5rem 2rem;overflow-y:auto"></div>
+  <!-- 历史记录 -->
+  <div id="test-history" style="display:none;padding:1.5rem 2rem">
+    <h3 style="font-size:1rem;color:var(--pri);margin-bottom:1rem">📋 测试历史</h3>
+    <div id="test-history-list"></div>
   </div>
 </div>
 </div>
@@ -374,7 +446,7 @@ async function syncExtract(){
   }
 }
 
-async function extractWords(){if(!currentTextbook||!currentUnit)return;var vocab=currentTextbook==='VSL1'?window._vsl1Vocab:window._vsl2Vocab;if(!vocab){alert('Vocabulary not loaded. Please refresh.');return;}var unitNum=parseInt(currentUnit.replace('U',''));var unitWords=vocab.filter(function(w){return w[3]===unitNum||w[4]===unitNum;});if(!unitWords.length){alert('No words found for this unit');wordList=[];}else{wordList=unitWords.map(function(w){return{vi:w[0]||'',zh:w[1]||'',extracted:true};});}localStorage.setItem('classroom_notes_word_list', JSON.stringify(wordList));renderWordList();}// === 段落2：提取课文（Promise wrapper for IndexedDB） ===
+async function extractWords(){if(!currentTextbook||!currentUnit)return;var vocab=currentTextbook==='VSL1'?window._vsl1Vocab:window._vsl2Vocab;if(!vocab){alert('Vocabulary not loaded. Please refresh.');return;}var unitNum=parseInt(currentUnit.replace('U',''));var unitWords=vocab.filter(function(w){return w[3]===unitNum||w[4]===unitNum;});if(!unitWords.length){alert('No words found for this unit');wordList=[];}else{wordList=unitWords.map(function(w){return{vi:w[0]||'',zh:w[1]||'',extracted:true};});}localStorage.setItem('classroom_notes_word_list', JSON.stringify(wordList));renderWordList();document.getElementById('btn-enter-test').disabled=!wordList.length;}// === 段落2：提取课文（Promise wrapper for IndexedDB） ===
 function extractDialogueAsync(){
   return new Promise(function(resolve){
     if(!currentTextbook||!currentUnit){ resolve(); return; }
@@ -1442,6 +1514,703 @@ window._vsl1Vocab=null;window._vsl2Vocab=null;
 <script src="vsl2-vocab.js" onerror="console.warn('vsl2-vocab.js not found')"></script>
 <script>
 if(typeof VN_VOCAB!=='undefined'){window._vsl1Vocab=VN_VOCAB['vsl1']||VN_VOCAB;window._vsl2Vocab=VN_VOCAB['vsl2']||VN_VOCAB;}
+</script>
+<script>
+// ============================================
+// AI 测试试卷系统 (Gemini API)
+// ============================================
+var currentTestPaper = null;
+var GEMINI_MODEL = 'gemini-2.5-flash';
+
+function getApiKey() {
+  var key = localStorage.getItem('gemini_api_key');
+  if (!key) {
+    key = prompt('请输入你的 Gemini API Key（仅需一次，将保存在浏览器中）：');
+    if (key) localStorage.setItem('gemini_api_key', key);
+  }
+  return key;
+}
+
+// 生成试卷
+// 修复 JSON 字符串内未转义换行（Gemini/LLM 常犯错误）
+function repairJSONString(s) {
+  var inString = false, esc = false, out = '';
+  for (var i = 0; i < s.length; i++) {
+    var ch = s[i];
+    if (esc) { esc = false; out += ch; continue; }
+    if (ch === '\\') { esc = true; out += ch; continue; }
+    if (ch === '"') { inString = !inString; out += ch; continue; }
+    if (inString && ch === '\n') { out += '\\n'; continue; }
+    if (inString && ch === '\r') { out += '\\r'; continue; }
+    out += ch;
+  }
+  return out;
+}
+
+async function generateTestPaper() {
+  if (!wordList || !wordList.length) {
+    alert('请先提取单词（点击「同步提取」按钮）');
+    return;
+  }
+  var geminiKey = getApiKey();
+  if (!geminiKey) return;
+
+  var btn = document.getElementById('btn-generate-test');
+  var genArea = document.getElementById('test-gen-area');
+  var loading = document.getElementById('test-loading');
+  var loadingMsg = document.getElementById('test-loading-msg');
+
+  btn.disabled = true;
+  btn.textContent = '⏳ 生成中...';
+  loading.style.display = 'block';
+  genArea.style.display = 'none';
+  var container = document.getElementById('test-paper-container');
+  container.style.display = 'none';
+  document.getElementById('test-history').style.display = 'none';
+
+  try {
+    loadingMsg.textContent = '正在收集学习数据...';
+
+    // 1. 收集词汇（打乱，取20个不重复的词）
+    var shuffled = wordList.slice().sort(function(){return Math.random()-0.5;});
+    var wordsForType1 = shuffled.slice(0, 10);
+    var wordsForType2 = shuffled.slice(10, 20);
+    if (wordsForType2.length < 10) {
+      // 不足20个单词，Type2 复用但确保不重复
+      var remaining = shuffled.filter(function(w){return wordsForType1.indexOf(w)===-1;});
+      wordsForType2 = remaining.slice(0, Math.min(10, remaining.length));
+    }
+
+    // 2. 收集例句（从用户录入的笔记中取 notes 类型的 textVi）
+    var userSentences = [];
+    records.forEach(function(r){
+      if (r.tabType === 'notes' && r.textVi) {
+        userSentences.push(r.textVi);
+      }
+    });
+    // 如果笔记不够，从 extractedDialogue 补充
+    if (userSentences.length < 3 && extractedDialogue && extractedDialogue.length) {
+      extractedDialogue.forEach(function(dlg){
+        var text = dlg.content || dlg.textVi || dlg.text || '';
+        var lines = text.split('\n').filter(function(l){return l.trim().length > 5;});
+        lines.forEach(function(l){userSentences.push(l.trim());});
+      });
+    }
+
+    // 3. 收集语法点
+    var grammarPoints = [];
+    marks.forEach(function(m){
+      if (m.type === 'grammar' && grammarPoints.indexOf(m.word) === -1) {
+        grammarPoints.push({word: m.word, extra: m.extra || ''});
+      }
+    });
+    if (!grammarPoints.length) {
+      // 没有用户标记的语法点，从词库中找有语法意义的词
+      grammarPoints.push({word: 'cần phải', extra: 'Cấu trúc: cần phải + động từ (必须做某事)'});
+      grammarPoints.push({word: 'hình như', extra: 'Cấu trúc: hình như + mệnh đề (好像…)'});
+    }
+
+    // 4. 构建 Gemini prompt
+    var vocabList1 = wordsForType1.map(function(w){return w.vi + ' (' + w.zh + ')';}).join(', ');
+    var vocabList2 = wordsForType2.map(function(w){return w.vi + ' (' + w.zh + ')';}).join(', ');
+    var allVocab = wordList.map(function(w){return w.vi + ' (' + w.zh + ')';}).join(', ');
+    var sentencesStr = userSentences.slice(0, 8).join(' | ');
+    var grammarStr = grammarPoints.map(function(g){return g.word + (g.extra ? ' (' + g.extra + ')' : '');}).join(', ');
+
+    loadingMsg.textContent = '正在调用 AI 生成试卷...';
+
+    var prompt = `Bạn là giáo viên tiếng Việt. Hãy tạo một bài kiểm tra dựa trên dữ liệu học tập sau:
+
+TỪ VỰNG TOÀN BỘ UNIT: ${allVocab}
+
+TỪ CHO PHẦN 1 (điền từ - ngân hàng từ): ${vocabList1}
+TỪ CHO PHẦN 2 (đặt câu với từ cho sẵn): ${vocabList2}
+
+CÂU VÍ DỤ CỦA HỌC VIÊN: ${sentencesStr}
+
+ĐIỂM NGỮ PHÁP: ${grammarStr}
+
+Hãy tạo bài kiểm tra gồm 5 phần, định dạng JSON như sau:
+{
+  "title": "Bài Kiểm Tra - [tên unit]",
+  "unit": "${currentUnit || ''}",
+  "textbook": "${currentTextbook || ''}",
+  "fillBlanks": {
+    "words": ["từ1", "từ2", ..., "từ10"],  // 10 từ tiếng Việt làm "ngân hàng từ" cho học viên chọn
+    "questions": [
+      {"sentence": "Câu tiếng Việt có chỗ trống ___", "blankWord": "từ đúng (trong words)", "hint": "gợi ý tiếng Trung"}
+    ]
+  }, // 10 câu × 2đ = 20đ. Mỗi câu dùng MỘT từ trong vocabList1. 10 từ trong "words" là danh sách từ để học viên chọn.
+  "makeSentence": [
+    {"word": "từ tiếng Việt", "zh": "nghĩa tiếng Trung", "hint": "gợi ý đặt câu"}
+  ], // 10 câu × 2đ = 20đ. Học viên dùng từ cho sẵn để đặt câu. Dùng từ TRONG vocabList2, KHÔNG trùng với fillBlanks.
+  "sentenceTranslate": [
+    {"zh": "câu tiếng Trung hoàn chỉnh", "answerVi": "câu tiếng Việt tham khảo"}
+  ], // 5 câu × 6đ = 30đ, chủ đề liên quan đến unit này
+  "grammarSentences": [
+    {"task": "yêu cầu đặt câu", "grammar": "điểm ngữ pháp cần dùng", "hint": "gợi ý chủ đề"}
+  ], // 2 câu × 5đ = 10đ, dùng điểm ngữ pháp từ grammarStr
+  "essay": {
+    "topic": "đề bài viết đoạn văn (tiếng Việt)",
+    "requirements": "yêu cầu cụ thể: trên 100 từ, dùng ít nhất 5 từ trong unit",
+    "points": 20
+  }
+}
+
+Yêu cầu:
+- Phần 1 (fillBlanks): 10 câu, mỗi câu có MỘT chỗ trống ___ cần điền từ. 10 từ trong "words" được liệt kê ở đầu làm ngân hàng từ. Mỗi từ CHỈ dùng MỘT lần. Câu phải tự nhiên, có ngữ cảnh rõ ràng.
+- Phần 2 (makeSentence): 10 câu, mỗi câu cho MỘT từ tiếng Việt. Học viên tự đặt câu chứa từ đó. Từ phải là từ THÔNG DỤNG, dễ đặt câu.
+- Phần 3 (sentenceTranslate): ƯU TIÊN dùng câu từ CÂU VÍ DỤ CỦA HỌC VIÊN ở trên, dịch sang tiếng Trung làm đề bài.
+- Phần 4 (grammarSentences): yêu cầu học viên đặt câu dùng đúng điểm ngữ pháp.
+- Phần 5 (essay): chủ đề liên quan đến nội dung unit này.
+- TRẢ VỀ CHỈ JSON, không thêm giải thích gì khác.`;
+
+    // 5. 调用 Gemini API
+    loadingMsg.textContent = 'AI 正在出题中…（约 10-20 秒）';
+    var resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':generateContent?key=' + geminiKey, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        contents: [{
+          parts: [{text: prompt}]
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 8192
+        }
+      })
+    });
+
+    if (!resp.ok) {
+      var errText = await resp.text();
+      throw new Error('API Error ' + resp.status + ': ' + errText.substring(0, 200));
+    }
+
+    var data = await resp.json();
+    var raw = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text;
+
+    if (!raw) throw new Error('Gemini 返回空内容');
+
+    // 6. 解析 JSON（参考 vietnamese-words 更稳健的提取方式）
+    var jsonStr = raw.trim();
+    // 清除所有 markdown 代码块标记
+    jsonStr = jsonStr.replace(/```json?\n?/g, '').replace(/```/g, '');
+    // 提取最外层 JSON 对象
+    var m = jsonStr.match(/\{[\s\S]*\}/);
+    if (!m) throw new Error('Gemini 返回中未找到 JSON 对象');
+    jsonStr = m[0];
+    // 修复常见问题
+    jsonStr = jsonStr.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
+    jsonStr = repairJSONString(jsonStr);
+    currentTestPaper = JSON.parse(jsonStr);
+
+    // 7. 渲染试卷
+    loading.style.display = 'none';
+    genArea.style.display = 'none';
+    renderTestPaper();
+
+  } catch(e) {
+    loading.style.display = 'none';
+    genArea.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = '🤖 AI 生成试卷';
+    var errMsg = e.message || '未知错误';
+    console.error('生成试卷失败:', e, '\nraw length:', (raw||'').length, '\njsonStr length:', (jsonStr||'').length);
+    if (errMsg.includes('API') || errMsg.includes('403') || errMsg.includes('401')) {
+      alert('API Key 无效或已过期：\n' + errMsg + '\n\n请检查 Gemini API Key');
+    } else if (errMsg.includes('JSON')) {
+      alert('AI 返回格式有误（已记录诊断信息）：\n' + errMsg + '\n\n请稍后重试');
+    } else {
+      alert('生成试卷失败: ' + errMsg);
+    }
+  }
+}
+
+// 渲染试卷
+function renderTestPaper() {
+  if (!currentTestPaper) return;
+  var p = currentTestPaper;
+  var c = document.getElementById('test-paper-container');
+  var h = document.getElementById('test-history');
+  h.style.display = 'none';
+
+  var html = '';
+
+  // 标题和元数据
+  html += '<h2>' + escHtml(p.title || 'Bài Kiểm Tra') + '</h2>';
+  html += '<div class="test-meta">';
+  html += '<span>📘 ' + escHtml(p.textbook || currentTextbook) + ' — ' + escHtml(p.unit || currentUnit) + '</span>';
+  html += '<span>⏱️ 60 phút</span>';
+  html += '<span>💯 100 điểm</span>';
+  html += '</div>';
+
+  // === Phần 1: Điền từ ===
+  html += '<div class="test-section">';
+  html += '<div class="test-sec-title">1️⃣ Điền từ vào chỗ trống <span class="badge">10 câu × 2đ = 20đ</span></div>';
+  html += '<p style="color:var(--tx-m);font-size:.8rem;margin-bottom:.8rem">Chọn từ trong khung bên dưới để điền vào chỗ trống.</p>';
+  // Hiển thị ngân hàng từ
+  if (p.fillBlanks && p.fillBlanks.words) {
+    html += '<div class="word-bank">';
+    p.fillBlanks.words.forEach(function(w, wi){
+      html += '<span class="word-bank-item" style="color:var(--accent)">' + escHtml(w) + '</span>';
+    });
+    html += '</div>';
+  }
+  if (p.fillBlanks && p.fillBlanks.questions) {
+    p.fillBlanks.questions.forEach(function(q, i){
+      var blankText = q.sentence || '';
+      html += '<div class="test-q"><span class="test-q-num">' + (i+1) + '.</span> ';
+      // 替换空白标记为内联输入框
+      var displayHTML = escHtml(blankText).replace(/(_{2,}|…{2,}|\.{3,})/g, 
+        '<input class="test-input test-input-inline" id="test-fb-' + i + '" placeholder="..." autocomplete="off">');
+      html += '<span class="test-q-text">' + displayHTML + '</span>';
+      html += '</div>';
+    });
+  }
+  html += '</div>';
+
+  // === Phần 2: Đặt câu với từ cho sẵn ===
+  html += '<div class="test-section">';
+  html += '<div class="test-sec-title">2️⃣ Đặt câu với từ cho sẵn <span class="badge">10 câu × 2đ = 20đ</span></div>';
+  html += '<p style="color:var(--tx-m);font-size:.8rem;margin-bottom:.8rem">Dùng từ tiếng Việt bên dưới để đặt một câu hoàn chỉnh.</p>';
+  if (p.makeSentence && p.makeSentence.length) {
+    p.makeSentence.forEach(function(q, i){
+      html += '<div class="test-q">';
+      html += '<span class="test-q-num">' + (i+1) + '.</span> ';
+      html += '<span class="test-q-word">' + escHtml(q.word || '') + '</span>';
+      if (q.hint) html += '<span class="test-q-hint">💡 ' + escHtml(q.hint) + '</span>';
+      html += '<textarea class="test-textarea" id="test-ms-' + i + '" placeholder="Viết câu chứa từ \'' + escHtml(q.word || '') + '\'..." style="min-height:52px"></textarea>';
+      html += '</div>';
+    });
+  }
+  html += '</div>';
+
+  // === Phần 3: Dịch câu ===
+  html += '<div class="test-section">';
+  html += '<div class="test-sec-title">3️⃣ Dịch câu sang tiếng Việt <span class="badge">5 câu × 6đ = 30đ</span></div>';
+  html += '<p style="color:var(--tx-m);font-size:.8rem;margin-bottom:.8rem">Dịch các câu tiếng Trung sau sang tiếng Việt.</p>';
+  if (p.sentenceTranslate && p.sentenceTranslate.length) {
+    p.sentenceTranslate.forEach(function(q, i){
+      html += '<div class="test-q"><span class="test-q-num">' + (i+1) + '.</span> ';
+      html += '<span class="test-q-text">' + escHtml(q.zh || '') + '</span>';
+      html += '<textarea class="test-textarea" id="test-st-' + i + '" placeholder="Nhập câu tiếng Việt..."></textarea>';
+      html += '</div>';
+    });
+  }
+  html += '</div>';
+
+  // === Phần 4: Đặt câu ngữ pháp ===
+  html += '<div class="test-section">';
+  html += '<div class="test-sec-title">4️⃣ Đặt câu với ngữ pháp <span class="badge">2 câu × 5đ = 10đ</span></div>';
+  if (p.grammarSentences && p.grammarSentences.length) {
+    p.grammarSentences.forEach(function(q, i){
+      html += '<div class="test-q"><span class="test-q-num">' + (i+1) + '.</span> ';
+      html += '<div class="test-q-text">' + escHtml(q.task || 'Hãy đặt câu dùng: ' + (q.grammar || '')) + '</div>';
+      if (q.hint) html += '<div class="test-q-hint">💡 ' + escHtml(q.hint) + '</div>';
+      html += '<textarea class="test-textarea" id="test-gs-' + i + '" placeholder="Viết câu của bạn..."></textarea>';
+      html += '</div>';
+    });
+  }
+  html += '</div>';
+
+  // === Phần 5: Viết đoạn văn ===
+  html += '<div class="test-section">';
+  html += '<div class="test-sec-title">5️⃣ Viết đoạn văn <span class="badge">1 câu × 20đ = 20đ</span></div>';
+  if (p.essay) {
+    html += '<div style="background:#eef2ff;border-radius:8px;padding:1rem;margin-bottom:.8rem">';
+    html += '<strong>📌 Đề bài:</strong> ' + escHtml(p.essay.topic || '');
+    html += '<div style="margin-top:.4rem;font-size:.82rem;color:var(--tx-m)">📏 ' + escHtml(p.essay.requirements || '') + '</div>';
+    html += '</div>';
+    html += '<textarea class="test-textarea" id="test-essay" style="min-height:160px" placeholder="Viết đoạn văn của bạn (trên 100 từ)..."></textarea>';
+  }
+  html += '</div>';
+
+  // 操作按钮
+  html += '<div class="test-actions">';
+  html += '<button class="btn-grade" onclick="submitTestForGrading()">📝 提交批改</button>';
+  html += '<button class="btn-export" onclick="exportTestPDF()">📄 导出 PDF</button>';
+  html += '<button class="btn-sm" onclick="resetTest()">🔄 重新出题</button>';
+  html += '</div>';
+
+  // 批改结果区
+  html += '<div id="test-grading-result" style="display:none"></div>';
+
+  c.innerHTML = html;
+  c.style.display = 'block';
+  document.getElementById('test-gen-area').style.display = 'none';
+
+  // 滚动到顶部
+  c.scrollTop = 0;
+}
+
+// 提交批改
+async function submitTestForGrading() {
+  if (!currentTestPaper || !getApiKey()) {
+    alert('无法批改：缺少 Gemini API Key 或试卷数据');
+    return;
+  }
+  var p = currentTestPaper;
+
+  // 收集答案
+  var answers = {
+    fillBlanks: [],
+    makeSentence: [],
+    sentenceTranslate: [],
+    grammarSentences: [],
+    essay: ''
+  };
+
+  if (p.fillBlanks && p.fillBlanks.questions) {
+    var wordsArr = p.fillBlanks.words || [];
+    p.fillBlanks.questions.forEach(function(q, i){
+      answers.fillBlanks.push({
+        sentence: q.sentence || '',
+        correctAnswer: q.blankWord || '',
+        wordBank: wordsArr,
+        userAnswer: (document.getElementById('test-fb-' + i) || {}).value || ''
+      });
+    });
+  }
+  if (p.makeSentence) p.makeSentence.forEach(function(q, i){
+    answers.makeSentence.push({
+      word: q.word || '',
+      zh: q.zh || '',
+      userAnswer: (document.getElementById('test-ms-' + i) || {}).value || ''
+    });
+  });
+  if (p.sentenceTranslate) p.sentenceTranslate.forEach(function(q, i){
+    answers.sentenceTranslate.push({
+      question: q.zh || '',
+      referenceAnswer: q.answerVi || '',
+      userAnswer: (document.getElementById('test-st-' + i) || {}).value || ''
+    });
+  });
+  if (p.grammarSentences) p.grammarSentences.forEach(function(q, i){
+    answers.grammarSentences.push({
+      task: q.task || '',
+      grammar: q.grammar || '',
+      userAnswer: (document.getElementById('test-gs-' + i) || {}).value || ''
+    });
+  });
+  answers.essay = {
+    topic: p.essay ? p.essay.topic : '',
+    requirements: p.essay ? p.essay.requirements : '',
+    userAnswer: (document.getElementById('test-essay') || {}).value || ''
+  };
+
+  // 计数
+  var totalQ = answers.fillBlanks.length + answers.makeSentence.length 
+    + answers.sentenceTranslate.length + answers.grammarSentences.length + (answers.essay.topic ? 1 : 0);
+  var answeredQ = answers.fillBlanks.filter(function(a){return a.userAnswer;}).length
+    + answers.makeSentence.filter(function(a){return a.userAnswer;}).length
+    + answers.sentenceTranslate.filter(function(a){return a.userAnswer;}).length
+    + answers.grammarSentences.filter(function(a){return a.userAnswer;}).length
+    + (answers.essay.userAnswer ? 1 : 0);
+  if (answeredQ === 0) {
+    alert('请至少回答一道题再提交批改');
+    return;
+  }
+  if (answeredQ < totalQ) {
+    var left = totalQ - answeredQ;
+    if (!confirm('还有 ' + left + ' 道题未作答，确定提交批改吗？\n\n已答：' + answeredQ + ' / ' + totalQ)) {
+      return;
+    }
+  }
+
+  // 禁用按钮
+  var btn = document.querySelector('.btn-grade');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> 批改中...';
+
+  // 显示加载
+  var resultDiv = document.getElementById('test-grading-result');
+  resultDiv.style.display = 'block';
+  resultDiv.innerHTML = '<div style="text-align:center;padding:2rem"><div class="spinner" style="width:2rem;height:2rem;border-color:rgba(99,102,241,.3);border-top-color:#6366f1"></div><p style="color:var(--tx-m);margin-top:.8rem">AI 正在批改试卷...</p></div>';
+
+  try {
+    // 构建 Grading Prompt
+    var gradingPrompt = `Bạn là giáo viên tiếng Việt. Hãy chấm điểm bài kiểm tra sau:
+
+CẤU TRÚC BÀI KIỂM TRA:
+- Phần 1 (Điền từ - chọn từ ngân hàng): 10 câu × 2đ = 20đ
+- Phần 2 (Đặt câu với từ cho sẵn): 10 câu × 2đ = 20đ  
+- Phần 3 (Dịch câu): 5 câu × 6đ = 30đ
+- Phần 4 (Đặt câu ngữ pháp): 2 câu × 5đ = 10đ
+- Phần 5 (Viết đoạn văn): 1 câu × 20đ = 20đ
+
+BÀI LÀM CỦA HỌC VIÊN:
+${JSON.stringify(answers, null, 2)}
+
+Hãy trả về JSON:
+{
+  "totalScore": 85,
+  "sectionScores": {"fillBlanks": 16, "makeSentence": 18, "sentenceTranslate": 24, "grammarSentences": 8, "essay": 16},
+  "perQuestion": {
+    "fillBlanks": [{"score": 2, "correct": true, "feedback": "Đúng"}, ...],
+    "makeSentence": [{"score": 2, "feedback": "Câu đúng, dùng từ chính xác"}, ...],
+    "sentenceTranslate": [{"score": 5, "feedback": "Câu đúng nhưng thiếu dấu..."}, ...],
+    "grammarSentences": [{"score": 4, "feedback": "Ngữ pháp đúng, từ vựng tốt"}, ...],
+    "essay": {"score": 16, "feedback": "..."}
+  },
+  "weaknesses": ["Từ vựng: hay nhầm lẫn giữa...", "Ngữ pháp: cần luyện thêm cấu trúc..."],
+  "strengths": ["Phát âm tốt", "..."],
+  "overallComment": "Nhận xét tổng quan (tiếng Việt, 2-3 câu)"
+}
+
+LƯU Ý:
+- Phần 1: 2đ=đúng từ, đúng chính tả. 1đ=sai dấu/thiếu dấu. 0đ=sai từ.
+- Phần 2: 2đ=câu đúng ngữ pháp, dùng từ chính xác, tự nhiên. 1đ=có lỗi nhỏ. 0đ=không dùng đúng từ hoặc sai hoàn toàn.
+- Phần 3: Chấm theo ý nghĩa (không cần giống hệt reference). 6đ=hoàn hảo, 4-5đ=có lỗi nhỏ, 2-3đ=sai nhiều, 1đ=cố gắng.
+- Phần 4: Đánh giá sử dụng đúng ngữ pháp + từ vựng + tự nhiên.
+- Phần 5: 20đ=trên 100 từ, đúng chủ đề, ngữ pháp tốt, dùng đủ từ vựng unit. Giảm điểm theo lỗi.
+- Nếu học viên không trả lời câu nào, cho 0 điểm câu đó.
+- TRẢ VỀ CHỈ JSON.`;
+
+    var resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':generateContent?key=' + getApiKey(), {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        contents: [{parts: [{text: gradingPrompt}]}],
+        generationConfig: {temperature: 0.3, maxOutputTokens: 8192}
+      })
+    });
+
+    if (!resp.ok) throw new Error('API Error ' + resp.status);
+
+    var data = await resp.json();
+    var raw = data.candidates[0].content.parts[0].text;
+    var jsonStr = raw.trim();
+    jsonStr = jsonStr.replace(/```json?\n?/g, '').replace(/```/g, '');
+    var m2 = jsonStr.match(/\{[\s\S]*\}/);
+    if (!m2) throw new Error('Gemini 批改返回中未找到 JSON 对象');
+    jsonStr = m2[0];
+    jsonStr = jsonStr.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
+    jsonStr = repairJSONString(jsonStr);
+    var result = JSON.parse(jsonStr);
+
+    // 渲染结果
+    currentTestPaper._gradingResult = result;
+    currentTestPaper._userAnswers = answers;
+    renderGradingResult(result);
+
+    // 保存到 Firebase + localStorage
+    saveTestResult(result, answers);
+
+    btn.disabled = false;
+    btn.innerHTML = '📝 提交批改';
+
+  } catch(e) {
+    console.error('批改失败:', e);
+    resultDiv.innerHTML = '<div style="color:var(--er);padding:1rem;background:#fef2f2;border-radius:8px">❌ 批改失败: ' + escHtml(e.message || '未知错误') + '</div>';
+    btn.disabled = false;
+    btn.innerHTML = '📝 重试批改';
+  }
+}
+
+// 渲染批改结果
+function renderGradingResult(result) {
+  var div = document.getElementById('test-grading-result');
+  div.style.display = 'block';
+  var score = result.totalScore || 0;
+  var cls = score >= 80 ? 'high' : score >= 60 ? 'mid' : 'low';
+
+  var html = '<div class="result-card">';
+  html += '<div class="result-header">';
+  html += '<div><span class="result-score ' + cls + '">' + score + '</span><span style="font-size:1rem;color:var(--tx-m)"> / 100</span></div>';
+  html += '<div style="font-size:.85rem;color:var(--tx-m)">' + new Date().toLocaleString('vi-VN') + '</div>';
+  html += '</div>';
+
+  // 各段分数
+  if (result.sectionScores) {
+    html += '<div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1rem">';
+    var labels = {fillBlanks: '📝 Điền từ', wordTranslate: '🔤 Dịch từ', sentenceTranslate: '📖 Dịch câu', grammarSentences: '📐 Ngữ pháp', essay: '✍️ Viết'};
+    for(var k in result.sectionScores) {
+      html += '<div style="font-size:.8rem;color:var(--tx-m)"><strong>' + (labels[k]||k) + ':</strong> ' + result.sectionScores[k] + 'đ</div>';
+    }
+    html += '</div>';
+  }
+
+  // 强项
+  if (result.strengths && result.strengths.length) {
+    html += '<div style="margin-bottom:.6rem"><strong style="color:var(--ok)">✅ Điểm mạnh:</strong></div>';
+    result.strengths.forEach(function(s){html += '<div style="font-size:.83rem;color:var(--tx-m);margin-left:.5rem">• ' + escHtml(s) + '</div>';});
+  }
+
+  // 弱项
+  if (result.weaknesses && result.weaknesses.length) {
+    html += '<div class="result-weakness"><strong>⚠️ Cần cải thiện:</strong><br>';
+    result.weaknesses.forEach(function(w){html += '• ' + escHtml(w) + '<br>';});
+    html += '</div>';
+  }
+
+  // 总体评价
+  if (result.overallComment) {
+    html += '<div style="margin-top:.8rem;padding:.8rem;background:var(--bg);border-radius:8px;font-size:.87rem;line-height:1.7">';
+    html += '<strong>💬 Nhận xét:</strong> ' + escHtml(result.overallComment) + '</div>';
+  }
+
+  html += '</div>';
+  div.innerHTML = html;
+  div.scrollIntoView({behavior: 'smooth'});
+}
+
+// 保存测试结果
+async function saveTestResult(result, answers) {
+  var fixedUserId = getFixedUserId();
+  var dateStr = new Date().toISOString().slice(0, 10);
+  var testRecord = {
+    id: 'test_' + Date.now(),
+    userId: fixedUserId,
+    textbook: currentTextbook || '',
+    unit: currentUnit || '',
+    tabType: 'test',
+    date: dateStr,
+    score: result.totalScore || 0,
+    totalPoints: 100,
+    weaknesses: (result.weaknesses || []).join(', '),
+    strengths: (result.strengths || []).join(', '),
+    overallComment: result.overallComment || '',
+    sectionScores: result.sectionScores || {},
+    paper: currentTestPaper,
+    answers: answers,
+    timestamp: Date.now()
+  };
+
+  // 本地存储
+  records.push(testRecord);
+  var localKey = 'classroom_notes_records_' + (currentTextbook || 'unknown') + '_' + (currentUnit || 'unknown');
+  localStorage.setItem(localKey, JSON.stringify(records));
+
+  // Firebase
+  try {
+    var doc = await db.collection('cn_records').add({
+      userId: fixedUserId,
+      textbook: currentTextbook || '',
+      unit: currentUnit || '',
+      tabType: 'test',
+      date: dateStr,
+      score: result.totalScore || 0,
+      weaknesses: result.weaknesses || [],
+      strengths: result.strengths || [],
+      overallComment: result.overallComment || '',
+      sectionScores: result.sectionScores || {},
+      paperTitle: currentTestPaper ? currentTestPaper.title : '',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    testRecord.id = doc.id;
+    localStorage.setItem(localKey, JSON.stringify(records));
+  } catch(e) {
+    console.error('保存测试结果到云端失败:', e);
+  }
+
+  // 刷新历史
+  renderTestHistory();
+}
+
+// 渲染测试历史
+function renderTestHistory() {
+  var testRecs = records.filter(function(r){return r.tabType === 'test';});
+  var list = document.getElementById('test-history-list');
+  var historyDiv = document.getElementById('test-history');
+  if (!list) return;
+
+  if (!testRecs.length) {
+    list.innerHTML = '<div class="test-empty-state"><div class="icon">📋</div><p>暂无测试记录</p><p style="font-size:.8rem">生成并完成一次测试后，结果将显示在此处</p></div>';
+    historyDiv.style.display = 'block';
+    return;
+  }
+
+  historyDiv.style.display = 'block';
+  // 按时间倒序
+  testRecs.sort(function(a,b){return (b.timestamp||0) - (a.timestamp||0);});
+
+  list.innerHTML = '';
+  testRecs.forEach(function(rec) {
+    var score = rec.score || 0;
+    var cls = score >= 80 ? 'high' : score >= 60 ? 'mid' : 'low';
+    var card = document.createElement('div');
+    card.className = 'test-history-card';
+    card.onclick = function() {
+      if (rec.paper && rec.answers) {
+        currentTestPaper = rec.paper;
+        if (rec._gradingResult) {
+          currentTestPaper._gradingResult = rec._gradingResult;
+        }
+        renderTestPaper();
+        var gradingDiv = document.getElementById('test-grading-result');
+        if (gradingDiv && currentTestPaper._gradingResult) {
+          renderGradingResult(currentTestPaper._gradingResult);
+        }
+      }
+    };
+    card.innerHTML = '<span class="history-score ' + cls + '">' + score + 'đ</span>' +
+      '<span class="history-meta">' + (rec.date || '') + ' | ' + escHtml(rec.textbook || '') + ' ' + escHtml(rec.unit || '') +
+      (rec.weaknesses ? ' | ⚠️ ' + escHtml(rec.weaknesses.substring(0, 50)) : '') + '</span>';
+    list.appendChild(card);
+  });
+}
+
+// 重新出题
+function resetTest() {
+  if (!confirm('确定要重新出题吗？当前答题内容将丢失。')) return;
+  currentTestPaper = null;
+  document.getElementById('test-paper-container').style.display = 'none';
+  document.getElementById('test-paper-container').innerHTML = '';
+  document.getElementById('test-gen-area').style.display = 'block';
+  document.getElementById('btn-generate-test').disabled = false;
+  document.getElementById('btn-generate-test').textContent = '🤖 AI 生成试卷';
+  renderTestHistory();
+}
+
+// 导出 PDF（简易版，使用浏览器打印）
+function exportTestPDF() {
+  var container = document.getElementById('test-paper-container');
+  if (!container) return;
+
+  // 创建打印窗口
+  var printWin = window.open('', '_blank', 'width=800,height=600');
+  printWin.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Bài Kiểm Tra</title>');
+  printWin.document.write('<style>');
+  printWin.document.write('body{font-family:system-ui,sans-serif;padding:2rem;color:#1e293b;line-height:1.7}');
+  printWin.document.write('h2{color:#6366f1;margin-bottom:.5rem}');
+  printWin.document.write('.meta{color:#64748b;font-size:.85rem;margin-bottom:1.5rem}');
+  printWin.document.write('.section{border:1px solid #e2e8f0;border-radius:8px;padding:1rem;margin-bottom:1rem;page-break-inside:avoid}');
+  printWin.document.write('.sec-title{font-weight:700;color:#6366f1;margin-bottom:.5rem}');
+  printWin.document.write('.q{margin-bottom:.5rem;padding-left:.5rem}');
+  printWin.document.write('.q-num{font-weight:700;color:#6366f1}');
+  printWin.document.write('.badge{font-size:.75rem;background:#eef2ff;color:#6366f1;padding:.1rem .4rem;border-radius:8px}');
+  printWin.document.write('</style></head><body>');
+  printWin.document.write(container.innerHTML);
+  printWin.document.write('</body></html>');
+  printWin.document.close();
+  setTimeout(function(){ printWin.print(); }, 500);
+}
+
+// 进入测试页签时刷新历史和显示生成按钮
+var _origSwitchTab = switchTab;
+switchTab = function(tab) {
+  _origSwitchTab(tab);
+  if (tab === 'test') {
+    // 显示生成按钮
+    document.getElementById('test-gen-area').style.display = currentTestPaper ? 'none' : 'block';
+    document.getElementById('test-paper-container').style.display = currentTestPaper ? 'block' : 'none';
+    document.getElementById('test-loading').style.display = 'none';
+    renderTestHistory();
+  }
+};
+
+// 修改 enterTest 按钮行为
+var _origEnterTest = enterTest;
+enterTest = function(){
+  if(!currentTextbook||!currentUnit){alert('请先选择课本和单元');return;}
+  // 检查是否有词汇数据
+  if(!wordList||!wordList.length){
+    alert('请先点击「同步提取」按钮加载单词');
+    return;
+  }
+  switchTab('test');
+};
+
 </script>
 </body>
 </html>
