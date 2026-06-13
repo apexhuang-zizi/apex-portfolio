@@ -2446,7 +2446,8 @@ function renderTestHistory() {
     var cls = score >= 80 ? 'high' : score >= 60 ? 'mid' : 'low';
     var card = document.createElement('div');
     card.className = 'test-history-card';
-    card.onclick = function() {
+    card.onclick = function(e) {
+      if (e.target.closest('.btn-delete-test') || e.target.closest('.btn-archive-pdf')) return;
       if (rec.paper && rec.answers) {
         currentTestPaper = rec.paper;
         // 兼容新旧字段名：_gradingResult(旧) 和 gradingResult(新)
