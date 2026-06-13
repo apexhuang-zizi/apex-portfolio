@@ -452,7 +452,7 @@ async function syncExtract(){
   }
 }
 
-async function extractWords(){if(!currentTextbook||!currentUnit)return;var vocab=currentTextbook==='VSL1'?window._vsl1Vocab:window._vsl2Vocab;if(!vocab){alert('Vocabulary not loaded. Please refresh.');return;}var unitNum=parseInt(currentUnit.replace('U',''));var unitWords=vocab.filter(function(w){return w[3]===unitNum||w[4]===unitNum;});if(!unitWords.length){alert('No words found for this unit');wordList=[];}else{wordList=unitWords.map(function(w){return{vi:w[0]||'',zh:w[1]||'',extracted:true};});}localStorage.setItem('classroom_notes_word_list', JSON.stringify(wordList));renderWordList();document.getElementById('btn-enter-test').disabled=!wordList.length;}// === 段落2：提取课文（Promise wrapper for IndexedDB） ===
+async function extractWords(){if(!currentTextbook||!currentUnit)return;var vocab=currentTextbook==='VSL1'?window._vsl1Vocab:window._vsl2Vocab;if(!vocab){alert('Vocabulary not loaded. Please refresh.');return;}var unitNum=parseInt(currentUnit.replace('U',''));var unitWords=vocab.filter(function(w){return w[3]===unitNum||w[4]===unitNum;});if(!unitWords.length){alert('No words found for this unit');wordList=[];}else{wordList=unitWords.map(function(w){return{vi:w[0]||'',zh:w[1]||'',extracted:true};});}localStorage.setItem('classroom_notes_word_list', JSON.stringify(wordList));renderWordList();}// === 段落2：提取课文（Promise wrapper for IndexedDB） ===
 function extractDialogueAsync(){
   return new Promise(function(resolve){
     if(!currentTextbook||!currentUnit){ resolve(); return; }
