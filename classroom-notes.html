@@ -183,7 +183,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 <div class="sel-group"><label>单元:</label><select class="sel-sm" id="unit-sel" disabled><option value="">-- 先选课本 --</option></select></div>
 <button class="btn-extract" id="btn-sync-extract" disabled onclick="syncExtract()">🔄 同步提取</button>
 <div style="flex:1"></div>
-<button class="btn-test-inline" id="btn-enter-test" disabled onclick="enterTest()">🎯 进入测试</button>
+
 </div>
 <div class="main-wrap">
 <div class="side-l"><div class="side-h">📚 单词表</div><div class="word-list" id="word-list"><div class="wb-empty">选择课本和单元后<br>点击「提取单词」按钮</div></div></div>
@@ -2380,17 +2380,6 @@ switchTab = function(tab) {
   }
 };
 
-// 修改 enterTest 按钮行为
-var _origEnterTest = enterTest;
-enterTest = function(){
-  if(!currentTextbook||!currentUnit){alert('请先选择课本和单元');return;}
-  // 检查是否有词汇数据
-  if(!wordList||!wordList.length){
-    alert('请先点击「同步提取」按钮加载单词');
-    return;
-  }
-  switchTab('test');
-};
 
 </script>
 </body>
