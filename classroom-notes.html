@@ -385,10 +385,19 @@ async function loadAllData(){if(!currentTextbook||!currentUnit)return;
       cloudRecords.push(item);
     });
     
-    // 合并：以云端为准，本地补充（本地可能有未同步的）
+    // 合并：以云端为准，但保留 paper/answers（云端如果缺失）
     var recordMap = {};
     localRecords.forEach(function(r) { if(r.id) recordMap[r.id] = r; });
-    cloudRecords.forEach(function(r) { if(r.id) recordMap[r.id] = r; });
+    cloudRecords.forEach(function(r) {
+      if(!r.id) return;
+      var local = recordMap[r.id];
+      if(local && local.paper && Object.keys(local.paper).length && (!r.paper || !Object.keys(r.paper).length)) {
+        r.paper = local.paper;
+        r.answers = local.answers || {};
+        r.gradingResult = r.gradingResult || local.gradingResult;
+      }
+      recordMap[r.id] = r;
+    });
     records = Object.values(recordMap);
     
     // 获取云端标记
@@ -2303,18 +2312,49 @@ function showTestArchive(rec) {
   
   if (!paper || !Object.keys(paper).length) {
     // 无试卷数据：显示成绩摘要
-    var w2 = window.open('', '_blank', 'width=600,height=400');
+    var w2 = window.open('', '_blank', 'width=700,height=600');
     w2.document.write('<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><title>Tom Tat</title><style>');
-    w2.document.write('body{font-family:system-ui,sans-serif;padding:2rem;color:#1e293b;line-height:1.7;text-align:center}');
-    w2.document.write('h2{color:#6366f1}.score{font-size:3rem;font-weight:800}.meta{color:#64748b;font-size:.85rem}');
-    w2.document.write('.note{color:#94a3b8;font-size:.8rem;margin-top:2rem}');
+    w2.document.write('body{font-family:system-ui,sans-serif;padding:2rem;color:#1e293b;line-height:1.7;max-width:600px;margin:0 auto}');
+    w2.document.write('h2{color:#6366f1;margin-bottom:.25rem}');
+    w2.document.write('.big-score{font-size:3rem;font-weight:800;margin:1rem 0}');
+    w2.document.write('.meta{color:#64748b;font-size:.85rem;margin-bottom:1.5rem}');
+    w2.document.write('.sections{display:flex;gap:.8rem;flex-wrap:wrap;justify-content:center;margin:1rem 0}');
+    w2.document.write('.sections span{background:#eef2ff;border-radius:8px;padding:.3rem .7rem;font-size:.82rem}');
+    w2.document.write('.box{background:#f8fafc;border-radius:8px;padding:.8rem 1rem;margin-bottom:.8rem;text-align:left;font-size:.85rem}');
+    w2.document.write('.box strong{display:block;margin-bottom:.3rem;color:#475569}');
+    w2.document.write('.note{color:#94a3b8;font-size:.78rem;margin-top:2rem}');
     w2.document.write('</style></head><body>');
     w2.document.write('<h2>Bai Kiem Tra</h2>');
     w2.document.write('<div class="meta">' + escHtml(rec.textbook||'') + ' | ' + escHtml(rec.unit||'') + ' | ' + (rec.date||'') + '</div>');
     var sc2 = rec.score || 0;
     var scC = sc2 >= 80 ? '#22c55e' : sc2 >= 60 ? '#f59e0b' : '#ef4444';
-    w2.document.write('<div class="score" style="color:' + scC + '">' + sc2 + ' / 100</div>');
-    w2.document.write('<div class="note">试卷原始数据已过期，仅限成绩摘要</div></body></html>');
+    w2.document.write('<div class="big-score" style="color:' + scC + '">' + sc2 + ' / 100</div>');
+    // 显示各题型分数
+    if (result && result.sectionScores) {
+      w2.document.write('<div class="sections">');
+      var lb2 = {fillBlanks:'Dien tu',makeSentence:'Dat cau',sentenceTranslate:'Dich cau',grammarSentences:'Ngu phap',essay:'Viet'};
+      for (var sk in result.sectionScores) {
+        w2.document.write('<span><strong>'+(lb2[sk]||sk)+':</strong> '+result.sectionScores[sk]+'d</span>');
+      }
+      w2.document.write('</div>');
+    }
+    // 评分详情
+    if (result) {
+      if (result.strengths && result.strengths.length) {
+        w2.document.write('<div class="box"><strong>✅ Diem manh</strong>');
+        result.strengths.forEach(function(s){w2.document.write('<div>'+escHtml(s)+'</div>');});
+        w2.document.write('</div>');
+      }
+      if (result.weaknesses && result.weaknesses.length) {
+        w2.document.write('<div class="box"><strong>⚠ Can cai thien</strong>');
+        result.weaknesses.forEach(function(w){w2.document.write('<div>'+escHtml(typeof w==='string'?w:w.word||'')+'</div>');});
+        w2.document.write('</div>');
+      }
+      if (result.overallComment) {
+        w2.document.write('<div class="box"><strong>Nhan xet</strong><div>'+escHtml(result.overallComment)+'</div></div>');
+      }
+    }
+    w2.document.write('<div class="note">试卷原始数据已过期，仅显示评分结果</div></body></html>');
     w2.document.close();
     return;
   }
@@ -2531,9 +2571,14 @@ function renderTestHistory() {
           currentTestPaper._gradingResult = gr;
         }
         renderTestPaper(rec.answers);
+      }
+      // 即使没有 paper，只要有 gradingResult 也显示评分
+      var gr2 = rec._gradingResult || rec.gradingResult;
+      if (gr2) {
         var gradingDiv = document.getElementById('test-grading-result');
-        if (gradingDiv && gr) {
-          renderGradingResult(gr);
+        if (gradingDiv) {
+          gradingDiv.style.display = 'block';
+          renderGradingResult(gr2);
         }
       }
     };
