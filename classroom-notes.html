@@ -2447,7 +2447,25 @@ function renderTestHistory() {
     var card = document.createElement('div');
     card.className = 'test-history-card';
     card.onclick = function(e) {
-      if (e.target.closest('.btn-delete-test') || e.target.closest('.btn-archive-pdf')) return;
+      var delBtn = e.target.closest('.btn-delete-test');
+      if (delBtn) {
+        e.stopPropagation();
+        e.preventDefault();
+        var delRecId = delBtn.getAttribute('data-rec-id');
+        if (confirm('Xóa bản ghi kiểm tra này?')) {
+          deleteTestRecord(delRecId);
+        }
+        return;
+      }
+      var archiveBtn = e.target.closest('.btn-archive-pdf');
+      if (archiveBtn) {
+        e.stopPropagation();
+        e.preventDefault();
+        var arRecId = archiveBtn.getAttribute('data-rec-id');
+        var rec2 = testRecs.find(function(r){return r.id === arRecId;});
+        if (rec2) showTestArchive(rec2);
+        return;
+      }
       if (rec.paper && rec.answers) {
         currentTestPaper = rec.paper;
         // 兼容新旧字段名：_gradingResult(旧) 和 gradingResult(新)
@@ -2465,28 +2483,9 @@ function renderTestHistory() {
     card.innerHTML = '<span class="history-score ' + cls + '">' + score + 'đ</span>' +
       '<span class="history-meta">' + (rec.date || '') + ' | ' + escHtml(rec.textbook || '') + ' ' + escHtml(rec.unit || '') +
       (rec.weaknesses ? ' | ⚠️ ' + escHtml(rec.weaknesses.substring(0, 50)) : '') + '</span>' +
-      '<button class="btn-delete-test" data-rec-id="' + rec.id + '" style="float:right;background:#fef2f2;color:#ef4444;border:1px solid #fecaca;border-radius:6px;padding:.25rem .6rem;font-size:.78rem;cursor:pointer;margin-left:.5rem">x</button>' + '<button class="btn-archive-pdf" data-rec-id="' + rec.id + '" style="float:right;background:#eef2ff;color:#6366f1;border:1px solid #c7d2fe;border-radius:6px;padding:.25rem .6rem;font-size:.78rem;cursor:pointer;margin-left:.5rem">Lưu trữ</button>';
+      '<span style="float:right"><button class="btn-delete-test" data-rec-id="' + rec.id + '" style="background:#fef2f2;color:#ef4444;border:1px solid #fecaca;border-radius:6px;padding:.25rem .6rem;font-size:.78rem;cursor:pointer;margin-left:.5rem;">✕</button><button class="btn-archive-pdf" data-rec-id="' + rec.id + '" style="background:#eef2ff;color:#6366f1;border:1px solid #c7d2fe;border-radius:6px;padding:.25rem .6rem;font-size:.78rem;cursor:pointer;">明细</button></span>';
     list.appendChild(card);
   });
-
-  list.onclick = function(e) {
-    var delBtn = e.target.closest('.btn-delete-test');
-    if (delBtn) {
-      e.stopPropagation();
-      var recId = delBtn.getAttribute('data-rec-id');
-      if (confirm('Xóa bản ghi kiểm tra này?')) {
-        deleteTestRecord(recId);
-      }
-      return;
-    }
-    var btn = e.target.closest('.btn-archive-pdf');
-    if (btn) {
-      e.stopPropagation();
-      var recId = btn.getAttribute('data-rec-id');
-      var rec = testRecs.find(function(r){return r.id === recId;});
-      if (rec) showTestArchive(rec);
-    }
-  };
 }
 
 // 重新出题
