@@ -2254,6 +2254,15 @@ async function saveTestResult(result, answers) {
     });
     testRecord.id = doc.id;
     localStorage.setItem(localKey, JSON.stringify(records));
+    // 同步 paper 和 answers 到 Firebase 文档
+    try {
+      doc.update({
+        paper: currentTestPaper || {},
+        answers: answers || {}
+      }).catch(function(e){
+        console.error('Update Firebase with paper/answers failed:', e);
+      });
+    } catch(e) { /* ignore */ }
   } catch(e) {
     console.error('保存测试结果到云端失败:', e);
   }
@@ -2265,10 +2274,47 @@ async function saveTestResult(result, answers) {
 
 // PDF Lưu trữ
 function showTestArchive(rec) {
+  var result = rec.gradingResult || rec._gradingResult;
+  var answers = rec.answers || {};
+  var paper = rec.paper || {};
+  
+  // 兼容：如果本地记录没有 paper/answers，尝试从 Firebase 加载
+  if (!paper || !Object.keys(paper).length) {
+    try {
+      db.collection('cn_records').doc(rec.id).get().then(function(docSnap){
+        if(docSnap.exists){
+          var data = docSnap.data();
+          showTestArchiveFromData({
+            id: rec.id,
+            textbook: rec.textbook,
+            unit: rec.unit,
+            date: rec.date,
+            score: rec.score,
+            gradingResult: data.gradingResult || data._gradingResult,
+            paper: data.paper || {},
+            answers: data.answers || {}
+          });
+        } else {
+          alert('找不到详细数据');
+        }
+      }).catch(function(e){
+        console.error('Load from Firebase failed:', e);
+        alert('加载详细数据失败: ' + (e.message || '未知错误'));
+      });
+      return;
+    } catch(e2){
+      alert('加载详细数据失败: ' + (e2.message || '未知错误'));
+      return;
+    }
+  }
+  showTestArchiveFromData(rec);
+}
+
+function showTestArchiveFromData(rec) {
   var result = rec.gradingResult;
   var answers = rec.answers;
   var paper = rec.paper;
-  if (!paper) { alert('无试卷数据'); return; }
+  if (!paper || Object.keys(paper).length === 0) { alert('无试卷数据'); return; }
   var w = window.open('', '_blank', 'width=900,height=700');
   var h = '<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><title>Bai Kiem Tra - Luu Tru</title>';
   h += '<style>';
