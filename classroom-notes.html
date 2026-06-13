@@ -1985,9 +1985,26 @@ LƯU Ý:
     var m2 = jsonStr.match(/\{[\s\S]*\}/);
     if (!m2) throw new Error('Gemini 批改返回中未找到 JSON 对象');
     jsonStr = m2[0];
-    jsonStr = jsonStr.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
-    jsonStr = repairJSONString(jsonStr);
-    var result = JSON.parse(jsonStr);
+    // 多层 JSON 修复
+    jsonStr = jsonStr.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');  // 尾部逗号
+    jsonStr = repairJSONString(jsonStr);  // 字符串内换行转义
+    // 修复数组内缺逗号
+    jsonStr = jsonStr.replace(/}\s*{/g, '}, {');
+    jsonStr = jsonStr.replace(/]\s*"/g, '], "');
+    jsonStr = jsonStr.replace(/]\s*{/g, '], {');
+    jsonStr = jsonStr.replace(/"\s+"/g, '", "');
+    jsonStr = jsonStr.replace(/}\s*"/g, '}, "');
+    jsonStr = jsonStr.replace(/(\d)\s*"/g, '$1, "');
+    jsonStr = jsonStr.replace(/true\s*"/g, 'true, "');
+    jsonStr = jsonStr.replace(/false\s*"/g, 'false, "');
+    jsonStr = jsonStr.replace(/null\s*"/g, 'null, "');
+    var result;
+    try {
+      result = JSON.parse(jsonStr);
+    } catch(parseErr) {
+      console.error('JSON parse error, raw jsonStr (first 2000 chars):', jsonStr.substring(0, 2000));
+      throw new Error('批改解析失败: ' + parseErr.message);
+    }
 
     // 渲染结果
     currentTestPaper._gradingResult = result;
