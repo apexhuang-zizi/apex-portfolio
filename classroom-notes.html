@@ -2041,6 +2041,8 @@ function renderGradingResult(result) {
   var cls = score >= 80 ? 'high' : score >= 60 ? 'mid' : 'low';
 
   var html = '<div class="result-card">';
+  html += '<button onclick="closeTestReview()" style="float:right;background:none;border:1px solid #cbd5e1;border-radius:6px;padding:.25rem .7rem;font-size:.78rem;cursor:pointer;color:#64748b">&#8592; Quay lại</button>';
+  html += '<div style="clear:both"></div>';
   html += '<div class="result-header">';
   html += '<div><span class="result-score ' + cls + '">' + score + '</span><span style="font-size:1rem;color:var(--tx-m)"> / 100</span></div>';
   html += '<div style="font-size:.85rem;color:var(--tx-m)">' + new Date().toLocaleString('vi-VN') + '</div>';
@@ -2194,6 +2196,16 @@ function appendGradingDetails(result) {
   if (html) {
     gradingDiv.insertAdjacentHTML('afterend', '<div id="grading-details">' + html + '</div>');
   }
+}
+
+function closeTestReview() {
+  currentTestPaper = null;
+  var c2 = document.getElementById('test-paper-container');
+  if (c2) { c2.style.display = 'none'; c2.innerHTML = ''; }
+  document.getElementById('test-gen-area').style.display = 'block';
+  document.getElementById('btn-generate-test').disabled = false;
+  document.getElementById('btn-generate-test').textContent = '\ud83e\udddc0 AI sinh \29399\22902';
+  renderTestHistory();
 }
 
 // 保存测试结果
