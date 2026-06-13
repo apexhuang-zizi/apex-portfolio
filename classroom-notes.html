@@ -171,7 +171,11 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .word-bank-item{display:inline-block;padding:4px 12px;background:var(--bg,#fff);border:1px solid var(--border,#e2e8f0);border-radius:999px;font-size:.85rem;font-weight:600}
 .test-q-word{display:inline-block;font-weight:700;color:var(--accent,#6366f1);font-size:1.05rem;margin-right:4px}
 .test-q-zh{font-size:.8rem;color:var(--tx-m)}
-</style>
+
+.q-item{padding:.5rem .7rem;border-left:3px solid transparent;margin-bottom:.4rem;border-radius:6px;font-size:.83rem}
+.q-item.correct{border-left-color:#22c55e;background:#f0fdf4}
+.q-item.wrong{border-left-color:#ef4444;background:#fef2f2}
+.q-item.partial{border-left-color:#f59e0b;background:#fffbeb}</style>
 </head>
 <body>
 <div class="hdr">
@@ -2074,6 +2078,122 @@ function renderGradingResult(result) {
   html += '</div>';
   div.innerHTML = html;
   div.scrollIntoView({behavior: 'smooth'});
+
+  // 每题详细批注
+  appendGradingDetails(result);
+}
+
+// 追加每题详细批注
+function appendGradingDetails(result) {
+  if (!result || !result.perQuestion) return;
+  var container = document.getElementById('test-paper-container');
+  if (!container || !currentTestPaper) return;
+  var p = currentTestPaper;
+  var answers = null;
+  // 尝试从当前输入框收集当前答案（用于回放）
+  // 优先使用已保存的答案
+  var savedAnswers = null;
+  var gradingDiv = document.getElementById('test-grading-result');
+  if (!gradingDiv) return;
+
+  var html = '';
+  html += '<div class="result-card" style="margin-top:1rem;border:2px solid #6366f1">';
+  html += '<div style="font-size:.95rem;font-weight:700;color:#6366f1;margin-bottom:.8rem">📝 Chi tiết từng câu</div>';
+
+  // S1 fillBlanks
+  if (p.fillBlanks && p.fillBlanks.questions && result.perQuestion.fillBlanks) {
+    html += '<div style="margin-bottom:1rem">';
+    html += '<div style="font-size:.85rem;font-weight:700;color:#475569;margin-bottom:.4rem">1. Điền từ</div>';
+    p.fillBlanks.questions.forEach(function(q, i){
+      var res = result.perQuestion.fillBlanks[i];
+      if (!res) return;
+      var cls2 = res.correct ? 'correct' : (res.score > 0 ? 'partial' : 'wrong');
+      var clsLabel = res.correct ? '✅ Đúng' : (res.score > 0 ? '⚠️ Gần đúng' : '❌ Sai');
+      html += '<div class="q-item ' + cls2 + '" style="padding:.5rem .7rem;border-radius:6px;margin-bottom:.4rem;font-size:.83rem">';
+      html += '<strong>' + (i+1) + '.</strong> ' + escHtml(q.sentence || '') + '<br>';
+      html += 'Đáp án: <span style="color:#16a34a;font-weight:700">' + escHtml(q.blankWord || '') + '</span> | ';
+      html += 'Kết quả: ' + res.score + 'đ | ' + clsLabel + '<br>';
+      if (res.feedback) html += '<span style="color:#64748b;font-style:italic">💬 ' + escHtml(res.feedback) + '</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+
+  // S2 makeSentence
+  if (p.makeSentence && p.makeSentence.length && result.perQuestion.makeSentence) {
+    html += '<div style="margin-bottom:1rem">';
+    html += '<div style="font-size:.85rem;font-weight:700;color:#475569;margin-bottom:.4rem">2. Đặt câu</div>';
+    p.makeSentence.forEach(function(q, i){
+      var res = result.perQuestion.makeSentence[i];
+      if (!res) return;
+      var cls2 = res.score >= 2 ? 'correct' : (res.score > 0 ? 'partial' : 'wrong');
+      var clsLabel = res.score >= 2 ? '✅ Tốt' : (res.score > 0 ? '⚠️ Cần cải thiện' : '❌ Chưa đạt');
+      html += '<div class="q-item ' + cls2 + '" style="padding:.5rem .7rem;border-radius:6px;margin-bottom:.4rem;font-size:.83rem">';
+      html += '<strong>' + (i+1) + '.</strong> Từ: <span style="font-weight:700;color:#6366f1">' + escHtml(q.word || '') + '</span><br>';
+      html += 'Kết quả: ' + res.score + '/2đ | ' + clsLabel + '<br>';
+      if (res.feedback) html += '<span style="color:#64748b;font-style:italic">💬 ' + escHtml(res.feedback) + '</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+
+  // S3 sentenceTranslate
+  if (p.sentenceTranslate && p.sentenceTranslate.length && result.perQuestion.sentenceTranslate) {
+    html += '<div style="margin-bottom:1rem">';
+    html += '<div style="font-size:.85rem;font-weight:700;color:#475569;margin-bottom:.4rem">3. Dịch câu</div>';
+    p.sentenceTranslate.forEach(function(q, i){
+      var res = result.perQuestion.sentenceTranslate[i];
+      if (!res) return;
+      var cls2 = res.score >= 5 ? 'correct' : (res.score >= 3 ? 'partial' : 'wrong');
+      var clsLabel = res.score >= 5 ? '✅ Tốt' : (res.score >= 3 ? '⚠️ Khá' : '❌ Cần cố gắng');
+      html += '<div class="q-item ' + cls2 + '" style="padding:.5rem .7rem;border-radius:6px;margin-bottom:.4rem;font-size:.83rem">';
+      html += '<strong>' + (i+1) + '.</strong> ' + escHtml(q.zh || '') + '<br>';
+      html += 'Tham khảo: <span style="color:#16a34a;font-weight:700">' + escHtml(q.answerVi || '') + '</span><br>';
+      html += 'Kết quả: ' + res.score + '/6đ | ' + clsLabel + '<br>';
+      if (res.feedback) html += '<span style="color:#64748b;font-style:italic">💬 ' + escHtml(res.feedback) + '</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+
+  // S4 grammarSentences
+  if (p.grammarSentences && p.grammarSentences.length && result.perQuestion.grammarSentences) {
+    html += '<div style="margin-bottom:1rem">';
+    html += '<div style="font-size:.85rem;font-weight:700;color:#475569;margin-bottom:.4rem">4. Ngữ pháp</div>';
+    p.grammarSentences.forEach(function(q, i){
+      var res = result.perQuestion.grammarSentences[i];
+      if (!res) return;
+      var cls2 = res.score >= 4 ? 'correct' : (res.score > 0 ? 'partial' : 'wrong');
+      var clsLabel = res.score >= 4 ? '✅ Tốt' : (res.score > 0 ? '⚠️ Khá' : '❌ Chưa đạt');
+      html += '<div class="q-item ' + cls2 + '" style="padding:.5rem .7rem;border-radius:6px;margin-bottom:.4rem;font-size:.83rem">';
+      html += '<strong>' + (i+1) + '.</strong> ' + escHtml(q.task || '') + ' (' + escHtml(q.grammar || '') + ')<br>';
+      html += 'Kết quả: ' + res.score + '/5đ | ' + clsLabel + '<br>';
+      if (res.feedback) html += '<span style="color:#64748b;font-style:italic">💬 ' + escHtml(res.feedback) + '</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+
+  // S5 essay
+  if (p.essay && result.perQuestion.essay) {
+    var essRes = result.perQuestion.essay;
+    if (essRes) {
+      html += '<div style="margin-bottom:1rem">';
+      html += '<div style="font-size:.85rem;font-weight:700;color:#475569;margin-bottom:.4rem">5. Viết đoạn văn</div>';
+      var cls2 = essRes.score >= 16 ? 'correct' : (essRes.score >= 10 ? 'partial' : 'wrong');
+      var clsLabel = essRes.score >= 16 ? '✅ Tốt' : (essRes.score >= 10 ? '⚠️ Khá' : '❌ Cần cải thiện');
+      html += '<div class="q-item ' + cls2 + '" style="padding:.5rem .7rem;border-radius:6px;margin-bottom:.4rem;font-size:.83rem">';
+      html += 'Đề bài: ' + escHtml(p.essay.topic || '') + '<br>';
+      html += 'Kết quả: ' + essRes.score + '/20đ | ' + clsLabel + '<br>';
+      if (essRes.feedback) html += '<span style="color:#64748b;font-style:italic">💬 ' + escHtml(essRes.feedback) + '</span>';
+      html += '</div>';
+      html += '</div>';
+    }
+  }
+
+  if (html) {
+    gradingDiv.insertAdjacentHTML('afterend', '<div id="grading-details">' + html + '</div>');
+  }
 }
 
 // 保存测试结果
