@@ -2407,6 +2407,22 @@ function showTestArchive(rec) {
   w.document.close();
 }
 
+// 删除测试记录
+function deleteTestRecord(recId) {
+  records = records.filter(function(r){ return r.id !== recId; });
+  var localKey = 'classroom_notes_records_' + (currentTextbook || 'unknown') + '_' + (currentUnit || 'unknown');
+  localStorage.setItem(localKey, JSON.stringify(records));
+  // 同时尝试删除 Firebase
+  try {
+    db.collection('cn_records').doc(recId).delete().then(function(){
+      console.log('Deleted from Firebase');
+    }).catch(function(e){
+      console.error('Delete from Firebase failed:', e);
+    });
+  } catch(e) { /* ignore */ }
+  renderTestHistory();
+}
+
 // 渲染测试历史
 function renderTestHistory() {
   var testRecs = records.filter(function(r){return r.tabType === 'test';});
@@ -2448,11 +2464,20 @@ function renderTestHistory() {
     card.innerHTML = '<span class="history-score ' + cls + '">' + score + 'đ</span>' +
       '<span class="history-meta">' + (rec.date || '') + ' | ' + escHtml(rec.textbook || '') + ' ' + escHtml(rec.unit || '') +
       (rec.weaknesses ? ' | ⚠️ ' + escHtml(rec.weaknesses.substring(0, 50)) : '') + '</span>' +
-      '<button class="btn-archive-pdf" data-rec-id="' + rec.id + '" style="float:right;background:#eef2ff;color:#6366f1;border:1px solid #c7d2fe;border-radius:6px;padding:.25rem .6rem;font-size:.78rem;cursor:pointer;margin-left:.5rem">Lưu trữ</button>';
+      '<button class="btn-delete-test" data-rec-id="' + rec.id + '" style="float:right;background:#fef2f2;color:#ef4444;border:1px solid #fecaca;border-radius:6px;padding:.25rem .6rem;font-size:.78rem;cursor:pointer;margin-left:.5rem">x</button>' + '<button class="btn-archive-pdf" data-rec-id="' + rec.id + '" style="float:right;background:#eef2ff;color:#6366f1;border:1px solid #c7d2fe;border-radius:6px;padding:.25rem .6rem;font-size:.78rem;cursor:pointer;margin-left:.5rem">Lưu trữ</button>';
     list.appendChild(card);
   });
 
   list.onclick = function(e) {
+    var delBtn = e.target.closest('.btn-delete-test');
+    if (delBtn) {
+      e.stopPropagation();
+      var recId = delBtn.getAttribute('data-rec-id');
+      if (confirm('Xóa bản ghi kiểm tra này?')) {
+        deleteTestRecord(recId);
+      }
+      return;
+    }
     var btn = e.target.closest('.btn-archive-pdf');
     if (btn) {
       e.stopPropagation();
