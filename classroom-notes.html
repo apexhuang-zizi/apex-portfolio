@@ -363,6 +363,7 @@ async function loadAllData(){if(!currentTextbook||!currentUnit)return;
   renderWordList();
   renderWhiteboard();
   renderExtractList();
+  renderTestHistory();
   
   // 3. 从 Firebase 增量同步（使用固定用户标识）
   try {
