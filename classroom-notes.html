@@ -2274,47 +2274,58 @@ async function saveTestResult(result, answers) {
 
 // PDF Lưu trữ
 function showTestArchive(rec) {
-  var result = rec.gradingResult || rec._gradingResult;
-  var answers = rec.answers || {};
-  var paper = rec.paper || {};
+  // 先从 records 中找完整数据
+  var fullRec = records.find(function(r){return r.id===rec.id;}) || rec;
+  var result = fullRec.gradingResult || fullRec._gradingResult;
+  var answers = fullRec.answers || {};
+  var paper = fullRec.paper || {};
   
-  // 兼容：如果本地记录没有 paper/answers，尝试从 Firebase 加载
+  // 如果 records 也没有 paper，遍历所有 localStorage 查找
   if (!paper || !Object.keys(paper).length) {
     try {
-      db.collection('cn_records').doc(rec.id).get().then(function(docSnap){
-        if(docSnap.exists){
-          var data = docSnap.data();
-          showTestArchiveFromData({
-            id: rec.id,
-            textbook: rec.textbook,
-            unit: rec.unit,
-            date: rec.date,
-            score: rec.score,
-            gradingResult: data.gradingResult || data._gradingResult,
-            paper: data.paper || {},
-            answers: data.answers || {}
-          });
-        } else {
-          alert('找不到详细数据');
+      for (var ki = 0; ki < localStorage.length; ki++) {
+        var lk = localStorage.key(ki);
+        if (lk && lk.indexOf('classroom_notes_records_') === 0) {
+          var stored = JSON.parse(localStorage.getItem(lk));
+          if (Array.isArray(stored)) {
+            var match = stored.find(function(r){return r.id === rec.id;});
+            if (match) {
+              paper = match.paper || {};
+              answers = match.answers || {};
+              result = match.gradingResult || match._gradingResult;
+              break;
+            }
+          }
         }
-      }).catch(function(e){
-        console.error('Load from Firebase failed:', e);
-        alert('加载详细数据失败: ' + (e.message || '未知错误'));
-      });
-      return;
-    } catch(e2){
-      alert('加载详细数据失败: ' + (e2.message || '未知错误'));
-      return;
-    }
+      }
+    } catch(e) {}
   }
-  showTestArchiveFromData(rec);
+  
+  if (!paper || !Object.keys(paper).length) {
+    // 无试卷数据：显示成绩摘要
+    var w2 = window.open('', '_blank', 'width=600,height=400');
+    w2.document.write('<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><title>Tom Tat</title><style>');
+    w2.document.write('body{font-family:system-ui,sans-serif;padding:2rem;color:#1e293b;line-height:1.7;text-align:center}');
+    w2.document.write('h2{color:#6366f1}.score{font-size:3rem;font-weight:800}.meta{color:#64748b;font-size:.85rem}');
+    w2.document.write('.note{color:#94a3b8;font-size:.8rem;margin-top:2rem}');
+    w2.document.write('</style></head><body>');
+    w2.document.write('<h2>Bai Kiem Tra</h2>');
+    w2.document.write('<div class="meta">' + escHtml(rec.textbook||'') + ' | ' + escHtml(rec.unit||'') + ' | ' + (rec.date||'') + '</div>');
+    var sc2 = rec.score || 0;
+    var scC = sc2 >= 80 ? '#22c55e' : sc2 >= 60 ? '#f59e0b' : '#ef4444';
+    w2.document.write('<div class="score" style="color:' + scC + '">' + sc2 + ' / 100</div>');
+    w2.document.write('<div class="note">试卷原始数据已过期，仅限成绩摘要</div></body></html>');
+    w2.document.close();
+    return;
+  }
+  showTestArchiveFromData({textbook:fullRec.textbook,unit:fullRec.unit,date:fullRec.date,paper:paper,answers:answers,gradingResult:result});
 }
 
 function showTestArchiveFromData(rec) {
   var result = rec.gradingResult;
   var answers = rec.answers;
   var paper = rec.paper;
-  if (!paper || Object.keys(paper).length === 0) { alert('无试卷数据'); return; }
+  if (!paper || Object.keys(paper).length === 0) { alert('试卷数据不可用'); return; }
   var w = window.open('', '_blank', 'width=900,height=700');
   var h = '<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><title>Bai Kiem Tra - Luu Tru</title>';
   h += '<style>';
