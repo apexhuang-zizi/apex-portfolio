@@ -1728,14 +1728,13 @@ Yêu cầu:
   }
 }
 
-// 渲染试卷
-function renderTestPaper() {
+// 渲染试卷（可选传入已有答案用于回放）
+function renderTestPaper(savedAnswers) {
   if (!currentTestPaper) return;
   var p = currentTestPaper;
   var c = document.getElementById('test-paper-container');
   var h = document.getElementById('test-history');
   h.style.display = 'none';
-
   var html = '';
 
   // 标题和元数据
@@ -1761,10 +1760,10 @@ function renderTestPaper() {
   if (p.fillBlanks && p.fillBlanks.questions) {
     p.fillBlanks.questions.forEach(function(q, i){
       var blankText = q.sentence || '';
+      var savedAns = (savedAnswers && savedAnswers.fillBlanks && savedAnswers.fillBlanks[i]) ? savedAnswers.fillBlanks[i].userAnswer : '';
       html += '<div class="test-q"><span class="test-q-num">' + (i+1) + '.</span> ';
-      // 替换空白标记为内联输入框
       var displayHTML = escHtml(blankText).replace(/(_{2,}|…{2,}|\.{3,})/g, 
-        '<input class="test-input test-input-inline" id="test-fb-' + i + '" placeholder="..." autocomplete="off">');
+        '<input class="test-input test-input-inline" id="test-fb-' + i + '" placeholder="..." value="' + escHtml(savedAns) + '" autocomplete="off">');
       html += '<span class="test-q-text">' + displayHTML + '</span>';
       html += '</div>';
     });
@@ -1781,7 +1780,8 @@ function renderTestPaper() {
       html += '<span class="test-q-num">' + (i+1) + '.</span> ';
       html += '<span class="test-q-word">' + escHtml(q.word || '') + '</span>';
       if (q.hint) html += '<span class="test-q-hint">💡 ' + escHtml(q.hint) + '</span>';
-      html += '<textarea class="test-textarea" id="test-ms-' + i + '" placeholder="Viết câu chứa từ \'' + escHtml(q.word || '') + '\'..." style="min-height:52px"></textarea>';
+      var savedAns = (savedAnswers && savedAnswers.makeSentence && savedAnswers.makeSentence[i]) ? savedAnswers.makeSentence[i].userAnswer : '';
+      html += '<textarea class="test-textarea" id="test-ms-' + i + '" placeholder="Viết câu chứa từ \'' + escHtml(q.word || '') + '\'..." style="min-height:52px">' + escHtml(savedAns) + '</textarea>';
       html += '</div>';
     });
   }
@@ -1795,7 +1795,8 @@ function renderTestPaper() {
     p.sentenceTranslate.forEach(function(q, i){
       html += '<div class="test-q"><span class="test-q-num">' + (i+1) + '.</span> ';
       html += '<span class="test-q-text">' + escHtml(q.zh || '') + '</span>';
-      html += '<textarea class="test-textarea" id="test-st-' + i + '" placeholder="Nhập câu tiếng Việt..."></textarea>';
+      var savedAns = (savedAnswers && savedAnswers.sentenceTranslate && savedAnswers.sentenceTranslate[i]) ? savedAnswers.sentenceTranslate[i].userAnswer : '';
+      html += '<textarea class="test-textarea" id="test-st-' + i + '" placeholder="Nhập câu tiếng Việt..." style="min-height:52px">' + escHtml(savedAns) + '</textarea>';
       html += '</div>';
     });
   }
@@ -1809,7 +1810,8 @@ function renderTestPaper() {
       html += '<div class="test-q"><span class="test-q-num">' + (i+1) + '.</span> ';
       html += '<div class="test-q-text">' + escHtml(q.task || 'Hãy đặt câu dùng: ' + (q.grammar || '')) + '</div>';
       if (q.hint) html += '<div class="test-q-hint">💡 ' + escHtml(q.hint) + '</div>';
-      html += '<textarea class="test-textarea" id="test-gs-' + i + '" placeholder="Viết câu của bạn..."></textarea>';
+      var savedAns = (savedAnswers && savedAnswers.grammarSentences && savedAnswers.grammarSentences[i]) ? savedAnswers.grammarSentences[i].userAnswer : '';
+      html += '<textarea class="test-textarea" id="test-gs-' + i + '" placeholder="Viết câu của bạn..." style="min-height:52px">' + escHtml(savedAns) + '</textarea>';
       html += '</div>';
     });
   }
@@ -1823,7 +1825,8 @@ function renderTestPaper() {
     html += '<strong>📌 Đề bài:</strong> ' + escHtml(p.essay.topic || '');
     html += '<div style="margin-top:.4rem;font-size:.82rem;color:var(--tx-m)">📏 ' + escHtml(p.essay.requirements || '') + '</div>';
     html += '</div>';
-    html += '<textarea class="test-textarea" id="test-essay" style="min-height:160px" placeholder="Viết đoạn văn của bạn (trên 100 từ)..."></textarea>';
+    var savedEssay = (savedAnswers && savedAnswers.essay) ? (typeof savedAnswers.essay === 'object' ? savedAnswers.essay.userAnswer || savedAnswers.essay : savedAnswers.essay) : '';
+    html += '<textarea class="test-textarea" id="test-essay" style="min-height:160px" placeholder="Viết đoạn văn của bạn (trên 100 từ)...">' + escHtml(savedEssay) + '</textarea>';
   }
   html += '</div>';
 
@@ -2298,13 +2301,15 @@ function renderTestHistory() {
     card.onclick = function() {
       if (rec.paper && rec.answers) {
         currentTestPaper = rec.paper;
-        if (rec._gradingResult) {
-          currentTestPaper._gradingResult = rec._gradingResult;
+        // 兼容新旧字段名：_gradingResult(旧) 和 gradingResult(新)
+        var gr = rec._gradingResult || rec.gradingResult;
+        if (gr) {
+          currentTestPaper._gradingResult = gr;
         }
-        renderTestPaper();
+        renderTestPaper(rec.answers);
         var gradingDiv = document.getElementById('test-grading-result');
-        if (gradingDiv && currentTestPaper._gradingResult) {
-          renderGradingResult(currentTestPaper._gradingResult);
+        if (gradingDiv && gr) {
+          renderGradingResult(gr);
         }
       }
     };
