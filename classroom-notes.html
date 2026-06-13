@@ -615,7 +615,7 @@ async function extractRecords(){
     if(newRecords.length > 0){
       records = records.concat(newRecords);
       // 合并后也按时间排序
-      records.sort(function(a,b){ return (a.createdAt||'').localeCompare(b.createdAt||''); });
+      records.sort(function(a,b){ var da=(a.createdAt||'').toString(),db=(b.createdAt||'').toString(); return da<db?-1:da>db?1:0; });
       var localKey = 'classroom_notes_records_' + currentTextbook + '_' + currentUnit;
       localStorage.setItem(localKey, JSON.stringify(records));
       alert('成功下载 ' + newRecords.length + ' 条记录');
